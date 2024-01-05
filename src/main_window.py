@@ -1,6 +1,6 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeWidget, QTreeWidgetItem, QFileDialog, QStatusBar, QLabel
+from scanner.scanner_dir import get_dir_structure
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -20,12 +20,16 @@ class MainWindow(QMainWindow):
         # Call the setup_ui method to setup the UI
         self.setup_ui()
 
-
     def setup_ui(self):
         # Perform additional setup for the UI here
-        self.update_status("Welcome - select a directory to scan either from thr menu or the scan button")
+        self.update_status(
+            "Welcome - select a directory to scan either from thr menu or the scan button"
+        )
         self.setup_exit()
         self.setup_scan()
+
+        self.treeWidget.setHeaderLabel("Directory")
+        self.tree_structure = None
 
     def setup_exit(self):
         # Get the actionExit from the menu bar
@@ -46,15 +50,40 @@ class MainWindow(QMainWindow):
         if directory:
             self.update_status("Scanning directory: " + directory)
             self.update_statusbar("Scanning directory: " + directory)
+            # Call the scanDirectory function and pass in the directory path
+
+            tree_structure = get_dir_structure(directory, self.update_statusbar)
+            # Store the reference to the tree structure object
+            self.tree_structure = tree_structure
+            # Clear the treeWidget and set the header label to the selected directory
+            self.treeWidget.clear()
+            self.treeWidget.setHeaderLabel(directory)
+
+            self.add_tree_items(self.treeWidget.invisibleRootItem(), tree_structure)
+            # Update the status label
+            self.update_status("Directory scanned: " + directory)
+            self.update_statusbar("Directory scanned: " + directory)
+
+    def add_tree_items(self, parent_item, tree_structure):
+        item = QTreeWidgetItem(parent_item, [tree_structure.get("name", "")])
+
+        # Set the icon for the item
+        if tree_structure.get("type") == "directory":
+            icon = self.style().standardIcon(QStyle.SP_DirIcon)
+        else:  # Assume it's a file if it's not a directory
+            icon = self.style().standardIcon(QStyle.SP_FileIcon)
+        item.setIcon(0, icon)
+
+        for child in tree_structure.get("children", []):
+            self.add_tree_items(item, child)
 
     def update_status(self, text):
         # Update the text in lbl_stat
         self.lbl_stat.setText(text)
-        
-    def update_statusbar(self,text):
+
+    def update_statusbar(self, text):
         # Update the text in the status bar
         self.statusbar.showMessage(text)
-    
 
 
 if __name__ == "__main__":
