@@ -27,14 +27,17 @@ class MainWindow(QMainWindow):
             "Welcome - select a directory to scan either from thr menu or the scan button"
         )
         self.setup_exit()
-        self.setup_scan()
+        self.setup_scan_source()
+        self.setup_scan_target()
 
         self.tree_source.setHeaderLabel("No directory selected")
         self.tree_source.setIconSize(QSize(32, 32))
         self.tree_target.setHeaderLabel("No directory selected")
         self.tree_target.setIconSize(QSize(32, 32))
         
-        self.tree_structure = None
+        self.tree_structure_source = None
+        self.tree_structure_target = None
+        
 
     def setup_exit(self):
         mf_exit = self.findChild(QAction, "mf_exit")
@@ -59,37 +62,55 @@ class MainWindow(QMainWindow):
         )
         if reply == QMessageBox.Yes:
             self.app.quit()
-        
-        
+            
 
-    def setup_scan(self):
+    def setup_scan_source(self):
         # Get the actionScan from the menu bar
         action_scan = self.findChild(QAction, "mf_scan")
-        # Connect the triggered signal of actionScan to the scan_directory slot
-        action_scan.triggered.connect(self.scan_directory)
+        # Connect the triggered signal of actionScan to the scan_source_directory slot
+        action_scan.triggered.connect(self.scan_source_directory)
 
         # Get the but_select_source push button
         but_select_source = self.findChild(QPushButton, "but_select_source")
-        # Connect the clicked signal of but_select_source to the scan_directory slot
-        but_select_source.clicked.connect(self.scan_directory)
+        # Connect the clicked signal of but_select_source to the scan_source_directory slot
+        but_select_source.clicked.connect(self.scan_source_directory)
 
-    def scan_directory(self):
+    def scan_source_directory(self):
         if directory := QFileDialog.getExistingDirectory(self, "Select Directory"):
             self.update_status(f"Scanning directory: {directory}")
             self.update_statusbar(f"Scanning directory: {directory}")
             # Call the scanDirectory function and pass in the directory path
 
-            tree_structure = get_dir_structure(directory, self.update_statusbar)
+            tree_structure_source = get_dir_structure(directory, self.update_statusbar)
             # Store the reference to the tree structure object
-            self.tree_structure = tree_structure
+            self.tree_structure_source = tree_structure_source
             # Clear the tree_source and set the header label to the selected directory
             self.tree_source.clear()
             self.tree_source.setHeaderLabel(directory)
 
-            self.add_tree_items(self.tree_source.invisibleRootItem(), tree_structure)
+            self.add_tree_items(self.tree_source.invisibleRootItem(), tree_structure_source)
             # Update the status label
             self.update_status(f"Directory scanned: {directory}")
             self.update_statusbar(f"Directory scanned: {directory}")
+    
+    def setup_scan_target(self):
+        but_select_target = self.findChild(QPushButton, "but_select_target")
+        but_select_target.clicked.connect(self.scan_target_directory)
+
+    def scan_target_directory(self):
+        if directory := QFileDialog.getExistingDirectory(self, "Select Directory"):
+            self.update_status(f"Scanning target directory: {directory}")
+            self.update_statusbar(f"Scanning target directory: {directory}")
+
+            tree_structure_target = get_dir_structure(directory, self.update_statusbar)
+            self.tree_target_structure = tree_structure_target
+            self.tree_target.clear()
+            self.tree_target.setHeaderLabel(directory)
+
+            self.add_tree_items(self.tree_target.invisibleRootItem(), tree_structure_target)
+            self.update_status(f"Target directory scanned: {directory}")
+            self.update_statusbar(f"Target directory scanned: {directory}")
+
 
     def add_tree_items(self, parent_item, tree_structure):
         item = QTreeWidgetItem(parent_item, [tree_structure.name])
