@@ -1,8 +1,8 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeWidget, QTreeWidgetItem, QFileDialog, QStatusBar, QLabel,QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeWidget, QTreeWidgetItem, QFileDialog, QStatusBar, QLabel,QPushButton, QMessageBox
 from scanner.scanner_dir import get_dir_structure
 from PyQt5.QtGui import QIcon
-
+from PyQt5.QtCore import QSize
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -29,14 +29,38 @@ class MainWindow(QMainWindow):
         self.setup_exit()
         self.setup_scan()
 
-        self.tree_source.setHeaderLabel("Directory")
+        self.tree_source.setHeaderLabel("No directory selected")
+        self.tree_source.setIconSize(QSize(32, 32))
+        self.tree_target.setHeaderLabel("No directory selected")
+        self.tree_target.setIconSize(QSize(32, 32))
+        
         self.tree_structure = None
 
     def setup_exit(self):
-        # Get the actionExit from the menu bar
-        action_exit = self.findChild(QAction, "mf_exit")
-        # Connect the triggered signal of actionExit to the quit slot of the application
-        action_exit.triggered.connect(self.app.quit)
+        mf_exit = self.findChild(QAction, "mf_exit")
+        but_exit = self.findChild(QPushButton, "but_exit")
+
+        mf_exit.triggered.connect(self.confirm_exit)
+        but_exit.clicked.connect(self.confirm_exit)
+
+        icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
+        mf_exit.setIcon(icon)
+        but_exit.setIcon(icon)
+
+        mf_exit.setShortcut("Ctrl+Q")
+
+    def confirm_exit(self):
+        reply = QMessageBox.question(
+            self,
+            "Exit",
+            "Are you sure you want to exit?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            self.app.quit()
+        
+        
 
     def setup_scan(self):
         # Get the actionScan from the menu bar
