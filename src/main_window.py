@@ -1,32 +1,11 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeWidget, QTreeWidgetItem, QFileDialog, QStatusBar, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeWidget, QTreeWidgetItem, QFileDialog, QStatusBar, QLabel,QPushButton
 from scanner.scanner_dir import get_dir_structure
 from PyQt5.QtGui import QIcon
 
+
 # Create an instance of QApplication
 app = QApplication([])
-
-"""
-A main window class for the music catalogue application.
-
-Args:
-    app: The application instance.
-
-Methods:
-    __init__(self, app): Initializes the main window.
-    setup_ui(self): Performs additional setup for the UI.
-    setup_exit(self): Sets up the exit action.
-    setup_scan(self): Sets up the scan action.
-    scan_directory(self): Scans the selected directory.
-    add_tree_items(self, parent_item, tree_structure): Adds tree items to the tree widget.
-    update_status(self, text): Updates the status label.
-    update_statusbar(self, text): Updates the status bar.
-
-Attributes:
-    app: The application instance.
-    tree_structure: The reference to the tree structure object.
-"""
-
 
 class MainWindow(QMainWindow):
     def __init__(self, app):
@@ -50,7 +29,7 @@ class MainWindow(QMainWindow):
         self.setup_exit()
         self.setup_scan()
 
-        self.treeWidget.setHeaderLabel("Directory")
+        self.tree_source.setHeaderLabel("Directory")
         self.tree_structure = None
 
     def setup_exit(self):
@@ -65,6 +44,11 @@ class MainWindow(QMainWindow):
         # Connect the triggered signal of actionScan to the scan_directory slot
         action_scan.triggered.connect(self.scan_directory)
 
+        # Get the but_select_source push button
+        but_select_source = self.findChild(QPushButton, "but_select_source")
+        # Connect the clicked signal of but_select_source to the scan_directory slot
+        but_select_source.clicked.connect(self.scan_directory)
+
     def scan_directory(self):
         if directory := QFileDialog.getExistingDirectory(self, "Select Directory"):
             self.update_status(f"Scanning directory: {directory}")
@@ -74,11 +58,11 @@ class MainWindow(QMainWindow):
             tree_structure = get_dir_structure(directory, self.update_statusbar)
             # Store the reference to the tree structure object
             self.tree_structure = tree_structure
-            # Clear the treeWidget and set the header label to the selected directory
-            self.treeWidget.clear()
-            self.treeWidget.setHeaderLabel(directory)
+            # Clear the tree_source and set the header label to the selected directory
+            self.tree_source.clear()
+            self.tree_source.setHeaderLabel(directory)
 
-            self.add_tree_items(self.treeWidget.invisibleRootItem(), tree_structure)
+            self.add_tree_items(self.tree_source.invisibleRootItem(), tree_structure)
             # Update the status label
             self.update_status(f"Directory scanned: {directory}")
             self.update_statusbar(f"Directory scanned: {directory}")
