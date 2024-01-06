@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
 from scanner.scanner_dir import get_dir_structure
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSize
+import configparser
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -29,6 +30,10 @@ class MainWindow(QMainWindow):
         """Initialize the main window."""
         super().__init__()
         self.app = app
+        self.config = configparser.ConfigParser()
+        self.config.read('config.ini')
+        if 'Directories' not in self.config:
+            self.config.add_section('Directories')
 
         # Load the .ui file and setup the UI
         uic.loadUi(
@@ -97,9 +102,15 @@ class MainWindow(QMainWindow):
 
     def scan_source_directory(self):
         """Scan the source directory."""
-        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
+        directory = QFileDialog.getExistingDirectory(self, "Select Directory", self.config.get('Directories', 'last_source_directory', fallback=''))
         if not directory:
             return
+
+        self.config.set('Directories', 'last_source_directory', directory)
+        with open('config.ini', 'w') as configfile:
+            self.config.write(configfile)
+
+        
 
         try:
             self.scan_directory(directory, self.tree_source, "source")
@@ -108,9 +119,13 @@ class MainWindow(QMainWindow):
 
     def scan_target_directory(self):
         """Scan the target directory."""
-        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
+        directory = QFileDialog.getExistingDirectory(self, "Select Directory", self.config.get('Directories', 'last_target_directory', fallback=''))
         if not directory:
             return
+
+        self.config.set('Directories', 'last_target_directory', directory)
+        with open('config.ini', 'w') as configfile:
+            self.config.write(configfile)
 
         try:
             self.scan_directory(directory, self.tree_target, "target")
