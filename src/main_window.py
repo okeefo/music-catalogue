@@ -12,9 +12,12 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMessageBox,
 )
-from scanner.scanner_dir import get_dir_structure
+from scanner.scanner_dir import FileNode, create_tree, DIRECTORY, get_dir_structure, FILE
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSize
+from audio_tag_reader import get_publisher
+from scanner.repackage_dir import preview_repackage
+import os
 import configparser
 
 # Create an instance of QApplication
@@ -54,6 +57,8 @@ class MainWindow(QMainWindow):
         self.setup_scan_target()
         self.setup_copy_source_button()
         self.setup_tree_widgets()
+        self.setup_refresh_button()
+        self.setup_preview_button()
 
     def setup_tree_widgets(self):
         self.tree_source = self.findChild(QTreeWidget, "tree_source")
@@ -82,6 +87,25 @@ class MainWindow(QMainWindow):
         but_copy_source = self.findChild(QPushButton, "but_copy_source")
         but_copy_source.clicked.connect(self.copy_source_to_target)
 
+    def setup_refresh_button(self):
+        but_refresh = self.findChild(QPushButton, "but_refresh_target")
+        but_refresh.clicked.connect(self.refresh)
+    
+    def setup_preview_button(self):
+        but_preview = self.findChild(QPushButton, "but_preview_to_target")
+        but_preview.clicked.connect(self.preview)   
+        
+    def refresh(self):
+        pass
+    
+    def preview(self):
+        header_label = self.tree_target.headerItem().text(0)
+        new_tree = preview_repackage(self.tree_structure_source, self.tree_structure_target, self.update_statusbar) 
+        self.tree_target.setHeaderLabel(header_label)
+        self.tree_target.clear()
+        self.add_tree_items(self.tree_target.invisibleRootItem(), new_tree)
+        self.tree_structure_target = new_tree
+
     def copy_source_to_target(self):
         if self.tree_structure_source is None:
             QMessageBox.critical(self, "Error", "Source directory not scanned")
@@ -95,8 +119,9 @@ class MainWindow(QMainWindow):
             return
         self.tree_structure_target = self.tree_structure_source
         self.tree_target.clear()
-        self.tree_target.setHeaderLabel(self.tree_structure_target.name)
+        self.tree_target.setHeaderLabel(self.tree_source.headerItem().text(0))
         self.add_tree_items(self.tree_target.invisibleRootItem(), self.tree_structure_target)
+        self.tree_structure_target_original = self.tree_structure_target
 
         QMessageBox.information(self, "Success", "Copy complete")
 
@@ -158,6 +183,7 @@ class MainWindow(QMainWindow):
 
         try:
             self.scan_directory(directory, self.tree_target, "target")
+            self.tree_structure_target_original = self.tree_structure_target
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
