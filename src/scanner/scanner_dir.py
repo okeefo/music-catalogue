@@ -11,7 +11,7 @@ class FileType(Enum):
 
 
 class FileNode:
-    def __init__(self, name, file_type, icon, extension=None):
+    def __init__(self, name, file_type, icon=None, extension=None):
         self.name = name
         self.type = file_type
         self.icon = icon
@@ -60,6 +60,13 @@ class FileNode:
     def __repr__(self):
         return f"FileNode(name={self.name}, type={self.type}, extension={self.extension}, children={self.children})"
 
+    def __eq__(self, other):
+        if not isinstance(other, FileNode):
+            return False
+
+        return self.name == other.name and self.type == other.type and self.extension == other.extension and \
+            self.children == other.children
+
 
 def create_tree(path, file_type):
     if file_type == FileType.FILE:
@@ -72,21 +79,24 @@ def create_tree(path, file_type):
 
 
 def get_dir_structure(path, update_statusbar):
+
+    if not os.path.isdir(path):
+        return create_tree(path, FileType.FILE)
+
     tree = create_tree(path, FileType.DIRECTORY)
+    for filename in os.listdir(path):
+        child_path = os.path.join(path, filename)
 
-    if os.path.isdir(path):
-        for filename in os.listdir(path):
-            child_path = os.path.join(path, filename)
+        if os.path.isdir(child_path):
+            update_statusbar(f"scanning dir: {child_path}")
+            tree.children.append(get_dir_structure(child_path, update_statusbar))
+        else:
+            # Update the status bar with the file name
+            update_statusbar(f"adding file: {child_path}")
+            tree.children.append(create_tree(child_path, FileType.FILE))
 
-            if os.path.isdir(child_path):
-                update_statusbar(f"scanning dir: {child_path}")
-                tree.children.append(get_dir_structure(child_path, update_statusbar))
-            else:
-                # Update the status bar with the file name
-                update_statusbar(f"adding file: {child_path}")
-                tree.children.append(create_tree(child_path, FileType.FILE))
+    return tree 
 
-    return tree
 
 
 # Dictionary to store QIcons
