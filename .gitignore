@@ -152,3 +152,8 @@ Testing/
 #   the following files to be ignored by git.
 .pyrightconfig.json
 .pyrightignore
+
+#ignore idea files
+.idea/
+config.ini
+```

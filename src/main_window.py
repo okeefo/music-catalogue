@@ -1,4 +1,4 @@
-from PyQt5 import uic
+from PyQt5 import uic, QtWidgets
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -7,17 +7,12 @@ from PyQt5.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
     QFileDialog,
-    QStatusBar,
-    QLabel,
     QPushButton,
     QMessageBox,
 )
-from scanner.scanner_dir import FileNode, create_tree, DIRECTORY, get_dir_structure, FILE
-from PyQt5.QtGui import QIcon
+from scanner.scanner_dir import get_dir_structure
 from PyQt5.QtCore import QSize
-from audio_tag_reader import get_publisher
 from scanner.repackage_dir import preview_repackage
-import os
 import configparser
 
 # Create an instance of QApplication
@@ -29,23 +24,36 @@ ICON_INDEX = 0
 class MainWindow(QMainWindow):
     """Main window class for the application."""
 
-    def __init__(self, app):
+    def __init__(self, application):
         """Initialize the main window."""
         super().__init__()
-        self.app = app
-        self.config = configparser.ConfigParser()
-        self.config.read("config.ini")
-        if "Directories" not in self.config:
-            self.config.add_section("Directories")
+        self.application = application
 
-        # Load the .ui file and setup the UI
+        # Set up instance variables
+        self.tree_source = None
+        self.tree_target = None
+        self.tree_structure_source = None
+        self.tree_structure_target = None
+        self.tree_structure_target_original = None
+        self.config = configparser.ConfigParser()
+
+        # set up config
+        self.setup_config()
+
+        # Set up the user interface from Designer.
+        # Load the .ui file and set up the UI
         uic.loadUi(
             "C:\\dev\\projects\\python\\music-catalogue\\src\\qt\\music_manager.ui",
             self,
         )
 
-        # Call the setup_ui method to setup the UI
+        # Call the setup_ui method to set up the UI
         self.setup_ui()
+
+    def setup_config(self):
+        self.config.read("config.ini")
+        if "Directories" not in self.config:
+            self.config.add_section("Directories")
 
     def setup_ui(self):
         """Perform additional setup for the UI."""
@@ -61,6 +69,7 @@ class MainWindow(QMainWindow):
         self.setup_preview_button()
 
     def setup_tree_widgets(self):
+        """Set up the tree widgets."""
         self.tree_source = self.findChild(QTreeWidget, "tree_source")
         self.tree_target = self.findChild(QTreeWidget, "tree_target")
         self.tree_source.setHeaderLabel("No directory selected")
@@ -71,10 +80,10 @@ class MainWindow(QMainWindow):
         self.tree_structure_target = None
 
     def setup_exit(self):
-        """Setup the exit button and menu item."""
+        """Set up the exit button and menu item."""
         mf_exit = self.findChild(QAction, "mf_exit")
         but_exit = self.findChild(QPushButton, "but_exit")
-        
+
         mf_exit.triggered.connect(self.confirm_exit)
         but_exit.clicked.connect(self.confirm_exit)
 
@@ -90,21 +99,23 @@ class MainWindow(QMainWindow):
     def setup_refresh_button(self):
         but_refresh = self.findChild(QPushButton, "but_refresh_target")
         but_refresh.clicked.connect(self.refresh)
-    
+
     def setup_preview_button(self):
         but_preview = self.findChild(QPushButton, "but_preview_to_target")
-        but_preview.clicked.connect(self.preview)   
-        
+        but_preview.clicked.connect(self.preview)
+
     def refresh(self):
         pass
-    
+
     def preview(self):
+        self.disable_main_window()
         header_label = self.tree_target.headerItem().text(0)
-        new_tree = preview_repackage(self.tree_structure_source, self.tree_structure_target, self.update_statusbar) 
+        new_tree = preview_repackage(self.tree_structure_source, self.tree_structure_target, self.update_statusbar)
         self.tree_target.setHeaderLabel(header_label)
         self.tree_target.clear()
         self.add_tree_items(self.tree_target.invisibleRootItem(), new_tree)
         self.tree_structure_target = new_tree
+        self.enable_main_window()
 
     def copy_source_to_target(self):
         if self.tree_structure_source is None:
@@ -123,20 +134,18 @@ class MainWindow(QMainWindow):
         self.add_tree_items(self.tree_target.invisibleRootItem(), self.tree_structure_target)
         self.tree_structure_target_original = self.tree_structure_target
 
-        QMessageBox.information(self, "Success", "Copy complete")
-
     def confirm_exit(self):
         """Confirm exit from the application."""
         if (
-            self.prompt_yes_no("Exit", "Are you sure you want to exit?")
-            == QMessageBox.No
+                self.prompt_yes_no("Exit", "Are you sure you want to exit?")
+                == QMessageBox.No
         ):
             return
 
-        self.app.quit()
+        self.application.quit()
 
     def setup_scan_source(self):
-        """Setup the source scan button and menu item."""
+        """Set up the source scan button and menu item."""
         action_scan = self.findChild(QAction, "mf_scan")
         action_scan.triggered.connect(self.scan_source_directory)
 
@@ -144,7 +153,7 @@ class MainWindow(QMainWindow):
         but_select_source.clicked.connect(self.scan_source_directory)
 
     def setup_scan_target(self):
-        """Setup the target scan button."""
+        """Set up the target scan button."""
         but_select_target = self.findChild(QPushButton, "but_select_target")
         but_select_target.clicked.connect(self.scan_target_directory)
 
@@ -187,13 +196,13 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
-    def scan_directory(self, directory, tree_widget, type):
+    def scan_directory(self, directory, tree_widget, file_type):
         """Scan a directory and update the UI."""
-        self.update_status(f"Scanning {type} directory: {directory}")
-        self.update_statusbar(f"Scanning {type} directory: {directory}")
+        self.update_status(f"Scanning {file_type} directory: {directory}")
+        self.update_statusbar(f"Scanning {file_type} directory: {directory}")
 
         tree_structure = get_dir_structure(directory, self.update_statusbar)
-        if type == "source":
+        if file_type == "source":
             self.tree_structure_source = tree_structure
         else:
             self.tree_structure_target = tree_structure
@@ -202,8 +211,8 @@ class MainWindow(QMainWindow):
         tree_widget.setHeaderLabel(directory)
 
         self.add_tree_items(tree_widget.invisibleRootItem(), tree_structure)
-        self.update_status(f"{type.capitalize()} directory scanned: {directory}")
-        self.update_statusbar(f"{type.capitalize()} directory scanned: {directory}")
+        self.update_status(f"{file_type.capitalize()} directory scanned: {directory}")
+        self.update_statusbar(f"{file_type.capitalize()} directory scanned: {directory}")
 
     def add_tree_items(self, parent_item, tree_structure):
         """Add items to the tree widget."""
@@ -230,6 +239,23 @@ class MainWindow(QMainWindow):
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
+
+    def enable_main_window(self):
+        self.setEnabled(True)
+
+    def disable_main_window(self):
+        self.setEnabled(False)
+
+    def setEnabled(self, enabled):
+        super().setEnabled(enabled)
+        if enabled:
+            self.update_statusbar("Ready")
+        else:
+            self.update_statusbar("Busy")
+
+        # Disable or enable all child widgets recursively
+        for child_widget in self.findChildren(QtWidgets.QWidget):
+            child_widget.setEnabled(enabled)
 
 
 if __name__ == "__main__":
