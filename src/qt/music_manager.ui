@@ -125,19 +125,19 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="but_copy_source">
-             <property name="text">
-              <string>Copy Source Dir</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QPushButton" name="but_select_target">
              <property name="enabled">
               <bool>true</bool>
              </property>
              <property name="text">
               <string>Select Target Dir</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="but_copy_source">
+             <property name="text">
+              <string>Copy Source Dir</string>
              </property>
             </widget>
            </item>
