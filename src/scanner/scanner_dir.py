@@ -4,119 +4,37 @@ from PyQt5.QtWidgets import QStyle, QApplication
 from PyQt5.QtGui import QIcon
 from enum import Enum
 
+from scanner.file_system_tree import FsoNode
 
-class FileType(Enum):
-    DIRECTORY = "directory"
-    FILE = "file"
-
-
-class FileNode:
-    def __init__(self, name, file_type, icon=None, extension=None):
-        self.name = name
-        self.type = file_type
-        self.icon = icon
-        self.extension = extension
-        self.children = []
-
-    def copy(self):
-        copied_node = FileNode(self.name, self.type, self.icon, self.extension)
-        copied_node.children = [child.copy() for child in self.children]
-        return copied_node
-
-    def add_child_node(self, name, file_type=None, extension=None):
-        if file_type is None:
-            self.children.append(name)  # Assuming 'name' is a FileNode object
-        else:
-            self.children.append(FileNode(name, file_type, get_icon(file_type, extension), extension))
-
-    def add_child_nodes(self, nodes):
-        self.children.extend(nodes)
-
-    def get_child_node(self, name):
-        return next((child for child in self.children if child.name == name), None)
-
-    def get_child_nodes(self, name):
-        return [child for child in self.children if child.name == name] or None
-
-    def get_child_nodes_by_type(self, file_type):
-        return [child for child in self.children if child.type == file_type] or None
-
-    def get_child_node_by_type(self, file_type):
-        return next((child for child in self.children if child.type == file_type), None)
-
-    def get_child_node_by_extension(self, extension):
-        return next((child for child in self.children if child.extension == extension), None)
-
-    def get_child_nodes_by_extension(self, extension):
-        return [child for child in self.children if child.extension == extension] or None
-
-    def get_child_nodes_by_extension_and_type(self, extension, file_type):
-        return [child for child in self.children if child.extension == extension and child.type == file_type] or None
-
-    def get_child_node_by_extension_and_type(self, extension, file_type):
-        return next((child for child in self.children if child.extension == extension and child.type == file_type),
-                    None)
-
-    def __repr__(self):
-        return f"FileNode(name={self.name}, type={self.type}, extension={self.extension}, children={self.children})"
-
-    def __eq__(self, other):
-        if not isinstance(other, FileNode):
-            return False
-
-        return self.name == other.name and self.type == other.type and self.extension == other.extension and \
-            self.children == other.children
-
-
-def create_tree(path, file_type):
-    if file_type == FileType.FILE:
-        extension = os.path.splitext(path)[1][1:].lower()
-        icon = get_icon(file_type, extension)
-        return FileNode(os.path.basename(path), file_type, icon, extension)
-    else:
-        icon = get_icon(file_type, None)
-        return FileNode(os.path.basename(path), file_type, icon)
 
 
 def get_dir_structure(path, update_statusbar):
+    """
+    This function takes the path of a directory and a reference to the status bar.
+    It scans the directory and returns a tree structure of the directory as a FsoNode object.
+    The status bar is updated during the scanning process.
+    """
+    update_statusbar(f"Scanning directory: {path}")
+    tree_structure = FsoNode(path)
+    _scan_dir(path, tree_structure, update_statusbar)
+    update_statusbar(f"Directory scanned: {path}")
+    return tree_structure
 
-    if not os.path.isdir(path):
-        return create_tree(path, FileType.FILE)
 
-    tree = create_tree(path, FileType.DIRECTORY)
-    for filename in os.listdir(path):
-        child_path = os.path.join(path, filename)
-
-        if os.path.isdir(child_path):
-            update_statusbar(f"scanning dir: {child_path}")
-            tree.children.append(get_dir_structure(child_path, update_statusbar))
+def _scan_dir(path, parent_node, update_statusbar):
+    """
+    This function takes a path, a parent node, and a reference to the status bar.
+    It scans the directory and adds the files and subdirectories to the parent node.
+    The status bar is updated during the scanning process.
+    """
+    for fso in os.scandir(path):
+        if fso.is_dir():
+            # We have a directory, so let's add it to the parent node
+            child_node = FsoNode(fso.path, parent_node)
+            parent_node.add_child_node(child_node)
+            _scan_dir(fso.path, child_node, update_statusbar)
+            update_statusbar(f"Scanning directory: {fso.path}")
         else:
-            # Update the status bar with the file name
-            update_statusbar(f"adding file: {child_path}")
-            tree.children.append(create_tree(child_path, FileType.FILE))
-
-    return tree 
-
-
-
-# Dictionary to store QIcons
-icons = {}
-
-
-def get_icon(file_type, extension):
-    style = QApplication.style()
-
-    if file_type == FileType.DIRECTORY:
-        if "dir" not in icons:
-            icons["dir"] = style.standardIcon(QStyle.SP_DirIcon)
-        return icons["dir"]
-
-    if extension in ["mp3", "wav", "jpg", "png"]:
-        if extension not in icons:
-            icons[extension] = QIcon(os.path.abspath(f"icons/mc-1-{extension}.ico"))
-        return icons[extension]
-
-    else:
-        if "file" not in icons:
-            icons["file"] = style.standardIcon(QStyle.SP_FileIcon)
-        return icons["file"]
+            # We have a file, so let's add it to the parent node
+            parent_node.add_child_node(FsoNode(fso.path, parent_node))
+            update_statusbar(f"Scanning file: {fso.path}")
