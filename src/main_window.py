@@ -174,6 +174,7 @@ class MainWindow(QMainWindow):
         try:
             self.scan_directory(directory, self.tree_source, "source")
         except Exception as e:
+            print(f"Error: {e}")  # Print the error message to the terminal
             QMessageBox.critical(self, "Error", str(e))
 
     def scan_target_directory(self):
@@ -194,6 +195,7 @@ class MainWindow(QMainWindow):
             self.scan_directory(directory, self.tree_target, "target")
             self.tree_structure_target_original = self.tree_structure_target
         except Exception as e:
+            print(f"Error: {e}")  # Print the error message to the terminal
             QMessageBox.critical(self, "Error", str(e))
 
     def scan_directory(self, directory, tree_widget, file_type):
