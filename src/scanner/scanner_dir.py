@@ -7,7 +7,6 @@ from enum import Enum
 from scanner.file_system_tree import FsoNode
 
 
-
 def get_dir_structure(path, update_statusbar):
     """
     This function takes the path of a directory and a reference to the status bar.
@@ -30,11 +29,11 @@ def _scan_dir(path, parent_node, update_statusbar):
     for fso in os.scandir(path):
         if fso.is_dir():
             # We have a directory, so let's add it to the parent node
-            child_node = FsoNode(fso.path, parent_node)
+            child_node = FsoNode(fso.path)
             parent_node.add_child_node(child_node)
             _scan_dir(fso.path, child_node, update_statusbar)
             update_statusbar(f"Scanning directory: {fso.path}")
         else:
             # We have a file, so let's add it to the parent node
-            parent_node.add_child_node(FsoNode(fso.path, parent_node))
+            parent_node.add_child_node(FsoNode(fso.path))
             update_statusbar(f"Scanning file: {fso.path}")

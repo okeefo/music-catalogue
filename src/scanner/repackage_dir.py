@@ -19,18 +19,27 @@ def preview_repackage(tree_structure_source, tree_structure_target, update_statu
     for child in tree_structure_source.children:
         if child.type == FsoType.FILE:
             # we have a file, so lets see if we have a Label tag
-            if label := child.get_id3_tag("LABEL"):
-                
-                path = child.absolute_path
-                file_name = os.path.basename(path)  
-                new_dir = path.replace(file_name, label)
-                new_path = os.path.join(new_dir, file_name)
-                node = FsoNode(new_dir, FsoType.DIRECTORY)
-                node.add_child_node(FsoNode(new_path, FsoType.FILE))
-                new_tree.add_child_node(node)
-            else:
-                # we don't have a publisher, so let's create a new child node in the target tree called "Unknown Publisher"
-                new_tree.add_child_node("Unknown Publisher", FsoType.DIRECTORY)
+           
+            # step 1 - check if audio file has a Label id3 tag else set it to "Unknown Publisher"
+            # step 2 - check if there is already a node with the same name as the Label tag if not create one
+            # step 3 - add the file to the node
+            # step 4 - remove the file from the root of the target tree
 
+            # step 1
+            label = child.get_id3_tag("LABEL") or "Unknown Publisher"
+            
+            # step 2
+            publisher_node = new_tree.get_child_node_by_name(label)
+            if publisher_node is None:
+                publisher_node = FsoNode(label,FsoType.DIRECTORY) 
+                new_tree.add_child_node(publisher_node)
+
+            # step 3
+            publisher_node.add_child_node(child)   
+
+            # step 4
+            new_tree.remove_child_node(child)
+
+    # update the status bar           
     update_statusbar("Repackaging... Done")
     return new_tree
