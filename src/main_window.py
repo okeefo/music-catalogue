@@ -105,17 +105,23 @@ class MainWindow(QMainWindow):
         but_preview.clicked.connect(self.preview)
 
     def refresh(self):
-        pass
+        tree_structure_target = self.tree_structure_target_original
+        self._populate_target_tree(tree_structure_target)
 
     def preview(self):
         self.disable_main_window()
-        header_label = self.tree_target.headerItem().text(0)
-        new_tree = preview_repackage(self.tree_structure_source, self.tree_structure_target, self.update_statusbar)
-        self.tree_target.setHeaderLabel(header_label)
+        new_tree = preview_repackage(
+            self.tree_structure_source,
+            self.tree_structure_target,
+            self.update_statusbar,
+        )
+        self._populate_target_tree(new_tree)
+        self.enable_main_window()
+
+    def _populate_target_tree(self, new_tree):
         self.tree_target.clear()
         self.add_tree_items(self.tree_target.invisibleRootItem(), new_tree)
         self.tree_structure_target = new_tree
-        self.enable_main_window()
 
     def copy_source_to_target(self):
         if self.tree_structure_source is None:
@@ -131,14 +137,16 @@ class MainWindow(QMainWindow):
         self.tree_structure_target = self.tree_structure_source
         self.tree_target.clear()
         self.tree_target.setHeaderLabel(self.tree_source.headerItem().text(0))
-        self.add_tree_items(self.tree_target.invisibleRootItem(), self.tree_structure_target)
+        self.add_tree_items(
+            self.tree_target.invisibleRootItem(), self.tree_structure_target
+        )
         self.tree_structure_target_original = self.tree_structure_target
 
     def confirm_exit(self):
         """Confirm exit from the application."""
         if (
-                self.prompt_yes_no("Exit", "Are you sure you want to exit?")
-                == QMessageBox.No
+            self.prompt_yes_no("Exit", "Are you sure you want to exit?")
+            == QMessageBox.No
         ):
             return
 
@@ -214,7 +222,9 @@ class MainWindow(QMainWindow):
 
         self.add_tree_items(tree_widget.invisibleRootItem(), tree_structure)
         self.update_status(f"{file_type.capitalize()} directory scanned: {directory}")
-        self.update_statusbar(f"{file_type.capitalize()} directory scanned: {directory}")
+        self.update_statusbar(
+            f"{file_type.capitalize()} directory scanned: {directory}"
+        )
 
     def add_tree_items(self, parent_item, tree_structure):
         """Add items to the tree widget."""

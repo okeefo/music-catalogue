@@ -38,7 +38,7 @@ def get_icon(file_type, extension=None):
 
 
 class FsoNode:
-    def __init__(self, absolute_path, strong=None, typeOverride=None):
+    def __init__(self, absolute_path, typeOverride=None):
         self.absolute_path = absolute_path
         self.name = os.path.basename(absolute_path)
         self.type = self._init_type(typeOverride)
@@ -79,6 +79,9 @@ class FsoNode:
 
     def get_child_node(self, name):
         return next((child for child in self.children if child.name == name), None)
+    
+    def get_child_node_by_name(self, name):
+        return self.get_child_node(name)
 
     def get_child_nodes(self, name):
         return [child for child in self.children if child.name == name] or None
@@ -171,3 +174,6 @@ class FsoNode:
                 if (song.tags.get(tag_name_requested))
                 else None
             )
+            
+    def remove_child_node(self, child_node):
+        self.children.remove(child_node)
