@@ -4,11 +4,11 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QAction,
     QStyle,
-    QTreeWidget,
-    QTreeWidgetItem,
+    QTreeView,
     QFileDialog,
     QPushButton,
     QMessageBox,
+    
 )
 from scanner.scanner_dir import get_dir_structure
 from PyQt5.QtCore import QSize
@@ -32,13 +32,13 @@ class MainWindow(QMainWindow):
         # Set up instance variables
         self.tree_source = None
         self.tree_target = None
-        self.tree_structure_source = None
-        self.tree_structure_target = None
-        self.tree_structure_target_original = None
+        self.tree_structure_source = QtWidgets.QFileSystemModel()
+        self.tree_structure_target = QtWidgets.QFileSystemModel()
+        self.tree_structure_target_original = QtWidgets.QFileSystemModel()
         self.config = configparser.ConfigParser()
 
         # set up config
-        self.setup_config()
+        self._setup_config()
 
         # Set up the user interface from Designer.
         # Load the .ui file and set up the UI
@@ -48,38 +48,33 @@ class MainWindow(QMainWindow):
         )
 
         # Call the setup_ui method to set up the UI
-        self.setup_ui()
+        self._setup_ui()
 
-    def setup_config(self):
+    def _setup_config(self):
         self.config.read("config.ini")
         if "Directories" not in self.config:
             self.config.add_section("Directories")
 
-    def setup_ui(self):
+    def _setup_ui(self):
         """Perform additional setup for the UI."""
         self.update_status(
             "Welcome - select a directory to scan either from thr menu or the scan button"
         )
-        self.setup_exit()
-        self.setup_scan_source()
-        self.setup_scan_target()
-        self.setup_copy_source_button()
-        self.setup_tree_widgets()
-        self.setup_refresh_button()
-        self.setup_preview_button()
+        self._setup_exit()
+        self._setup_scan_source()
+        self._setup_scan_target()
+        self._setup_copy_source_button()
+        self._setup_tree_views()
+        self._setup_refresh_button()
+        self._setup_preview_button()
 
-    def setup_tree_widgets(self):
+    def _setup_tree_views(self):
         """Set up the tree widgets."""
-        self.tree_source = self.findChild(QTreeWidget, "tree_source")
-        self.tree_target = self.findChild(QTreeWidget, "tree_target")
-        self.tree_source.setHeaderLabel("No directory selected")
-        self.tree_target.setHeaderLabel("No directory selected")
-        self.tree_source.setIconSize(QSize(32, 32))
-        self.tree_target.setIconSize(QSize(32, 32))
-        self.tree_structure_source = None
-        self.tree_structure_target = None
+        self.tree_source = self.findChild(QTreeView, "tree_source")
+        self.tree_target = self.findChild(QTreeView, "tree_target")
 
-    def setup_exit(self):
+
+    def _setup_exit(self):
         """Set up the exit button and menu item."""
         mf_exit = self.findChild(QAction, "mf_exit")
         but_exit = self.findChild(QPushButton, "but_exit")
@@ -92,18 +87,30 @@ class MainWindow(QMainWindow):
         but_exit.setIcon(icon)
         mf_exit.setShortcut("Ctrl+Q")
 
-    def setup_copy_source_button(self):
+    def _setup_copy_source_button(self):
         but_copy_source = self.findChild(QPushButton, "but_copy_source")
         but_copy_source.clicked.connect(self.copy_source_to_target)
 
-    def setup_refresh_button(self):
+    def _setup_refresh_button(self):
         but_refresh = self.findChild(QPushButton, "but_refresh_target")
         but_refresh.clicked.connect(self.refresh)
 
-    def setup_preview_button(self):
+    def _setup_preview_button(self):
         but_preview = self.findChild(QPushButton, "but_preview_to_target")
         but_preview.clicked.connect(self.preview)
+    
+    def _setup_scan_source(self):
+        """Set up the source scan button and menu item."""
+        action_scan = self.findChild(QAction, "mf_scan")
+        action_scan.triggered.connect(self.scan_source_directory)
+        but_select_source = self.findChild(QPushButton, "but_select_source")
+        but_select_source.clicked.connect(self.scan_source_directory)
 
+    def _setup_scan_target(self):
+        """Set up the target scan button."""
+        but_select_target = self.findChild(QPushButton, "but_select_target")
+        but_select_target.clicked.connect(self.scan_target_directory)
+        
     def refresh(self):
         tree_structure_target = self.tree_structure_target_original
         self._populate_target_tree(tree_structure_target)
@@ -135,12 +142,14 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.No:
             return
         self.tree_structure_target = self.tree_structure_source
-        self.tree_target.clear()
-        self.tree_target.setHeaderLabel(self.tree_source.headerItem().text(0))
-        self.add_tree_items(
-            self.tree_target.invisibleRootItem(), self.tree_structure_target
-        )
         self.tree_structure_target_original = self.tree_structure_target
+        #self.tree_structure_target.setRootPath(directory)
+        
+        self.tree_structure_target.setRootPath(self.tree_structure_source.rootPath())
+        self.tree_target.setModel(self.tree_structure_source)
+        self.tree_target.setRootIndex(self.tree_structure_source.index(self.tree_structure_target.rootPath()))
+        self.tree_target.setSortingEnabled(True)
+        
 
     def confirm_exit(self):
         """Confirm exit from the application."""
@@ -151,19 +160,6 @@ class MainWindow(QMainWindow):
             return
 
         self.application.quit()
-
-    def setup_scan_source(self):
-        """Set up the source scan button and menu item."""
-        action_scan = self.findChild(QAction, "mf_scan")
-        action_scan.triggered.connect(self.scan_source_directory)
-
-        but_select_source = self.findChild(QPushButton, "but_select_source")
-        but_select_source.clicked.connect(self.scan_source_directory)
-
-    def setup_scan_target(self):
-        """Set up the target scan button."""
-        but_select_target = self.findChild(QPushButton, "but_select_target")
-        but_select_target.clicked.connect(self.scan_target_directory)
 
     def scan_source_directory(self):
         """Scan the source directory."""
@@ -180,7 +176,12 @@ class MainWindow(QMainWindow):
             self.config.write(config_file)
 
         try:
-            self.scan_directory(directory, self.tree_source, "source")
+#            self.scan_directory(directory, self.tree_source, "source")
+            self.tree_structure_source.setRootPath(directory)
+            self.tree_source.setModel(self.tree_structure_source)
+            self.tree_source.setRootIndex(self.tree_structure_source.index(directory))
+            self.tree_source.setSortingEnabled(True)
+            
         except Exception as e:
             print(f"Error: {e}")  # Print the error message to the terminal
             QMessageBox.critical(self, "Error", str(e))
