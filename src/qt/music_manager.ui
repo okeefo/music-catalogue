@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1203</width>
-    <height>594</height>
+    <width>1923</width>
+    <height>786</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -99,9 +99,23 @@
              <height>892</height>
             </size>
            </property>
+           <property name="alternatingRowColors">
+            <bool>true</bool>
+           </property>
+           <property name="columnCount">
+            <number>2</number>
+           </property>
+           <attribute name="headerCascadingSectionResizes">
+            <bool>true</bool>
+           </attribute>
            <column>
             <property name="text">
              <string notr="true">1</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string notr="true">2</string>
             </property>
            </column>
           </widget>
@@ -208,9 +222,20 @@
         <layout class="QHBoxLayout" name="horizontalLayout_7">
          <item>
           <widget class="QTreeWidget" name="tree_target">
+           <property name="columnCount">
+            <number>2</number>
+           </property>
+           <attribute name="headerCascadingSectionResizes">
+            <bool>true</bool>
+           </attribute>
            <column>
             <property name="text">
              <string notr="true">1</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string notr="true">2</string>
             </property>
            </column>
           </widget>
@@ -227,7 +252,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1203</width>
+     <width>1923</width>
      <height>26</height>
     </rect>
    </property>
