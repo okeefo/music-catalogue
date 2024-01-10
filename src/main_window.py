@@ -14,6 +14,7 @@ from scanner.scanner_dir import get_dir_structure
 from PyQt5.QtCore import QSize
 from scanner.repackage_dir import preview_repackage
 import configparser
+from PyQt5.QtCore import Qt
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -72,12 +73,14 @@ class MainWindow(QMainWindow):
         """Set up the tree widgets."""
         self.tree_source = self.findChild(QTreeWidget, "tree_source")
         self.tree_target = self.findChild(QTreeWidget, "tree_target")
-        self.tree_source.setHeaderLabel("No directory selected")
-        self.tree_target.setHeaderLabel("No directory selected")
+        self.tree_source.setHeaderLabels(["No directory selected",""])
+        self.tree_target.setHeaderLabels(["No directory selected",""])
         self.tree_source.setIconSize(QSize(32, 32))
         self.tree_target.setIconSize(QSize(32, 32))
-        self.tree_structure_source = None
-        self.tree_structure_target = None
+        self.tree_source.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree_source.setSortingEnabled(True)
+        
+        
 
     def setup_exit(self):
         """Set up the exit button and menu item."""
@@ -134,7 +137,7 @@ class MainWindow(QMainWindow):
         )
         if reply == QMessageBox.No:
             return
-        self.tree_structure_target = self.tree_structure_source
+        self.tree_structure_target = self.tree_structure_source.copy()
         self.tree_target.clear()
         self.tree_target.setHeaderLabel(self.tree_source.headerItem().text(0))
         self.add_tree_items(
@@ -218,7 +221,7 @@ class MainWindow(QMainWindow):
             self.tree_structure_target = tree_structure
 
         tree_widget.clear()
-        tree_widget.setHeaderLabel(directory)
+        tree_widget.setHeaderLabels([directory, "Type"])
 
         self.add_tree_items(tree_widget.invisibleRootItem(), tree_structure)
         self.update_status(f"{file_type.capitalize()} directory scanned: {directory}")
@@ -228,8 +231,11 @@ class MainWindow(QMainWindow):
 
     def add_tree_items(self, parent_item, tree_structure):
         """Add items to the tree widget."""
-        item = QTreeWidgetItem(parent_item, [tree_structure.name])
+        # add name and type to the tree widget
+        #add name and type to the tree widget
+        item = QTreeWidgetItem(parent_item, [tree_structure.name, tree_structure.extension] )
         item.setIcon(ICON_INDEX, tree_structure.icon)
+        
 
         for child in tree_structure.children:
             self.add_tree_items(item, child)
