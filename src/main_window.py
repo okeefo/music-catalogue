@@ -113,6 +113,10 @@ class MainWindow(QMainWindow):
 
     def preview(self):
         self.disable_main_window()
+        #check if target tree is empty
+        if self.tree_structure_target is None:
+            # do silent copy of source to target
+            self.copy_source_to_target()
         new_tree = preview_repackage(
             self.tree_structure_source,
             self.tree_structure_target,
