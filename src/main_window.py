@@ -38,6 +38,9 @@ class MainWindow(QMainWindow):
         self.tree_structure_target = None
         self.tree_structure_target_original = None
         self.config = configparser.ConfigParser()
+        self.id3_tags = []
+        self.source_id3_labels = []
+        self.target_id3_labels = []
 
         # set up config
         self.setup_config()
@@ -69,24 +72,62 @@ class MainWindow(QMainWindow):
         self.setup_tree_widgets()
         self.setup_refresh_button()
         self.setup_preview_button()
-        self.clear_audio_tags_source()
-        self.clear_audio_tags_target()
+        self.setup_id3_label_caches()
+        self.setup_id3_tags()
+        self.clear_audio_tags(True)
+        self.clear_audio_tags(False)
+
+    def setup_id3_label_caches(self):
+        self.source_id3_labels = [
+            self.lbl_src_title,
+            self.lbl_src_artist,
+            self.lbl_src_album,
+            self.lbl_src_label,
+            self.lbl_src_side,
+            self.lbl_src_track,
+            self.lbl_src_catalog,
+            self.lbl_src_discogs_id,
+            self.lbl_src_website,
+        ]
+
+        self.target_id3_labels = [
+            self.lbl_tar_title,
+            self.lbl_tar_artist,
+            self.lbl_tar_album,
+            self.lbl_tar_label,
+            self.lbl_tar_side,
+            self.lbl_tar_track,
+            self.lbl_tar_catalog,
+            self.lbl_tar_discogs_id,
+            self.lbl_tar_website,
+        ]
+
+    def setup_id3_tags(self):
+        self.id3_tags = [
+            "TITLE",
+            "ARTIST",
+            "ALBUM",
+            "LABEL",
+            "SIDE",
+            "TRACKNUMBER",
+            "CATALOGNUMBER",
+            "DISCOGS_ID",
+            "WEBSITE",
+        ]
 
     def setup_tree_widgets(self):
         """Set up the tree widgets."""
         self.tree_source = self.findChild(QTreeWidget, "tree_source")
         self.tree_target = self.findChild(QTreeWidget, "tree_target")
-        self.tree_source.setHeaderLabels(["No directory selected",""])
-        self.tree_target.setHeaderLabels(["No directory selected",""])
+        self.tree_source.setHeaderLabels(["No directory selected", ""])
+        self.tree_target.setHeaderLabels(["No directory selected", ""])
         self.tree_source.setIconSize(QSize(32, 32))
         self.tree_target.setIconSize(QSize(32, 32))
         self.tree_source.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_source.setSortingEnabled(True)
-        # when user clicks on a node in the source tree, display the id3 tags for the selected audio file 
-        self.tree_source.itemClicked.connect(self.display_audio_tags_source)
-        self.tree_target.itemClicked.connect(self.display_audio_tags_target)
-        
-        
+        # when user clicks on a node in the source tree, display the id3 tags for the selected audio file
+        self.tree_source.itemClicked.connect(self.display_audio_tags)
+        self.tree_target.itemClicked.connect(self.display_audio_tags)
 
     def setup_exit(self):
         """Set up the exit button and menu item."""
@@ -119,7 +160,7 @@ class MainWindow(QMainWindow):
 
     def preview(self):
         self.disable_main_window()
-        #check if target tree is empty
+        # check if target tree is empty
         if self.tree_structure_target is None:
             # do silent copy of source to target
             self.copy_source_to_target()
@@ -242,10 +283,11 @@ class MainWindow(QMainWindow):
     def add_tree_items(self, parent_item, tree_structure):
         """Add items to the tree widget."""
         # add name and type to the tree widget
-        #add name and type to the tree widget
-        item = QTreeWidgetItem(parent_item, [tree_structure.name, tree_structure.extension] )
+        # add name and type to the tree widget
+        item = QTreeWidgetItem(
+            parent_item, [tree_structure.name, tree_structure.extension]
+        )
         item.setIcon(ICON_INDEX, tree_structure.icon)
-        
 
         for child in tree_structure.children:
             self.add_tree_items(item, child)
@@ -284,75 +326,36 @@ class MainWindow(QMainWindow):
         # Disable or enable all child widgets recursively
         for child_widget in self.findChildren(QtWidgets.QWidget):
             child_widget.setEnabled(enabled)
-            
-                
-    def clear_audio_tags_source(self):
-        self.lbl_src_title.setText("") 
-        self.lbl_src_artist.setText("")
-        self.lbl_src_album.setText("")
-        self.lbl_src_label.setText("")
-        self.lbl_src_side.setText("")
-        self.lbl_src_track.setText("")
-        self.lbl_src_catalog.setText("")
-        self.lbl_src_discogs_id.setText("")
-        self.lbl_src_website.setText("")
-        
-    def clear_audio_tags_target(self):
-        self.lbl_tar_title.setText("") 
-        self.lbl_tar_artist.setText("")
-        self.lbl_tar_album.setText("")
-        self.lbl_tar_label.setText("")
-        self.lbl_tar_side.setText("")
-        self.lbl_tar_track.setText("")
-        self.lbl_tar_catalog.setText("")
-        self.lbl_tar_discogs_id.setText("")
-        self.lbl_tar_website.setText("")
-    
-    # this function is called when the user clicks on a node in the source tree
-    # it displays the id3 tags for the selected audio file
-    def display_audio_tags_source(self, item):
+
+    def clear_audio_tags(self, source=True):
+        labels = self.get_label_list(source)
+
+        for label in labels:
+            label.setText("")
+
+    def display_audio_tags(self, item):
         if item is None:
             return
-        if is_supported_audio_file(item.text(1)):
-            self._extract_and_display_audio_tags_source(item)
-        else:
-            self.clear_audio_tags_source()
 
-    # TODO Rename this here and in `display_audio_tags_source`
-    def _extract_and_display_audio_tags_source(self, item):
-        item = self.tree_structure_source.get_child_node_by_name(item.text(0))
-        self.lbl_src_title.setText(item.get_id3_tag("TITLE"))
-        self.lbl_src_artist.setText(item.get_id3_tag("ARTIST"))
-        self.lbl_src_album.setText(item.get_id3_tag("ALBUM"))
-        self.lbl_src_label.setText(item.get_id3_tag("LABEL"))
-        self.lbl_src_side.setText(item.get_id3_tag("DISCNUMBER"))
-        self.lbl_src_track.setText(item.get_id3_tag("TRACKNUMBER"))
-        self.lbl_src_catalog.setText(item.get_id3_tag("CATALOGNUMBER"))
-        self.lbl_src_discogs_id.setText(item.get_id3_tag("DISCOGS_RELEASE_ID"))
-        self.lbl_src_website.setText(item.get_id3_tag("URL"))
-    
-    def display_audio_tags_target(self, item):
-        if item is None:
+        source = self.sender() == self.tree_source
+
+        if not is_supported_audio_file(item.text(1)):
+            self.clear_audio_tags(source)
             return
-        if is_supported_audio_file(item.text(1)):
-            self._extract_and_display_audio_tags_target(item)
-        else:
-            self.clear_audio_tags_source()
 
-    # TODO Rename this here and in `display_audio_tags_source`
-    def _extract_and_display_audio_tags_target(self, item):
-        item = self.tree_structure_source.get_child_node_by_name(item.text(0))
-        self.lbl_tar_title.setText(item.get_id3_tag("TITLE"))
-        self.lbl_tar_artist.setText(item.get_id3_tag("ARTIST"))
-        self.lbl_tar_album.setText(item.get_id3_tag("ALBUM"))
-        self.lbl_tar_label.setText(item.get_id3_tag("LABEL"))
-        self.lbl_tar_side.setText(item.get_id3_tag("DISCNUMBER"))
-        self.lbl_tar_track.setText(item.get_id3_tag("TRACKNUMBER"))
-        self.lbl_tar_catalog.setText(item.get_id3_tag("CATALOGNUMBER"))
-        self.lbl_tar_discogs_id.setText(item.get_id3_tag("DISCOGS_RELEASE_ID"))
-        self.lbl_tar_website.setText(item.get_id3_tag("URL"))
-            
-        
+        labels = self.get_label_list(source)
+        tree_structure = (
+            self.tree_structure_source if source else self.tree_structure_target
+        )
+
+        item = tree_structure.get_child_node_by_name(item.text(0))
+
+        for label, tag in zip(labels, self.id3_tags):
+            label.setText(item.get_id3_tag(tag))
+
+    def get_label_list(self, source=True):
+        return self.source_id3_labels if source else self.target_id3_labels
+
 
 if __name__ == "__main__":
     # Create an instance of MainWindow
