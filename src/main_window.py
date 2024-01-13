@@ -15,6 +15,7 @@ from PyQt5.QtCore import QSize
 from scanner.repackage_dir import preview_repackage
 import configparser
 from PyQt5.QtCore import Qt
+from scanner.file_system_tree import is_supported_audio_file
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -68,6 +69,8 @@ class MainWindow(QMainWindow):
         self.setup_tree_widgets()
         self.setup_refresh_button()
         self.setup_preview_button()
+        self.clear_audio_tags_source()
+        self.clear_audio_tags_target()
 
     def setup_tree_widgets(self):
         """Set up the tree widgets."""
@@ -79,6 +82,9 @@ class MainWindow(QMainWindow):
         self.tree_target.setIconSize(QSize(32, 32))
         self.tree_source.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_source.setSortingEnabled(True)
+        # when user clicks on a node in the source tree, display the id3 tags for the selected audio file 
+        self.tree_source.itemClicked.connect(self.display_audio_tags_source)
+        self.tree_target.itemClicked.connect(self.display_audio_tags_target)
         
         
 
@@ -278,7 +284,75 @@ class MainWindow(QMainWindow):
         # Disable or enable all child widgets recursively
         for child_widget in self.findChildren(QtWidgets.QWidget):
             child_widget.setEnabled(enabled)
+            
+                
+    def clear_audio_tags_source(self):
+        self.lbl_src_title.setText("") 
+        self.lbl_src_artist.setText("")
+        self.lbl_src_album.setText("")
+        self.lbl_src_label.setText("")
+        self.lbl_src_side.setText("")
+        self.lbl_src_track.setText("")
+        self.lbl_src_catalog.setText("")
+        self.lbl_src_discogs_id.setText("")
+        self.lbl_src_website.setText("")
+        
+    def clear_audio_tags_target(self):
+        self.lbl_tar_title.setText("") 
+        self.lbl_tar_artist.setText("")
+        self.lbl_tar_album.setText("")
+        self.lbl_tar_label.setText("")
+        self.lbl_tar_side.setText("")
+        self.lbl_tar_track.setText("")
+        self.lbl_tar_catalog.setText("")
+        self.lbl_tar_discogs_id.setText("")
+        self.lbl_tar_website.setText("")
+    
+    # this function is called when the user clicks on a node in the source tree
+    # it displays the id3 tags for the selected audio file
+    def display_audio_tags_source(self, item):
+        if item is None:
+            return
+        if is_supported_audio_file(item.text(1)):
+            self._extract_and_display_audio_tags_source(item)
+        else:
+            self.clear_audio_tags_source()
 
+    # TODO Rename this here and in `display_audio_tags_source`
+    def _extract_and_display_audio_tags_source(self, item):
+        item = self.tree_structure_source.get_child_node_by_name(item.text(0))
+        self.lbl_src_title.setText(item.get_id3_tag("TITLE"))
+        self.lbl_src_artist.setText(item.get_id3_tag("ARTIST"))
+        self.lbl_src_album.setText(item.get_id3_tag("ALBUM"))
+        self.lbl_src_label.setText(item.get_id3_tag("LABEL"))
+        self.lbl_src_side.setText(item.get_id3_tag("DISCNUMBER"))
+        self.lbl_src_track.setText(item.get_id3_tag("TRACKNUMBER"))
+        self.lbl_src_catalog.setText(item.get_id3_tag("CATALOGNUMBER"))
+        self.lbl_src_discogs_id.setText(item.get_id3_tag("DISCOGS_RELEASE_ID"))
+        self.lbl_src_website.setText(item.get_id3_tag("URL"))
+    
+    def display_audio_tags_target(self, item):
+        if item is None:
+            return
+        if is_supported_audio_file(item.text(1)):
+            self._extract_and_display_audio_tags_target(item)
+        else:
+            self.clear_audio_tags_source()
+
+    # TODO Rename this here and in `display_audio_tags_source`
+    def _extract_and_display_audio_tags_target(self, item):
+        item = self.tree_structure_source.get_child_node_by_name(item.text(0))
+        self.lbl_tar_title.setText(item.get_id3_tag("TITLE"))
+        self.lbl_tar_artist.setText(item.get_id3_tag("ARTIST"))
+        self.lbl_tar_album.setText(item.get_id3_tag("ALBUM"))
+        self.lbl_tar_label.setText(item.get_id3_tag("LABEL"))
+        self.lbl_tar_side.setText(item.get_id3_tag("DISCNUMBER"))
+        self.lbl_tar_track.setText(item.get_id3_tag("TRACKNUMBER"))
+        self.lbl_tar_catalog.setText(item.get_id3_tag("CATALOGNUMBER"))
+        self.lbl_tar_discogs_id.setText(item.get_id3_tag("DISCOGS_RELEASE_ID"))
+        self.lbl_tar_website.setText(item.get_id3_tag("URL"))
+            
+        
 
 if __name__ == "__main__":
     # Create an instance of MainWindow
