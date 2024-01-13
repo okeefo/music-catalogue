@@ -2,8 +2,6 @@ from enum import Enum
 import os
 from PyQt5.QtWidgets import QApplication, QStyle
 from PyQt5.QtGui import QIcon
-from tinytag import TinyTag
-from mutagen.id3 import ID3
 import taglib
 
 
@@ -27,6 +25,8 @@ fosIcons = {
 
 supported_audio_extensions = ["mp3", "wav"]
 
+def is_supported_audio_file(extension):
+    return extension in supported_audio_extensions
 
 def get_icon(file_type, extension=None):
     if file_type == FsoType.DIRECTORY:

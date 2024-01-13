@@ -103,24 +103,19 @@
             <bool>true</bool>
            </property>
            <property name="columnCount">
-            <number>3</number>
+            <number>2</number>
            </property>
            <attribute name="headerCascadingSectionResizes">
             <bool>true</bool>
            </attribute>
            <column>
             <property name="text">
-             <string>New Column</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
              <string/>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>1</string>
             </property>
            </column>
           </widget>
