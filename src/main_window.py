@@ -108,11 +108,11 @@ class MainWindow(QMainWindow):
             "ARTIST",
             "ALBUM",
             "LABEL",
-            "SIDE",
+            "DISCNUMBER",
             "TRACKNUMBER",
             "CATALOGNUMBER",
-            "DISCOGS_ID",
-            "WEBSITE",
+            "DISCOGS_RELEASE_ID",
+            "URL",
         ]
 
     def setup_tree_widgets(self):
@@ -160,10 +160,10 @@ class MainWindow(QMainWindow):
 
     def preview(self):
         self.disable_main_window()
-        # check if target tree is empty
+        # check if target tree is empty, if it is, copy source to target silently
         if self.tree_structure_target is None:
-            # do silent copy of source to target
-            self.copy_source_to_target()
+             self.copy_source_to_target(True)
+            
         new_tree = preview_repackage(
             self.tree_structure_source,
             self.tree_structure_target,
@@ -177,17 +177,19 @@ class MainWindow(QMainWindow):
         self.add_tree_items(self.tree_target.invisibleRootItem(), new_tree)
         self.tree_structure_target = new_tree
 
-    def copy_source_to_target(self):
+    def copy_source_to_target(self, silent=False):
         if self.tree_structure_source is None:
             QMessageBox.critical(self, "Error", "Source directory not scanned")
             return
 
-        reply = self.prompt_yes_no(
-            "Confirmation",
-            "Are you sure you want to copy the source to the target?",
-        )
-        if reply == QMessageBox.No:
-            return
+        if not silent:
+            reply = self.prompt_yes_no(
+                "Confirmation",
+                "Are you sure you want to copy the source to the target?",
+            )
+            if reply == QMessageBox.No:
+                return
+        
         self.tree_structure_target = self.tree_structure_source.copy()
         self.tree_target.clear()
         self.tree_target.setHeaderLabel(self.tree_source.headerItem().text(0))
@@ -344,6 +346,7 @@ class MainWindow(QMainWindow):
             return
 
         labels = self.get_label_list(source)
+
         tree_structure = (
             self.tree_structure_source if source else self.tree_structure_target
         )
