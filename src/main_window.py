@@ -1,3 +1,4 @@
+import traceback
 from PyQt5 import uic, QtWidgets
 from PyQt5.QtWidgets import (
     QApplication,
@@ -17,10 +18,26 @@ import configparser
 from PyQt5.QtCore import Qt
 from scanner.file_system_tree import is_supported_audio_file
 
+
+class PaddedTreeWidgetItem(QTreeWidgetItem):
+    def data(self, column, role):
+        data = super().data(column, role)
+        if role == Qt.DisplayRole:
+            data += ' ' * 2  # Add 10 spaces to the end of the content
+        return data
+    
+    
 # Create an instance of QApplication
 app = QApplication([])
 
 ICON_INDEX = 0
+
+CONFIG_SECTION_DIRECTORIES = "Directories"
+CONFIG_SECTION_WINDOW = "Window"
+CONFIG_WINDOW_HIGHT = "hight"
+CONFIG_WINDOW_WIDTH = "Width"
+CONFIG_LAST_TARGET_DIRECTORY = "last_target_directory"
+CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
 
 
 class MainWindow(QMainWindow):
@@ -43,7 +60,7 @@ class MainWindow(QMainWindow):
         self.target_id3_labels = []
 
         # set up config
-        self.setup_config()
+        self.__setup_config()
 
         # Set up the user interface from Designer.
         # Load the .ui file and set up the UI
@@ -53,31 +70,47 @@ class MainWindow(QMainWindow):
         )
 
         # Call the setup_ui method to set up the UI
-        self.setup_ui()
+        self.__setup_ui()
 
-    def setup_config(self):
+    def __setup_config(self):
         self.config.read("config.ini")
-        if "Directories" not in self.config:
-            self.config.add_section("Directories")
+        if CONFIG_SECTION_DIRECTORIES not in self.config:
+            self.config.add_section(CONFIG_SECTION_DIRECTORIES)
+        if CONFIG_SECTION_WINDOW not in self.config:
+            self.config.add_section(CONFIG_SECTION_WINDOW)
 
-    def setup_ui(self):
+    def __setup_ui(self):
         """Perform additional setup for the UI."""
         self.update_status(
             "Welcome - select a directory to scan either from thr menu or the scan button"
         )
-        self.setup_exit()
-        self.setup_scan_source()
-        self.setup_scan_target()
-        self.setup_copy_source_button()
-        self.setup_tree_widgets()
-        self.setup_refresh_button()
-        self.setup_preview_button()
-        self.setup_id3_label_caches()
-        self.setup_id3_tags()
-        self.clear_audio_tags(True)
-        self.clear_audio_tags(False)
+        # set window size from config
+        self.__setup_window_size()
+        self.__setup_exit()
+        self.__setup_scan_source()
+        self.__setup_scan_target()
+        self.__setup_copy_source_button()
+        self.__setup_tree_widgets()
+        self.__setup_refresh_button()
+        self.__setup_preview_button()
+        self.__setup_id3_label_caches()
+        self.__setup_id3_tags()
+        self.__clear_audio_tags(True)
+        self.__clear_audio_tags(False)
 
-    def setup_id3_label_caches(self):
+    def __setup_window_size(self):
+        self.resize(
+            self.config.getint(
+                CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, fallback=800
+            ),
+            self.config.getint(
+                CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, fallback=600
+            ),
+        )
+
+        self.setMinimumSize(QSize(800, 600))
+
+    def __setup_id3_label_caches(self):
         self.source_id3_labels = [
             self.lbl_src_title,
             self.lbl_src_artist,
@@ -102,7 +135,7 @@ class MainWindow(QMainWindow):
             self.lbl_tar_website,
         ]
 
-    def setup_id3_tags(self):
+    def __setup_id3_tags(self):
         self.id3_tags = [
             "TITLE",
             "ARTIST",
@@ -115,7 +148,7 @@ class MainWindow(QMainWindow):
             "URL",
         ]
 
-    def setup_tree_widgets(self):
+    def __setup_tree_widgets(self):
         """Set up the tree widgets."""
         self.tree_source = self.findChild(QTreeWidget, "tree_source")
         self.tree_target = self.findChild(QTreeWidget, "tree_target")
@@ -128,8 +161,11 @@ class MainWindow(QMainWindow):
         # when user clicks on a node in the source tree, display the id3 tags for the selected audio file
         self.tree_source.itemClicked.connect(self.display_audio_tags)
         self.tree_target.itemClicked.connect(self.display_audio_tags)
+        # When user clicks expand - resize the columns
+        self.tree_source.itemExpanded.connect(self.resizeColumns)
+        self.tree_target.itemExpanded.connect(self.resizeColumns)
 
-    def setup_exit(self):
+    def __setup_exit(self):
         """Set up the exit button and menu item."""
         mf_exit = self.findChild(QAction, "mf_exit")
         but_exit = self.findChild(QPushButton, "but_exit")
@@ -142,15 +178,15 @@ class MainWindow(QMainWindow):
         but_exit.setIcon(icon)
         mf_exit.setShortcut("Ctrl+Q")
 
-    def setup_copy_source_button(self):
+    def __setup_copy_source_button(self):
         but_copy_source = self.findChild(QPushButton, "but_copy_source")
         but_copy_source.clicked.connect(self.copy_source_to_target)
 
-    def setup_refresh_button(self):
+    def __setup_refresh_button(self):
         but_refresh = self.findChild(QPushButton, "but_refresh_target")
         but_refresh.clicked.connect(self.refresh)
 
-    def setup_preview_button(self):
+    def __setup_preview_button(self):
         but_preview = self.findChild(QPushButton, "but_preview_to_target")
         but_preview.clicked.connect(self.preview)
 
@@ -162,20 +198,28 @@ class MainWindow(QMainWindow):
         self.disable_main_window()
         # check if target tree is empty, if it is, copy source to target silently
         if self.tree_structure_target is None:
-             self.copy_source_to_target(True)
-            
+            self.copy_source_to_target(True)
+
         new_tree = preview_repackage(
             self.tree_structure_source,
             self.tree_structure_target,
             self.update_statusbar,
         )
         self._populate_target_tree(new_tree)
+        # Expand the first top-level item
+        self.tree_target.expandItem(self.tree_target.topLevelItem(0))
         self.enable_main_window()
 
     def _populate_target_tree(self, new_tree):
         self.tree_target.clear()
+        self.tree_target.setHeaderLabels(
+            [self.tree_source.headerItem().text(0), "Type", "Date", "Size"]
+        )
         self.add_tree_items(self.tree_target.invisibleRootItem(), new_tree)
+        self.tree_target.expandItem(self.tree_target.topLevelItem(0))
         self.tree_structure_target = new_tree
+        # Expand the first top-level item
+        self.tree_target.expandItem(self.tree_target.topLevelItem(0))
 
     def copy_source_to_target(self, silent=False):
         if self.tree_structure_source is None:
@@ -189,13 +233,7 @@ class MainWindow(QMainWindow):
             )
             if reply == QMessageBox.No:
                 return
-        
-        self.tree_structure_target = self.tree_structure_source.copy()
-        self.tree_target.clear()
-        self.tree_target.setHeaderLabel(self.tree_source.headerItem().text(0))
-        self.add_tree_items(
-            self.tree_target.invisibleRootItem(), self.tree_structure_target
-        )
+        self._populate_target_tree(self.tree_structure_source.copy())
         self.tree_structure_target_original = self.tree_structure_target
 
     def confirm_exit(self):
@@ -206,9 +244,26 @@ class MainWindow(QMainWindow):
         ):
             return
 
+        self.__update_config_file()
+
         self.application.quit()
 
-    def setup_scan_source(self):
+    def __update_config_file(self):
+        """Update the config file with window size and settings."""
+
+        # Write the window size to the config file
+        self.config.set(
+            CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, f"{self.size().height()}"
+        )
+        self.config.set(
+            CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, f"{self.size().width()}"
+        )
+
+        # Save the config file
+        with open("config.ini", "w") as config_file:
+            self.config.write(config_file)
+
+    def __setup_scan_source(self):
         """Set up the source scan button and menu item."""
         action_scan = self.findChild(QAction, "mf_scan")
         action_scan.triggered.connect(self.scan_source_directory)
@@ -216,7 +271,7 @@ class MainWindow(QMainWindow):
         but_select_source = self.findChild(QPushButton, "but_select_source")
         but_select_source.clicked.connect(self.scan_source_directory)
 
-    def setup_scan_target(self):
+    def __setup_scan_target(self):
         """Set up the target scan button."""
         but_select_target = self.findChild(QPushButton, "but_select_target")
         but_select_target.clicked.connect(self.scan_target_directory)
@@ -226,41 +281,49 @@ class MainWindow(QMainWindow):
         directory = QFileDialog.getExistingDirectory(
             self,
             "Select Directory",
-            self.config.get("Directories", "last_source_directory", fallback=""),
+            self.config.get(
+                CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, fallback=""
+            ),
         )
         if not directory:
             return
 
-        self.config.set("Directories", "last_source_directory", directory)
-        with open("config.ini", "w") as config_file:
-            self.config.write(config_file)
+        self.config.set(
+            CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, directory
+        )
 
         try:
             self.scan_directory(directory, self.tree_source, "source")
         except Exception as e:
-            print(f"Error: {e}")  # Print the error message to the terminal
-            QMessageBox.critical(self, "Error", str(e))
+            self._extracted_from_scan_target_directory_18(e)
 
     def scan_target_directory(self):
         """Scan the target directory."""
         directory = QFileDialog.getExistingDirectory(
             self,
             "Select Directory",
-            self.config.get("Directories", "last_target_directory", fallback=""),
+            self.config.get(
+                CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, fallback=""
+            ),
         )
         if not directory:
             return
 
-        self.config.set("Directories", "last_target_directory", directory)
-        with open("config.ini", "w") as config_file:
-            self.config.write(config_file)
+        self.config.set(
+            CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, directory
+        )
 
         try:
             self.scan_directory(directory, self.tree_target, "target")
             self.tree_structure_target_original = self.tree_structure_target
         except Exception as e:
-            print(f"Error: {e}")  # Print the error message to the terminal
-            QMessageBox.critical(self, "Error", str(e))
+            self._extracted_from_scan_target_directory_18(e)
+
+    # TODO Rename this here and in `scan_source_directory` and `scan_target_directory`
+    def _extracted_from_scan_target_directory_18(self, e):
+        print(traceback.format_exc())
+        print(f"Error: {e}")
+        QMessageBox.critical(self, "Error", str(e))
 
     def scan_directory(self, directory, tree_widget, file_type):
         """Scan a directory and update the UI."""
@@ -274,24 +337,33 @@ class MainWindow(QMainWindow):
             self.tree_structure_target = tree_structure
 
         tree_widget.clear()
-        tree_widget.setHeaderLabels([directory, "Type"])
+        tree_widget.setHeaderLabels([directory, "Type", "Date", "Size"])
 
         self.add_tree_items(tree_widget.invisibleRootItem(), tree_structure)
+
         self.update_status(f"{file_type.capitalize()} directory scanned: {directory}")
         self.update_statusbar(
             f"{file_type.capitalize()} directory scanned: {directory}"
         )
+        
+        # Expand the first top-level item
+        tree_widget.expandItem(tree_widget.topLevelItem(0))
 
     def add_tree_items(self, parent_item, tree_structure):
         """Add items to the tree widget."""
         # add name and type to the tree widget
-        # add name and type to the tree widget
-        item = QTreeWidgetItem(
-            parent_item, [tree_structure.name, tree_structure.extension]
+        item = PaddedTreeWidgetItem(
+            parent_item,
+            [
+                tree_structure.get_name(),
+                tree_structure.get_extension(),
+                tree_structure.get_modified_date(),
+                tree_structure.get_file_size_mb(),
+            ],
         )
-        item.setIcon(ICON_INDEX, tree_structure.icon)
+        item.setIcon(ICON_INDEX, tree_structure.get_icon())
 
-        for child in tree_structure.children:
+        for child in tree_structure.get_children():
             self.add_tree_items(item, child)
 
     def update_status(self, text):
@@ -329,7 +401,7 @@ class MainWindow(QMainWindow):
         for child_widget in self.findChildren(QtWidgets.QWidget):
             child_widget.setEnabled(enabled)
 
-    def clear_audio_tags(self, source=True):
+    def __clear_audio_tags(self, source=True):
         labels = self.get_label_list(source)
 
         for label in labels:
@@ -342,7 +414,7 @@ class MainWindow(QMainWindow):
         source = self.sender() == self.tree_source
 
         if not is_supported_audio_file(item.text(1)):
-            self.clear_audio_tags(source)
+            self.__clear_audio_tags(source)
             return
 
         labels = self.get_label_list(source)
@@ -358,6 +430,16 @@ class MainWindow(QMainWindow):
 
     def get_label_list(self, source=True):
         return self.source_id3_labels if source else self.target_id3_labels
+
+    def resizeColumns(self):
+        """Resize the columns of the tree widget."""
+        if self.sender() == self.tree_source:
+            tree_widget = self.tree_source
+        else:
+            tree_widget = self.tree_target
+
+        for i in range(tree_widget.columnCount()):
+            tree_widget.resizeColumnToContents(i)
 
 
 if __name__ == "__main__":
