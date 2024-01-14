@@ -23,7 +23,7 @@ def preview_repackage(tree_structure_source, tree_structure_target, update_statu
             # step 1 - check if audio file has a Label id3 tag else set it to "Unknown Publisher"
             # step 2 - check if there is already a node with the same name as the Label tag if not create one
             # step 3 - add the file to the node
-            # step 4 - remove the file from the root of the target tree
+            # step 4 - remove the file from the root of the target tree is it exists
 
             # step 1
             label = child.get_id3_tag("LABEL") or "Unknown Publisher"
@@ -34,7 +34,7 @@ def preview_repackage(tree_structure_source, tree_structure_target, update_statu
                 publisher_node = FsoNode(label,FsoType.DIRECTORY) 
                 new_tree.add_child_node(publisher_node)
 
-            # step 3
+            # step 3 - add the file to the node only if it doesn't already exist
             publisher_node.add_child_node(child)   
 
             # step 4
