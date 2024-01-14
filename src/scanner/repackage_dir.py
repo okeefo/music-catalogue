@@ -16,8 +16,8 @@ def preview_repackage(tree_structure_source, tree_structure_target, update_statu
     new_tree = tree_structure_target.copy()
 
     # now lets loop through the source tree and look for files to move
-    for child in tree_structure_source.children:
-        if child.type == FsoType.FILE:
+    for child in tree_structure_source.get_children():
+        if child.get_type() == FsoType.FILE:
             # we have a file, so lets see if we have a Label tag
            
             # step 1 - check if audio file has a Label id3 tag else set it to "Unknown Publisher"

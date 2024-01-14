@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1824</width>
-    <height>981</height>
+    <width>2190</width>
+    <height>1051</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -99,23 +99,39 @@
              <height>892</height>
             </size>
            </property>
+           <property name="font">
+            <font>
+             <family>Consolas</family>
+             <pointsize>9</pointsize>
+            </font>
+           </property>
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>
            <property name="columnCount">
-            <number>2</number>
+            <number>4</number>
            </property>
            <attribute name="headerCascadingSectionResizes">
             <bool>true</bool>
            </attribute>
            <column>
             <property name="text">
-             <string/>
+             <string>Path</string>
             </property>
            </column>
            <column>
             <property name="text">
-             <string>1</string>
+             <string>Name</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Date</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Size</string>
             </property>
            </column>
           </widget>
@@ -222,20 +238,36 @@
         <layout class="QHBoxLayout" name="horizontalLayout_7">
          <item>
           <widget class="QTreeWidget" name="tree_target">
+           <property name="font">
+            <font>
+             <family>Consolas</family>
+             <pointsize>9</pointsize>
+            </font>
+           </property>
            <property name="columnCount">
-            <number>2</number>
+            <number>4</number>
            </property>
            <attribute name="headerCascadingSectionResizes">
             <bool>true</bool>
            </attribute>
            <column>
             <property name="text">
-             <string notr="true">1</string>
+             <string notr="true">Path</string>
             </property>
            </column>
            <column>
             <property name="text">
-             <string notr="true">2</string>
+             <string notr="true">Name</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Date</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Size</string>
             </property>
            </column>
           </widget>
@@ -269,7 +301,7 @@
           <rect>
            <x>20</x>
            <y>30</y>
-           <width>881</width>
+           <width>1051</width>
            <height>161</height>
           </rect>
          </property>
@@ -552,7 +584,7 @@
           <rect>
            <x>10</x>
            <y>28</y>
-           <width>881</width>
+           <width>1061</width>
            <height>161</height>
           </rect>
          </property>
@@ -822,7 +854,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1824</width>
+     <width>2190</width>
      <height>26</height>
     </rect>
    </property>
