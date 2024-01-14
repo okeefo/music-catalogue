@@ -19,8 +19,6 @@ from PyQt5.QtCore import Qt
 from scanner.file_system_tree import is_supported_audio_file
 import logging
 
-# TODO: Bugfix - pressing Preview twice
-# TODO: Bugfix - Preview bug what source != target
 # TODO: commit button
 
 class PaddedTreeWidgetItem(QTreeWidgetItem):
@@ -76,8 +74,8 @@ class MainWindow(QMainWindow):
         self.tree_structure_target_original = None
         self.config = configparser.ConfigParser()
         self.id3_tags = []
-        self.source_id3_labels = []
-        self.target_id3_labels = []
+        self.id3_labels_source = []
+        self.id3_labels_target = []
 
         # set up config
         self.__setup_config()
@@ -123,8 +121,8 @@ class MainWindow(QMainWindow):
         self.__setup_preview_button()
         self.__setup_id3_label_caches()
         self.__setup_id3_tags()
-        self.__clear_label_text(self.source_id3_labels)
-        self.__clear_label_text(self.target_id3_labels)
+        self.__clear_label_text(self.id3_labels_source)
+        self.__clear_label_text(self.id3_labels_target)
 
     def __setup_window_size(self) -> None:
         """
@@ -148,7 +146,7 @@ class MainWindow(QMainWindow):
         Returns: None
         """
 
-        self.source_id3_labels = [
+        self.id3_labels_source = [
             self.lbl_src_title,
             self.lbl_src_artist,
             self.lbl_src_album,
@@ -160,7 +158,7 @@ class MainWindow(QMainWindow):
             self.lbl_src_website,
         ]
 
-        self.target_id3_labels = [
+        self.id3_labels_target = [
             self.lbl_tar_title,
             self.lbl_tar_artist,
             self.lbl_tar_album,
@@ -298,7 +296,7 @@ class MainWindow(QMainWindow):
 
         self.tree_target.clear()
         self.tree_target.setHeaderLabels(
-            [self.tree_source.headerItem().text(0), "Type", "Date", "Size"]
+            [new_tree.get_absolute_path(), "Type", "Date", "Size"]
         )
         self.add_tree_items(self.tree_target.invisibleRootItem(), new_tree)
         self.tree_target.expandItem(self.tree_target.topLevelItem(0))
@@ -412,7 +410,7 @@ class MainWindow(QMainWindow):
 
         try:
             self.do_file_system_scan_and_display(directory, self.tree_target, "target")
-            self.tree_structure_target_original = self.tree_structure_target
+            self.tree_structure_target_original = self.tree_structure_target.copy()
         except Exception as e:
             self._display_and_log_error(e)
 
@@ -525,24 +523,28 @@ class MainWindow(QMainWindow):
 
         source = self.sender() == self.tree_source
 
-        if not is_supported_audio_file(item.text(1)):
-            self.__clear_label_text(source)
-            return
-
         labels = self.get_label_list(source)
+
+        if not is_supported_audio_file(item.text(1).rstrip()):
+            self.__clear_label_text(labels)
+            return
 
         tree_structure = (
             self.tree_structure_source if source else self.tree_structure_target
         )
 
-        item = tree_structure.get_child_node_by_name(item.text(0))
+        item = tree_structure.get_child_node_by_name(item.text(0).rstrip())
 
         for label, tag in zip(labels, self.id3_tags):
-            label.setText(item.get_id3_tag(tag))
+            if tag == 'URL':
+                url = item.get_id3_tag(tag)
+                label.setText(f'<a href="{url}">{url}</a>')
+            else:
+                label.setText(item.get_id3_tag(tag))
 
     def get_label_list(self, source=True) -> list:
         """Returns: list of source or target ID3 labels"""
-        return self.source_id3_labels if source else self.target_id3_labels
+        return self.id3_labels_source if source else self.id3_labels_target
 
     def resizeColumns(self) -> None:
         """Resize the columns of the tree widget. Returns: None """

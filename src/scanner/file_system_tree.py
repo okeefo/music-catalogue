@@ -105,7 +105,7 @@ class FsoNode:
             self.__type == FsoType.DIRECTORY
             or self.__extension not in supported_audio_extensions
         ):
-            return None
+            return []
         elif tags_override is not None:
             return tags_override
         else:
@@ -134,7 +134,7 @@ class FsoNode:
             return get_icon(self.__type, self.__extension)
 
     def copy(self):
-        copied_node = FsoNode(self.__absolute_path)
+        copied_node = FsoNode(self.__absolute_path, self.get_type(), self.__tags.copy())
         copied_node.__children = [child.copy() for child in self.__children]
         return copied_node
 
@@ -215,22 +215,22 @@ class FsoNode:
             )
         return False
 
-    def get_absolute_path(self):
+    def get_absolute_path(self) -> str:
         return self.__absolute_path
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self.__name
 
-    def get_type(self):
+    def get_type(self) -> FsoType:
         return self.__type
 
-    def get_icon(self):
+    def get_icon(self) -> QIcon:
         return self.__icon
 
-    def get_extension(self):
+    def get_extension(self) -> str:
         return self.__extension
 
-    def get_children(self):
+    def get_children(self) -> list:
         return self.__children
 
     def get_id3_tag(self, tag_name_requested):
@@ -276,4 +276,5 @@ class FsoNode:
         )
 
     def remove_child_node(self, child_node):
-        self.__children.remove(child_node)
+        if child_node in self.__children:
+            self.__children.remove(child_node)
