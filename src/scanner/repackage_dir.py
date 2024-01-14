@@ -35,7 +35,8 @@ def preview_repackage(tree_structure_source, tree_structure_target, update_statu
                 new_tree.add_child_node(publisher_node)
 
             # step 3 - add the file to the node only if it doesn't already exist
-            publisher_node.add_child_node(child)   
+            if not publisher_node.get_child_node_by_name(child.get_name()):
+                publisher_node.add_child_node(child)   
 
             # step 4
             new_tree.remove_child_node(child)
