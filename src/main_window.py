@@ -13,13 +13,14 @@ from PyQt5.QtWidgets import (
 )
 from scanner.scanner_dir import get_dir_structure
 from PyQt5.QtCore import QSize
-from scanner.repackage_dir import preview_repackage
+from scanner.repackage_dir import preview_repackage, repackage
 import configparser
 from PyQt5.QtCore import Qt
 from scanner.file_system_tree import is_supported_audio_file
 import logging
 
 # TODO: commit button
+
 
 class PaddedTreeWidgetItem(QTreeWidgetItem):
     """
@@ -123,6 +124,7 @@ class MainWindow(QMainWindow):
         self.__setup_id3_tags()
         self.__clear_label_text(self.id3_labels_source)
         self.__clear_label_text(self.id3_labels_target)
+        self.__setup_commit_button()
 
     def __setup_window_size(self) -> None:
         """
@@ -257,6 +259,15 @@ class MainWindow(QMainWindow):
         but_preview = self.findChild(QPushButton, "but_preview_to_target")
         but_preview.clicked.connect(self.preview)
 
+    def __setup_commit_button(self) -> None:
+        """
+        Sets up the functionality of the commit button.
+        Returns: None
+        """
+
+        but_commit = self.findChild(QPushButton, "but_commit")
+        but_commit.clicked.connect(self.repackage)
+
     def reset_target(self) -> None:
         """
         Resets the target directory tree structure to before any changes were made.
@@ -329,7 +340,7 @@ class MainWindow(QMainWindow):
         Confirms the exit action with the user.
         Returns: None
         """
-        
+
         if (
             self.prompt_yes_no("Exit", "Are you sure you want to exit?")
             == QMessageBox.No
@@ -359,7 +370,7 @@ class MainWindow(QMainWindow):
             self.config.write(config_file)
 
     def __setup_scan_source(self) -> None:
-        """ Set up the source scan button and menu item. Returns: None"""
+        """Set up the source scan button and menu item. Returns: None"""
         action_scan = self.findChild(QAction, "mf_scan")
         action_scan.triggered.connect(self.scan_source_directory)
 
@@ -367,7 +378,7 @@ class MainWindow(QMainWindow):
         but_select_source.clicked.connect(self.scan_source_directory)
 
     def __setup_scan_target(self) -> None:
-        """ Set up the target scan button. Returns: None"""
+        """Set up the target scan button. Returns: None"""
         but_select_target = self.findChild(QPushButton, "but_select_target")
         but_select_target.clicked.connect(self.scan_target_directory)
 
@@ -392,15 +403,19 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self._display_and_log_error(e)
 
-    def scan_target_directory(self) -> None:
-        """ Ask User to select target DIR and scan it. Returns: None"""
-        directory = QFileDialog.getExistingDirectory(
-            self,
-            "Select Directory",
-            self.config.get(
-                CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, fallback=""
-            ),
-        )
+    def scan_target_directory(self, directory=None) -> None:
+        """Ask User to select target DIR and scan it. Returns: None"""
+        if not directory:
+            directory = QFileDialog.getExistingDirectory(
+                self,
+                "Select Directory",
+                self.config.get(
+                    CONFIG_SECTION_DIRECTORIES,
+                    CONFIG_LAST_TARGET_DIRECTORY,
+                    fallback="",
+                ),
+            )
+
         if not directory:
             return
 
@@ -422,7 +437,7 @@ class MainWindow(QMainWindow):
     def do_file_system_scan_and_display(
         self, directory, tree_widget, file_type
     ) -> None:
-        """ 
+        """
         Scan a directory and update the UI.
         Returns: None
         """
@@ -536,7 +551,7 @@ class MainWindow(QMainWindow):
         item = tree_structure.get_child_node_by_name(item.text(0).rstrip())
 
         for label, tag in zip(labels, self.id3_tags):
-            if tag == 'URL':
+            if tag == "URL":
                 url = item.get_id3_tag(tag)
                 label.setText(f'<a href="{url}">{url}</a>')
             else:
@@ -547,7 +562,7 @@ class MainWindow(QMainWindow):
         return self.id3_labels_source if source else self.id3_labels_target
 
     def resizeColumns(self) -> None:
-        """Resize the columns of the tree widget. Returns: None """
+        """Resize the columns of the tree widget. Returns: None"""
         if self.sender() == self.tree_source:
             tree_widget = self.tree_source
         else:
@@ -555,6 +570,39 @@ class MainWindow(QMainWindow):
 
         for i in range(tree_widget.columnCount()):
             tree_widget.resizeColumnToContents(i)
+
+    def repackage(self) -> None:
+        """
+        Commit the changes to the target directory.
+        Returns: None
+        """
+
+        if (
+            self.tree_structure_source is None
+            or self.tree_structure_source.get_absolute_path() is None
+        ):
+            QMessageBox.critical(self, "Error", "Source directory not scanned")
+            return
+
+        if (
+            self.tree_structure_target is None
+            or self.tree_structure_target.get_absolute_path() is None
+        ):
+            QMessageBox.critical(self, "Error", "Target directory not scanned")
+            return
+
+        self.disable_main_window()
+
+        repackage(
+            self.tree_structure_source,
+            self.tree_structure_target.get_absolute_path(),
+            self.update_statusbar,
+            self.update_status,
+            True,
+        )
+        self.scan_target_directory(self.tree_structure_target.get_absolute_path())
+        self.update_statusbar("Repackaging... Done")
+        self.enable_main_window()
 
 
 if __name__ == "__main__":
