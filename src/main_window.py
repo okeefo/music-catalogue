@@ -11,13 +11,13 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMessageBox,
 )
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt
 from scanner.scanner_dir import get_dir_structure
-from PyQt5.QtCore import QSize
 from scanner.repackage_dir import preview_repackage, repackage
 import configparser
-from PyQt5.QtCore import Qt
 from scanner.file_system_tree import is_supported_audio_file
 import logging
+
 
 # TODO: commit button
 
@@ -90,6 +90,11 @@ class MainWindow(QMainWindow):
 
         # Call the setup_ui method to set up the UI
         self.__setup_ui()
+
+        ## TOGGLE/BURGUER MENU
+        ########################################################################
+        self.frame_left_menu.setMinimumWidth(0)
+        self.but_toggle.clicked.connect(lambda: self.toggleMenu(200, True))
 
     def __setup_config(self) -> None:
         """
@@ -247,7 +252,7 @@ class MainWindow(QMainWindow):
         Returns: None
         """
 
-        but_refresh = self.findChild(QPushButton, "but_refresh_target")
+        but_refresh = self.findChild(QPushButton, "but_refresh_target_2")
         but_refresh.clicked.connect(self.reset_target)
 
     def __setup_preview_button(self) -> None:
@@ -256,7 +261,7 @@ class MainWindow(QMainWindow):
         Returns: None
         """
 
-        but_preview = self.findChild(QPushButton, "but_preview_to_target")
+        but_preview = self.findChild(QPushButton, "but_preview_to_target_2")
         but_preview.clicked.connect(self.preview)
 
     def __setup_commit_button(self) -> None:
@@ -265,7 +270,7 @@ class MainWindow(QMainWindow):
         Returns: None
         """
 
-        but_commit = self.findChild(QPushButton, "but_commit")
+        but_commit = self.findChild(QPushButton, "but_commit_2")
         but_commit.clicked.connect(self.repackage)
 
     def reset_target(self) -> None:
@@ -603,6 +608,26 @@ class MainWindow(QMainWindow):
         self.scan_target_directory(self.tree_structure_target.get_absolute_path())
         self.update_statusbar("Repackaging... Done")
         self.enable_main_window()
+
+    def toggleMenu(self, maxWidth, enable):
+        if not enable:
+            return
+        # GET WIDTH
+        width = self.frame_left_menu.width()
+        print(f"width:{width}")
+        maxExtend = maxWidth
+        standard = 0
+
+        # SET MAX WIDTH
+        widthExtended = maxExtend if width <= 100 else standard
+        print(f"widthExtended:{widthExtended}")
+        # ANIMATION
+        self.animation = QPropertyAnimation(self.frame_left_menu, b"minimumWidth")
+        self.animation.setDuration(400)
+        self.animation.setStartValue(width)
+        self.animation.setEndValue(widthExtended)
+        self.animation.setEasingCurve(QEasingCurve.InOutQuart)
+        self.animation.start()
 
 
 if __name__ == "__main__":
