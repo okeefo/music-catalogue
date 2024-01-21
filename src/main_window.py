@@ -10,9 +10,12 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QPushButton,
     QMessageBox,
-    QTextBrowser
+    QTextBrowser,
+    QCompleter,
+    QFileSystemModel,
+    QLineEdit
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QResource
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir
 from scanner.scanner_dir import get_dir_structure
 from scanner.repackage_dir import preview_repackage, repackage
 import configparser
@@ -132,8 +135,26 @@ class MainWindow(QMainWindow):
         self.__setup_commit_button()
         self.__setup_menu_buttons()
         self.__setup_checkboxes()
-       
+        self.__setup_path_labels()
         
+    def __setup_path_labels(self) -> None:
+        # Create a file system model
+        model = QFileSystemModel()
+        model.setRootPath(QDir.rootPath())
+
+        # Create a completer with the model
+        completer = QCompleter()
+        completer.setModel(model)
+
+        # Set the completer for the QLineEdit
+        self.findChild(QLineEdit, "path_source").setCompleter(completer)
+        self.findChild(QLineEdit, "path_target").setCompleter(completer)
+        
+ #       self.path_source = self.findChild(QtWidgets.QLabel, "path_label_source")
+       # self.path_target = self.findChild(QtWidgets.QLabel, "path_label_target")
+  #      self.path_source.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY])
+     #   self.path_target.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY])
+               
     
     def __setup_icons(self) -> None:
        
@@ -362,7 +383,7 @@ class MainWindow(QMainWindow):
         """
 
         self.tree_target.clear()
-        self.findChild(QTextBrowser, "path_target").setText(new_tree.get_absolute_path())
+        self.findChild(QLineEdit, "path_target").setText(new_tree.get_absolute_path())
         self.add_tree_items(self.tree_target.invisibleRootItem(), new_tree)
         self.tree_target.expandItem(self.tree_target.topLevelItem(0))
         self.tree_structure_target = new_tree
@@ -501,7 +522,7 @@ class MainWindow(QMainWindow):
         tree_structure = get_dir_structure(directory, self.update_statusbar)
         if file_type == "source":
             self.tree_structure_source = tree_structure
-            self.findChild(QTextBrowser, "path_source").setText(directory)
+            self.findChild(QLineEdit, "path_source").setText(directory)
         else:
             self.tree_structure_target = tree_structure
             self.findChild(QTextBrowser, "path_target").setText(directory)
