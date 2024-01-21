@@ -463,8 +463,20 @@
                  <string>Source Directory</string>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_3">
+                 <property name="spacing">
+                  <number>10</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>10</number>
+                 </property>
                  <property name="topMargin">
-                  <number>20</number>
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>10</number>
                  </property>
                  <item>
                   <widget class="QFrame" name="source_path">
@@ -494,15 +506,15 @@
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QTextBrowser" name="path_source">
-                      <property name="maximumSize">
+                     <widget class="QLineEdit" name="path_source">
+                      <property name="minimumSize">
                        <size>
-                        <width>16777215</width>
-                        <height>30</height>
+                        <width>0</width>
+                        <height>0</height>
                        </size>
                       </property>
-                      <property name="frameShape">
-                       <enum>QFrame::WinPanel</enum>
+                      <property name="alignment">
+                       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
                       </property>
                      </widget>
                     </item>
@@ -607,16 +619,16 @@
                   <number>10</number>
                  </property>
                  <property name="leftMargin">
-                  <number>0</number>
+                  <number>10</number>
                  </property>
                  <property name="topMargin">
-                  <number>20</number>
+                  <number>10</number>
                  </property>
                  <property name="rightMargin">
-                  <number>0</number>
+                  <number>10</number>
                  </property>
                  <property name="bottomMargin">
-                  <number>0</number>
+                  <number>10</number>
                  </property>
                  <item>
                   <widget class="QPushButton" name="but_copy_source">
@@ -956,6 +968,21 @@
                  <string>Target Directory</string>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_7">
+                 <property name="spacing">
+                  <number>10</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>10</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>10</number>
+                 </property>
                  <item>
                   <widget class="QFrame" name="source_path_2">
                    <property name="maximumSize">
@@ -984,17 +1011,7 @@
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QTextBrowser" name="path_target">
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>30</height>
-                       </size>
-                      </property>
-                      <property name="frameShape">
-                       <enum>QFrame::WinPanel</enum>
-                      </property>
-                     </widget>
+                     <widget class="QLineEdit" name="path_target"/>
                     </item>
                     <item>
                      <widget class="QPushButton" name="but_source_up_2">
