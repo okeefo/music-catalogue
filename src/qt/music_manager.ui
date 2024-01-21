@@ -479,11 +479,17 @@
                   <number>10</number>
                  </property>
                  <item>
-                  <widget class="QFrame" name="source_path">
+                  <widget class="QFrame" name="frame_path_source">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>50</height>
+                    </size>
+                   </property>
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
-                     <height>30</height>
+                     <height>16777215</height>
                     </size>
                    </property>
                    <property name="frameShape">
@@ -510,7 +516,7 @@
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
-                        <height>0</height>
+                        <height>30</height>
                        </size>
                       </property>
                       <property name="alignment">
@@ -984,11 +990,17 @@
                   <number>10</number>
                  </property>
                  <item>
-                  <widget class="QFrame" name="source_path_2">
+                  <widget class="QFrame" name="frame_path_target">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>50</height>
+                    </size>
+                   </property>
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
-                     <height>30</height>
+                     <height>16777215</height>
                     </size>
                    </property>
                    <property name="frameShape">
@@ -1011,10 +1023,17 @@
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QLineEdit" name="path_target"/>
+                     <widget class="QLineEdit" name="path_target">
+                      <property name="minimumSize">
+                       <size>
+                        <width>0</width>
+                        <height>30</height>
+                       </size>
+                      </property>
+                     </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_source_up_2">
+                     <widget class="QPushButton" name="but_target_up">
                       <property name="text">
                        <string/>
                       </property>
