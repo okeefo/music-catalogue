@@ -23,6 +23,7 @@ from scanner.file_system_tree import is_supported_audio_file
 import logging
 from PyQt5 import QtGui
 import qt.resources_rcc
+import os
 # TODO: commit button
 
 
@@ -81,6 +82,8 @@ class MainWindow(QMainWindow):
         self.id3_tags = []
         self.id3_labels_source = []
         self.id3_labels_target = []
+        self.directory_source = "c:\\"
+        self.directory_target = "c:\\"
         
 
         # set up config
@@ -147,15 +150,18 @@ class MainWindow(QMainWindow):
         completer.setModel(model)
 
         # Set the completer for the QLineEdit
-        self.findChild(QLineEdit, "path_source").setCompleter(completer)
-        self.findChild(QLineEdit, "path_target").setCompleter(completer)
+        self.path_source = self.findChild(QLineEdit, "path_source")
+        self.path_source.setCompleter(completer)
+        self.path_target = self.findChild(QLineEdit, "path_target")
+        self.path_target.setCompleter(completer)
         
  #       self.path_source = self.findChild(QtWidgets.QLabel, "path_label_source")
        # self.path_target = self.findChild(QtWidgets.QLabel, "path_label_target")
-  #      self.path_source.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY])
-     #   self.path_target.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY])
-               
-    
+        self.path_source.returnPressed.connect(lambda: self.on_path_return_pressed(True))
+        self.path_target.returnPressed.connect(lambda: self.on_path_return_pressed(False)) 
+        self.path_source.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY])
+        self.path_target.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY])
+        
     def __setup_icons(self) -> None:
        
         self.icon_left = QtGui.QIcon(":/icons/icons/chevrons-left.svg") 
@@ -344,7 +350,23 @@ class MainWindow(QMainWindow):
 
         but_commit = self.findChild(QPushButton, "but_commit_2")
         but_commit.clicked.connect(self.repackage)
+        
+    def on_path_return_pressed(self, is_source) -> None:
+        if is_source:
+            directory = self.path_source.text()
+            self.handle_directory(directory, "Source directory not found", self.path_source, self.scan_source_directory, self.directory_source)
+        else:
+            directory = self.path_target.text()
+            self.handle_directory(directory, "Target directory not found", self.path_target, self.scan_target_directory, self.directory_target)
 
+    def handle_directory(self, directory, error_message, path_line_edit, scan_directory_func, original_path) -> None:
+        if not os.path.isdir(directory):
+            QMessageBox.critical(self, "Error", error_message)
+            path_line_edit.setText(original_path)
+        else:
+            scan_directory_func(directory)
+
+  
     def reset_target(self) -> None:
         """
         Resets the target directory tree structure to before any changes were made.
@@ -457,27 +479,39 @@ class MainWindow(QMainWindow):
         but_select_target = self.findChild(QPushButton, "but_select_target")
         but_select_target.clicked.connect(self.scan_target_directory)
 
-    def scan_source_directory(self) -> None:
+    def scan_source_directory(self,directory=None) -> None:
         """Scan the source directory. Returns: None"""
-        directory = QFileDialog.getExistingDirectory(
-            self,
-            "Select Directory",
-            self.config.get(
-                CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, fallback=""
-            ),
-        )
+        if( not directory):
+            directory = QFileDialog.getExistingDirectory(
+                self,
+                "Select Directory",
+                self.config.get(
+                    CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, fallback=""
+                ),
+            )
         if not directory:
             return
-
-        self.config.set(
-            CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, directory
-        )
-
+        
+        self.directory_updated(directory, True)
         try:
             self.do_file_system_scan_and_display(directory, self.tree_source, "source")
         except Exception as e:
             self._display_and_log_error(e)
 
+    def directory_updated(self, directory, is_source) ->None:
+        """Update the source or target directory config settings, and the base reference based on the given directory."""
+        
+        if (is_source):
+            self.config.set(
+                CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, directory
+            )
+            self.directory_source = directory
+        else:
+            self.config.set(
+                CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, directory
+            )
+            self.directory_target = directory
+        
     def scan_target_directory(self, directory=None) -> None:
         """Ask User to select target DIR and scan it. Returns: None"""
         if not directory:
@@ -493,10 +527,8 @@ class MainWindow(QMainWindow):
 
         if not directory:
             return
-
-        self.config.set(
-            CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, directory
-        )
+        
+        self.directory_updated(directory, False)
 
         try:
             self.do_file_system_scan_and_display(directory, self.tree_target, "target")
@@ -522,10 +554,10 @@ class MainWindow(QMainWindow):
         tree_structure = get_dir_structure(directory, self.update_statusbar)
         if file_type == "source":
             self.tree_structure_source = tree_structure
-            self.findChild(QLineEdit, "path_source").setText(directory)
+            self.path_source.setText(directory)
         else:
             self.tree_structure_target = tree_structure
-            self.findChild(QTextBrowser, "path_target").setText(directory)
+            self.path_target.setText(directory)
 
         tree_widget.clear()
         
