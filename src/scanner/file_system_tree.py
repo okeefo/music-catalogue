@@ -26,7 +26,7 @@ app = QApplication([])
 fosIcons = {
     FsoType.DIRECTORY: QApplication.style().standardIcon(QStyle.SP_DirIcon),
     FsoType.FILE: QApplication.style().standardIcon(QStyle.SP_FileIcon),
-    "mp3": QIcon(os.path.abspath("icons/mc-1-mp3.ico")),
+    "mp3": QIcon(os.path.abspath("src/qt/icons/mc-1-mp3.ico")),
     "wav": QIcon(os.path.abspath("icons/mc-1-wav.ico")),
     "jpg": QIcon(os.path.abspath("icons/mc-1-jpg.ico")),
     "png": QIcon(os.path.abspath("icons/mc-1-png.ico")),
