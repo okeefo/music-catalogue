@@ -1,5 +1,5 @@
 import traceback
-from PyQt5 import uic, QtWidgets
+from PyQt5 import uic, QtWidgets, QtGui
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -11,14 +11,14 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMessageBox,
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QResource
 from scanner.scanner_dir import get_dir_structure
 from scanner.repackage_dir import preview_repackage, repackage
 import configparser
 from scanner.file_system_tree import is_supported_audio_file
 import logging
-
-
+from PyQt5 import QtGui
+import qt.resources_rcc
 # TODO: commit button
 
 
@@ -77,6 +77,7 @@ class MainWindow(QMainWindow):
         self.id3_tags = []
         self.id3_labels_source = []
         self.id3_labels_target = []
+        
 
         # set up config
         self.__setup_config()
@@ -84,17 +85,14 @@ class MainWindow(QMainWindow):
         # Set up the user interface from Designer.
         # Load the .ui file and set up the UI
         uic.loadUi(
-            "C:\\dev\\projects\\python\\music-catalogue\\src\\qt\\music_manager.ui",
+            "src\\qt\\music_manager.ui",
             self,
         )
 
+       # QResource.registerResource("c:\\dev\\projects\\python\\music-catalog\\src\\qt\\resources.qrc")
+
         # Call the setup_ui method to set up the UI
         self.__setup_ui()
-
-        ## TOGGLE/BURGUER MENU
-        ########################################################################
-        self.frame_left_menu.setMinimumWidth(0)
-        self.but_toggle.clicked.connect(lambda: self.toggleMenu(200, True))
 
     def __setup_config(self) -> None:
         """
@@ -117,6 +115,7 @@ class MainWindow(QMainWindow):
             "Welcome - select a directory to scan either from thr menu or the scan button"
         )
         # set window size from config
+        self.__setup_icons()
         self.__setup_window_size()
         self.__setup_exit()
         self.__setup_scan_source()
@@ -130,7 +129,56 @@ class MainWindow(QMainWindow):
         self.__clear_label_text(self.id3_labels_source)
         self.__clear_label_text(self.id3_labels_target)
         self.__setup_commit_button()
-
+        self.__setup_menu_buttons()
+        self.__setup_checkboxes()
+       
+        
+    
+    def __setup_icons(self) -> None:
+       
+        self.icon_left = QtGui.QIcon(":/icons/icons/chevrons-left.svg") 
+        self.icon_right =  QtGui.QIcon(":/icons/icons/chevrons-right.svg")
+        self.icon_repackage = QtGui.QIcon(":/icons/icons/package.svg")
+        self.icon_move = QtGui.QIcon(":/icons/icons/move.svg")
+        self.icon_exit = QtGui.QIcon(":/icons/icons/log-out.svg")
+        
+    def __setup_checkboxes(self) -> None:
+        self.checkbox_overwrite = self.findChild(QtWidgets.QCheckBox, "checkBox_overwrite")
+        self.checkbox_overwrite.setToolTip("Overwrite existing files in the target directory with the same name as the source files")
+        self.checkbox_copy = self.findChild(QtWidgets.QCheckBox, "checkBox_copy")
+        self.checkbox_copy.setToolTip("Copy files from the source directory to the target directory instead of moving them")
+        
+        
+    def __setup_menu_buttons(self) -> None:
+        """Set up the menu buttons. Returns: None"""
+        # toggle menu
+        self.frame_left_menu.setMinimumWidth(0)
+        self.but_toggle = self.findChild(QPushButton, "but_toggle")
+        self.but_toggle.clicked.connect(lambda: self.toggleMenu())
+        self.but_toggle.setToolTip("Open Menu")
+        self.but_toggle.setToolTipDuration(1000)
+        self.but_toggle.setIcon(QtGui.QIcon(":/icons/icons/chevrons-right.svg"))
+        self.but_toggle.setShortcut("Ctrl+M")
+        
+        # Repackage buttons
+        self.but_repackage = self.findChild(QPushButton, "but_repackage")
+        self.but_repackage.setIcon(QtGui.QIcon(self.icon_repackage.pixmap(40, 40)))
+#        self.but_repackage.clicked.connect(self.repackage_files)
+        self.but_repackage.setToolTip("Repackage files by Label")
+        
+        # Move buttons
+        self.but_move = self.findChild(QPushButton, "but_move_2")
+        self.but_move.setIcon(QtGui.QIcon(self.icon_move.pixmap(40, 40)))
+ #       self.but_move.clicked.connect(self.move_files)
+        self.but_move.setToolTip("Move files from the source directory to the target directory")
+        
+        
+        
+        self.but_exit.setIcon(QtGui.QIcon(self.icon_exit.pixmap(40, 40)))
+        
+    def __setup_commit_button(self) -> None:
+        pass
+    
     def __setup_window_size(self) -> None:
         """
         Sets up the size of the main window based on the configuration settings.
@@ -227,14 +275,16 @@ class MainWindow(QMainWindow):
         """
 
         mf_exit = self.findChild(QAction, "mf_exit")
-        but_exit = self.findChild(QPushButton, "but_exit")
+        self.but_exit = self.findChild(QPushButton, "but_exit")
+        self.but_exit_2 = self.findChild(QPushButton, "but_exit_2")
 
         mf_exit.triggered.connect(self.confirm_exit)
-        but_exit.clicked.connect(self.confirm_exit)
+        self.but_exit.clicked.connect(self.confirm_exit)
+        self.but_exit_2.clicked.connect(self.confirm_exit)
 
         icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
         mf_exit.setIcon(icon)
-        but_exit.setIcon(icon)
+        self.but_exit.setIcon(icon)
         mf_exit.setShortcut("Ctrl+Q")
 
     def __setup_copy_source_button(self) -> None:
@@ -609,13 +659,12 @@ class MainWindow(QMainWindow):
         self.update_statusbar("Repackaging... Done")
         self.enable_main_window()
 
-    def toggleMenu(self, maxWidth, enable):
-        if not enable:
-            return
-        # GET WIDTH
+    def toggleMenu(self) -> None:
+       
+        # get width
         width = self.frame_left_menu.width()
         print(f"width:{width}")
-        maxExtend = maxWidth
+        maxExtend = 200
         standard = 0
 
         # SET MAX WIDTH
@@ -629,6 +678,16 @@ class MainWindow(QMainWindow):
         self.animation.setEasingCurve(QEasingCurve.InOutQuart)
         self.animation.start()
 
+        # Set the ico from resources.  
+        # when the menu is open, the icon is chevrons-left.svg, when closed the chevrons-right.svg
+        icon = QtGui.QIcon(":/icons/icons/chevrons-left.svg") if width <= 100 else QtGui.QIcon(":/icons/icons/chevrons-right.svg")
+        self.but_toggle.setIcon(icon)
+        if width <= 0:
+            self.but_toggle.setToolTip("Close Menu")
+            self.but_toggle.setToolTipDuration(1000)
+        else:
+            self.but_toggle.setToolTip("Open Menu")
+                      
 
 if __name__ == "__main__":
     # Create an instance of MainWindow
