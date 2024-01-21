@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QPushButton,
     QMessageBox,
+    QTextBrowser
 )
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QResource
 from scanner.scanner_dir import get_dir_structure
@@ -251,8 +252,8 @@ class MainWindow(QMainWindow):
 
         self.tree_source = self.findChild(QTreeWidget, "tree_source")
         self.tree_target = self.findChild(QTreeWidget, "tree_target")
-        self.tree_source.setHeaderLabels(["No directory selected", ""])
-        self.tree_target.setHeaderLabels(["No directory selected", ""])
+        self.tree_source.setHeaderLabels(["Name", "Type", "Date", "Size"])
+        self.tree_target.setHeaderLabels(["Name", "Type", "Date", "Size"])
         self.tree_source.setIconSize(QSize(32, 32))
         self.tree_target.setIconSize(QSize(32, 32))
         self.tree_source.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -361,9 +362,7 @@ class MainWindow(QMainWindow):
         """
 
         self.tree_target.clear()
-        self.tree_target.setHeaderLabels(
-            [new_tree.get_absolute_path(), "Type", "Date", "Size"]
-        )
+        self.findChild(QTextBrowser, "path_target").setText(new_tree.get_absolute_path())
         self.add_tree_items(self.tree_target.invisibleRootItem(), new_tree)
         self.tree_target.expandItem(self.tree_target.topLevelItem(0))
         self.tree_structure_target = new_tree
@@ -502,11 +501,14 @@ class MainWindow(QMainWindow):
         tree_structure = get_dir_structure(directory, self.update_statusbar)
         if file_type == "source":
             self.tree_structure_source = tree_structure
+            self.findChild(QTextBrowser, "path_source").setText(directory)
         else:
             self.tree_structure_target = tree_structure
+            self.findChild(QTextBrowser, "path_target").setText(directory)
 
         tree_widget.clear()
-        tree_widget.setHeaderLabels([directory, "Type", "Date", "Size"])
+        
+      
 
         self.add_tree_items(tree_widget.invisibleRootItem(), tree_structure)
 
@@ -664,7 +666,7 @@ class MainWindow(QMainWindow):
         # get width
         width = self.frame_left_menu.width()
         print(f"width:{width}")
-        maxExtend = 200
+        maxExtend = 180
         standard = 0
 
         # SET MAX WIDTH
