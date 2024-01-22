@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QFileSystemModel,
     QLineEdit,
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex
 from scanner.repackage_dir import repackage
 import configparser
 from scanner.file_system_tree import is_supported_audio_file
@@ -24,7 +24,6 @@ import logging
 from PyQt5 import QtGui
 import qt.resources_rcc
 import os
-
 
 class PaddedTreeWidgetItem(QTreeWidgetItem):
     """
@@ -317,6 +316,8 @@ class MainWindow(QMainWindow):
         self.tree_source.clicked.connect(self.on_source_tree_clicked)
         self.tree_source.doubleClicked.connect(self.on_source_tree_double_clicked)
         self.tree_source.expanded.connect(self.resize_first_column)
+        self.tree_source.setSortingEnabled(True)
+        
         
 
         self.tree_target = self.findChild(QTreeWidget, "tree_target")
@@ -436,12 +437,27 @@ class MainWindow(QMainWindow):
 
         # self.display_id3_tags_when_an_item_is_selected
         pass
-    def on_source_tree_double_clicked(self, index):
+    
+    def on_source_tree_double_clicked(self, index: QModelIndex) -> None:
         if self.source_model.isDir(index):
-            self.tree_source.expand(index)
-            self.tree_source.setRootIndex(index)
-            self.path_source.setText(self.source_model.filePath(index))
-            self.directory_updated(self.source_model.filePath(index), True)
+            path = self.source_model.filePath(index)
+            if self.source_model.rowCount(index) > 0:
+                self.set_root_index(path)
+            else:
+                self.source_model.directoryLoaded.connect(self.set_root_index)
+                self.tree_source.expand(index)
+            self.path_source.setText(path)
+            self.directory_updated(path, True)
+    
+    def set_root_index(self, path):
+        index = self.source_model.index(path)
+        self.tree_source.setRootIndex(index)
+        for column in range(self.source_model.columnCount()):
+            self.tree_source.resizeColumnToContents(column)
+        try:
+            self.source_model.directoryLoaded.disconnect(self.set_root_index)
+        except TypeError:
+            pass
             
    # def update_path_source(self, newPath):
    #     self.path_source.setText(newPath)
