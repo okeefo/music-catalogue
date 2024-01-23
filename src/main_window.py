@@ -24,6 +24,8 @@ import logging
 from PyQt5 import QtGui
 import qt.resources_rcc
 import os
+from enum import Enum
+
 
 class PaddedTreeWidgetItem(QTreeWidgetItem):
     """
@@ -45,6 +47,7 @@ class PaddedTreeWidgetItem(QTreeWidgetItem):
             data += " " * 2  # Add spaces to the end of the content
         return data
 
+
 class CustomFileSystemModel(QFileSystemModel):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -60,6 +63,7 @@ class CustomFileSystemModel(QFileSystemModel):
 
         return super().lessThan(left, right)
 
+
 # Create an instance of QApplication
 app = QApplication([])
 
@@ -71,6 +75,21 @@ CONFIG_WINDOW_HIGHT = "hight"
 CONFIG_WINDOW_WIDTH = "Width"
 CONFIG_LAST_TARGET_DIRECTORY = "last_target_directory"
 CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
+
+
+# create a enum that can be used to denote changes are being made either in the source or target views
+# create two methods isSource and isTarget if the changeType is SOURCE or TARGET respectively
+
+class ChangeType(Enum):
+    SOURCE = 0
+    TARGET = 1
+
+    def isSource(self):
+        return self == ChangeType.SOURCE
+
+    def isTarget(self):
+        return self == ChangeType.TARGET
+
 
 # Set logging instance
 logger = logging.getLogger(__name__)
@@ -134,9 +153,7 @@ class MainWindow(QMainWindow):
         Sets up the user interface of the main window.
         Returns: None
         """
-        self.update_status(
-            "Welcome - select a directory to scan either from the menu or the scan button"
-        )
+        self.update_status("Welcome - select a directory to scan either from the menu or the scan button")
         # set window size from config
         self.__setup_icons()
         self.__setup_window_size()
@@ -154,7 +171,7 @@ class MainWindow(QMainWindow):
         self.__setup_menu_buttons()
         self.__setup_checkboxes()
         self.__setup_path_labels()
-        self.__setup_source_up_button()
+        self.__setup_dir_up_buttons()
 
     def __setup_path_labels(self) -> None:
         # Create a file system model
@@ -173,18 +190,10 @@ class MainWindow(QMainWindow):
 
         #       self.path_source = self.findChild(QtWidgets.QLabel, "path_label_source")
         # self.path_target = self.findChild(QtWidgets.QLabel, "path_label_target")
-        self.path_source.returnPressed.connect(
-            lambda: self.on_path_return_pressed(True)
-        )
-        self.path_target.returnPressed.connect(
-            lambda: self.on_path_return_pressed(False)
-        )
-        self.path_source.setText(
-            self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY]
-        )
-        self.path_target.setText(
-            self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
-        )
+        self.path_source.returnPressed.connect(lambda: self.on_path_return_pressed(self.tree_source))
+        self.path_target.returnPressed.connect(lambda: self.on_path_return_pressed(self.tree_target))
+        self.path_source.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY])
+        self.path_target.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY])
 
     def __setup_icons(self) -> None:
         self.icon_left = QtGui.QIcon(":/icons/icons/chevrons-left.svg")
@@ -194,16 +203,10 @@ class MainWindow(QMainWindow):
         self.icon_exit = QtGui.QIcon(":/icons/icons/log-out.svg")
 
     def __setup_checkboxes(self) -> None:
-        self.checkbox_overwrite = self.findChild(
-            QtWidgets.QCheckBox, "checkBox_overwrite"
-        )
-        self.checkbox_overwrite.setToolTip(
-            "Overwrite existing files in the target directory with the same name as the source files"
-        )
+        self.checkbox_overwrite = self.findChild(QtWidgets.QCheckBox, "checkBox_overwrite")
+        self.checkbox_overwrite.setToolTip("Overwrite existing files in the target directory with the same name as the source files")
         self.checkbox_copy = self.findChild(QtWidgets.QCheckBox, "checkBox_copy")
-        self.checkbox_copy.setToolTip(
-            "Copy files from the source directory to the target directory instead of moving them"
-        )
+        self.checkbox_copy.setToolTip("Copy files from the source directory to the target directory instead of moving them")
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
@@ -226,9 +229,7 @@ class MainWindow(QMainWindow):
         self.but_move = self.findChild(QPushButton, "but_move_2")
         self.but_move.setIcon(QtGui.QIcon(self.icon_move.pixmap(40, 40)))
         #       self.but_move.clicked.connect(self.move_files)
-        self.but_move.setToolTip(
-            "Move files from the source directory to the target directory"
-        )
+        self.but_move.setToolTip("Move files from the source directory to the target directory")
 
         self.but_exit.setIcon(QtGui.QIcon(self.icon_exit.pixmap(40, 40)))
 
@@ -241,12 +242,8 @@ class MainWindow(QMainWindow):
         Returns: None
         """
         self.resize(
-            self.config.getint(
-                CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, fallback=800
-            ),
-            self.config.getint(
-                CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, fallback=600
-            ),
+            self.config.getint(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, fallback=800),
+            self.config.getint(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, fallback=600),
         )
 
         self.setMinimumSize(QSize(800, 600))
@@ -304,36 +301,27 @@ class MainWindow(QMainWindow):
         Populates the id3_tags list with the names of the supported ID3 tags.
         Returns: None
         """
-        last_source_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY];
-        self.source_model = QFileSystemModel()
-        self.source_model.directoryLoaded.connect(self.resize_first_column)
-        self.source_model.setRootPath(last_source_dir)
 
         self.tree_source = self.findChild(QTreeView, "tree_source")
-        self.tree_source.setModel(self.source_model)
-        self.tree_source.sortByColumn(0, Qt.AscendingOrder)
-        self.tree_source.setRootIndex(self.source_model.index(last_source_dir))
-        self.tree_source.clicked.connect(self.on_source_tree_clicked)
-        self.tree_source.doubleClicked.connect(self.on_source_tree_double_clicked)
-        self.tree_source.expanded.connect(self.resize_first_column)
-        self.tree_source.setSortingEnabled(True)
-        
-        
+        last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY]
+        self.__setup_tree_view(self.tree_source, last_dir)
 
-        self.tree_target = self.findChild(QTreeWidget, "tree_target")
-        self.tree_target.setHeaderLabels(["Name", "Type", "Date", "Size"])
-        self.tree_source.setIconSize(QSize(32, 32))
-        self.tree_target.setIconSize(QSize(32, 32))
-        self.tree_source.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.tree_source.setSortingEnabled(True)
-        # when user clicks on a node in the source tree, display the id3 tags for the selected audio file
+        self.tree_target = self.findChild(QTreeView, "tree_target")
+        last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
+        self.__setup_tree_view(self.tree_target, last_dir)
 
-        self.tree_target.itemClicked.connect(
-            self.display_id3_tags_when_an_item_is_selected
-        )
-        # When user clicks expand - resize the columns
-        # self.tree_source.itemExpanded.connect(self.resizeColumns)
-        self.tree_target.itemExpanded.connect(self.resizeColumns)
+    def __setup_tree_view(self, tree_view: QTreeView, last_dir) -> None:
+        model = QFileSystemModel()
+        model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
+        model.setRootPath(last_dir)
+
+        tree_view.setModel(model)
+        tree_view.sortByColumn(0, Qt.AscendingOrder)
+        tree_view.setRootIndex(model.index(last_dir))
+        tree_view.clicked.connect(self.on_tree_clicked)
+        tree_view.doubleClicked.connect(lambda: self.on_tree_double_clicked(tree_view.selectedIndexes()[0], tree_view))
+        tree_view.expanded.connect(lambda: self.resize_first_column(tree_view))
+        tree_view.setSortingEnabled(True)
 
     def __setup_exit(self) -> None:
         """
@@ -381,102 +369,109 @@ class MainWindow(QMainWindow):
         but_commit = self.findChild(QPushButton, "but_commit_2")
         but_commit.clicked.connect(self.repackage)
 
-    def __setup_source_up_button(self) -> None:
+    def __setup_dir_up_buttons(self) -> None:
         """
-        Sets up the functionality of the source up button.
+        Sets up the functionality of the path up buttons.
         Returns: None
         """
 
-        but_source_up = self.findChild(QPushButton, "but_source_up")
-        but_source_up.clicked.connect(self.go_up_source)       
-    
-    def resize_first_column(self, index=None) -> None:
-        self.tree_source.resizeColumnToContents(0)
-    
-    def on_path_return_pressed(self, is_source) -> None:
-        if is_source:
-            directory = self.path_source.text()
+        self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_source))
+        self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_target))
+
+    def resize_first_column(self, tree_view: QTreeView) -> None:
+        tree_view.resizeColumnToContents(0)
+
+    def on_path_return_pressed(self, tree_view: QTreeView) -> None:
+        if tree_view == self.tree_source:
             self.handle_directory(
-                directory,
                 "Source directory not found",
                 self.path_source,
-                self.scan_source_directory,
                 self.directory_source,
+                tree_view,
             )
         else:
-            directory = self.path_target.text()
             self.handle_directory(
-                directory,
                 "Target directory not found",
                 self.path_target,
-                self.scan_target_directory,
                 self.directory_target,
+                tree_view,
             )
 
-    def handle_directory(
-        self,
-        directory,
-        error_message,
-        path_line_edit,
-        scan_directory_func,
-        original_path,
-    ) -> None:
-        if not os.path.isdir(directory):
-            QMessageBox.critical(self, "Error", error_message)
-            path_line_edit.setText(original_path)
-        else:
-            scan_directory_func(directory)
+    def handle_directory(self, error_message, path_line: QLineEdit, original_path, tree_view: QTreeView) -> None:
+        """
+        Handles the directory selection.
+        Args:
+        error_message: The error message to display if the directory is not found.
+        path_line: The line edit where the path is stored.
+        original_path: The original path.
+        tree_view: The tree view where the directory is selected.
 
-    def on_source_tree_clicked(self, item) -> None:
+        Returns: None
+        """
+
+        if not os.path.isdir(path_line.text()):
+            QMessageBox.critical(self, "Error", error_message)
+            path_line.setText(original_path)
+        else:
+            self.open_directory(tree_view, path_line, path_line.text())
+
+    def on_tree_clicked(self, item) -> None:
         """
         Displays the ID3 tags for the selected audio file in the source tree.
         Returns: None
         """
-        #if self.source_model.isDir(index):
-        #    self.tree_source.setRootIndex(index)
 
-        # self.display_id3_tags_when_an_item_is_selected
         pass
-    
-    def on_source_tree_double_clicked(self, index: QModelIndex) -> None:
-        if self.source_model.isDir(index):
-            path = self.source_model.filePath(index)
-            if self.source_model.rowCount(index) > 0:
-                self.set_root_index(path)
+
+    def on_tree_double_clicked(self, index: QModelIndex, tree_view: QTreeView) -> None:
+        model = tree_view.model()
+        if model.isDir(index):
+            path = model.filePath(index)
+            #if model.rowCount(index) > 0:
+            self.set_root_index(path, tree_view)
+          
+            #else:
+            model.directoryLoaded.connect(lambda: self.set_root_index(path,tree_view))
+              #  tree_view.expand(index)
+                
+            if(tree_view == self.tree_source):
+                self.path_source.setText(path)
+                self.directory_updated(path, ChangeType.SOURCE)
             else:
-                self.source_model.directoryLoaded.connect(self.set_root_index)
-                self.tree_source.expand(index)
-            self.path_source.setText(path)
-            self.directory_updated(path, True)
-    
-    def set_root_index(self, path):
-        index = self.source_model.index(path)
-        self.tree_source.setRootIndex(index)
-        for column in range(self.source_model.columnCount()):
-            self.tree_source.resizeColumnToContents(column)
+                self.path_target.setText(path)
+                self.directory_updated(path, ChangeType.TARGET)
+                
+    def set_root_index(self, directory, tree_view: QTreeView = None) -> None:
+        model = tree_view.model()
+        tree_view.setRootIndex(model.index(directory))
+        for column in range(model.columnCount()):
+            tree_view.resizeColumnToContents(column)
+
         try:
-            self.source_model.directoryLoaded.disconnect(self.set_root_index)
+            model.directoryLoaded.disconnect()
         except TypeError:
             pass
-            
-   # def update_path_source(self, newPath):
-   #     self.path_source.setText(newPath)
-  #      self.directory_updated(newPath, True)
-  
-    def go_up_source(self) -> None:
-        """
-        Goes up one directory in the source tree view.
-        Returns: None
-        """
 
-        current_root_path = self.source_model.filePath(self.tree_source.rootIndex())
+    def go_up_dir_level(self, tree_view: QTreeView, path: QLineEdit) -> None:
+        model = tree_view.model()
+        current_root_path = model.filePath(tree_view.rootIndex())
         dir = QDir(current_root_path)
         if dir.cdUp():
             parent_path = dir.absolutePath()
-            self.tree_source.setRootIndex(self.source_model.index(parent_path))
-            self.path_source.setText(parent_path)
-            self.directory_updated(parent_path, True)
+            
+            model = QFileSystemModel()
+        
+            model.setRootPath(parent_path)
 
+            tree_view.setModel(model)
+            tree_view.sortByColumn(0, Qt.AscendingOrder)
+            self.set_root_index(parent_path, tree_view)
+            model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
+
+            path.setText(parent_path)
+            changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
+            self.directory_updated(parent_path, changeType)
+        
     def reset_target(self) -> None:
         """
         Resets the target directory tree structure to before any changes were made.
@@ -512,10 +507,7 @@ class MainWindow(QMainWindow):
         Returns: None
         """
 
-        if (
-            self.prompt_yes_no("Exit", "Are you sure you want to exit?")
-            == QMessageBox.No
-        ):
+        if self.prompt_yes_no("Exit", "Are you sure you want to exit?") == QMessageBox.No:
             return
 
         self.__update_config_file()
@@ -529,12 +521,8 @@ class MainWindow(QMainWindow):
         """
 
         # Write the window size to the config file
-        self.config.set(
-            CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, f"{self.size().height()}"
-        )
-        self.config.set(
-            CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, f"{self.size().width()}"
-        )
+        self.config.set(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, f"{self.size().height()}")
+        self.config.set(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, f"{self.size().width()}")
 
         # Save the config file
         with open("config.ini", "w") as config_file:
@@ -543,90 +531,65 @@ class MainWindow(QMainWindow):
     def __setup_scan_source(self) -> None:
         """Set up the source scan button and menu item. Returns: None"""
         action_scan = self.findChild(QAction, "mf_scan")
-        action_scan.triggered.connect(self.scan_source_directory)
+        action_scan.triggered.connect(lambda: self.open_directory(self.tree_source, self.path_source))
 
         but_select_source = self.findChild(QPushButton, "but_select_source")
-        but_select_source.clicked.connect(self.scan_source_directory)
+        but_select_source.clicked.connect(lambda: self.open_directory(self.tree_source, self.path_source))
 
     def __setup_scan_target(self) -> None:
         """Set up the target scan button. Returns: None"""
         but_select_target = self.findChild(QPushButton, "but_select_target")
-        but_select_target.clicked.connect(self.scan_target_directory)
+        but_select_target.clicked.connect(lambda: self.open_directory(self.tree_target, self.path_target))
 
-    def scan_source_directory(self, directory=None) -> None:
-
+    def open_directory(self, tree_view: QTreeView, path: QLineEdit, directory=None) -> None:
         """Scan the source directory. Returns: None"""
+
         if not directory:
-            directory = QFileDialog.getExistingDirectory(
-                self,
-                "Select Directory",
-                self.config.get(
+            if tree_view == self.tree_source:
+                last_directory = self.config.get(
                     CONFIG_SECTION_DIRECTORIES,
                     CONFIG_LAST_SOURCE_DIRECTORY,
                     fallback="",
-                ),
-            )
-        if not directory:
-            return
-
-
-        try:
-            
-            #self.tree_source.setRootIndex(self.source_model.index(QDir.rootPath()))
-            # set a directory to the root path of the source tree
-            self.tree_source.setRootIndex(self.source_model.index(directory))
-            self.path_source.setText(directory)
-            self.directory_updated(directory, True)
-            
-        except Exception as e:
-            self._display_and_log_error(e)
-
-    def directory_updated(self, directory, is_source) -> None:
-        """Update the source or target directory config settings, and the base reference based on the given directory."""
-
-        if is_source:
-            self.config.set(
-                CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, directory
-            )
-            self.directory_source = directory
-        else:
-            self.config.set(
-                CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, directory
-            )
-            self.directory_target = directory
-
-    def scan_target_directory(self, directory=None) -> None:
-        """Ask User to select target DIR and scan it. Returns: None"""
-        if not directory:
-            directory = QFileDialog.getExistingDirectory(
-                self,
-                "Select Directory",
-                self.config.get(
+                )
+            else:
+                last_directory = self.config.get(
                     CONFIG_SECTION_DIRECTORIES,
                     CONFIG_LAST_TARGET_DIRECTORY,
                     fallback="",
-                ),
-            )
+                )
+
+            directory = QFileDialog.getExistingDirectory(self, "Select Directory", last_directory)
 
         if not directory:
             return
 
-        self.directory_updated(directory, False)
-
         try:
-            self.do_file_system_scan_and_display(directory, self.tree_target, "target")
-            self.tree_structure_target_original = self.tree_structure_target.copy()
+            # self.tree_source.setRootIndex(self.source_model.index(QDir.rootPath()))
+            # set a directory to the root path of the source tree
+
+            tree_view.setRootIndex(tree_view.model().index(directory))
+            path.setText(directory)
+            changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
+            self.directory_updated(directory, changeType)
+
         except Exception as e:
             self._display_and_log_error(e)
 
-    # TODO Rename this here and in `scan_source_directory` and `scan_target_directory`
+    def directory_updated(self, directory, changeType: ChangeType) -> None:
+        """Update the source or target directory config settings, and the base reference based on the given directory."""
+
+        if changeType.isSource():
+            self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, directory)
+            self.directory_source = directory
+        else:
+            self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, directory)
+            self.directory_target = directory
+
     def _display_and_log_error(self, e) -> None:
         logging.error(traceback.format_exc())
         QMessageBox.critical(self, "Error", str(e))
 
-    def do_file_system_scan_and_display(
-        self, directory, tree_widget, file_type
-    ) -> None:
+    def do_file_system_scan_and_display(self, directory, tree_widget, file_type) -> None:
         """
         Scan a directory and update the UI.
         Returns: None
@@ -647,9 +610,7 @@ class MainWindow(QMainWindow):
         self.add_tree_items(tree_widget.invisibleRootItem(), tree_structure)
 
         self.update_status(f"{file_type.capitalize()} directory scanned: {directory}")
-        self.update_statusbar(
-            f"{file_type.capitalize()} directory scanned: {directory}"
-        )
+        self.update_statusbar(f"{file_type.capitalize()} directory scanned: {directory}")
 
         # Expand the first top-level item
         tree_widget.expandItem(tree_widget.topLevelItem(0))
@@ -697,9 +658,7 @@ class MainWindow(QMainWindow):
             self.__clear_label_text(labels)
             return
 
-        tree_structure = (
-            self.tree_structure_source if source else self.tree_structure_target
-        )
+        tree_structure = self.tree_structure_source if source else self.tree_structure_target
 
         item = tree_structure.get_child_node_by_name(item.text(0).rstrip())
 
@@ -730,17 +689,11 @@ class MainWindow(QMainWindow):
         Returns: None
         """
 
-        if (
-            self.tree_structure_source is None
-            or self.tree_structure_source.get_absolute_path() is None
-        ):
+        if self.tree_structure_source is None or self.tree_structure_source.get_absolute_path() is None:
             QMessageBox.critical(self, "Error", "Source directory not scanned")
             return
 
-        if (
-            self.tree_structure_target is None
-            or self.tree_structure_target.get_absolute_path() is None
-        ):
+        if self.tree_structure_target is None or self.tree_structure_target.get_absolute_path() is None:
             QMessageBox.critical(self, "Error", "Target directory not scanned")
             return
 
@@ -777,11 +730,7 @@ class MainWindow(QMainWindow):
 
         # Set the ico from resources.
         # when the menu is open, the icon is chevrons-left.svg, when closed the chevrons-right.svg
-        icon = (
-            QtGui.QIcon(":/icons/icons/chevrons-left.svg")
-            if width <= 100
-            else QtGui.QIcon(":/icons/icons/chevrons-right.svg")
-        )
+        icon = QtGui.QIcon(":/icons/icons/chevrons-left.svg") if width <= 100 else QtGui.QIcon(":/icons/icons/chevrons-right.svg")
         self.but_toggle.setIcon(icon)
         if width <= 0:
             self.but_toggle.setToolTip("Close Menu")
