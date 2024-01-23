@@ -80,6 +80,7 @@ CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
 # create a enum that can be used to denote changes are being made either in the source or target views
 # create two methods isSource and isTarget if the changeType is SOURCE or TARGET respectively
 
+
 class ChangeType(Enum):
     SOURCE = 0
     TARGET = 1
@@ -169,7 +170,6 @@ class MainWindow(QMainWindow):
         self.__clear_label_text(self.id3_labels_target)
         self.__setup_commit_button()
         self.__setup_menu_buttons()
-        self.__setup_checkboxes()
         self.__setup_path_labels()
         self.__setup_dir_up_buttons()
 
@@ -198,15 +198,10 @@ class MainWindow(QMainWindow):
     def __setup_icons(self) -> None:
         self.icon_left = QtGui.QIcon(":/icons/icons/chevrons-left.svg")
         self.icon_right = QtGui.QIcon(":/icons/icons/chevrons-right.svg")
+        self.icon_menu = QtGui.QIcon(":/icons/icons/menu.svg")
         self.icon_repackage = QtGui.QIcon(":/icons/icons/package.svg")
         self.icon_move = QtGui.QIcon(":/icons/icons/move.svg")
         self.icon_exit = QtGui.QIcon(":/icons/icons/log-out.svg")
-
-    def __setup_checkboxes(self) -> None:
-        self.checkbox_overwrite = self.findChild(QtWidgets.QCheckBox, "checkBox_overwrite")
-        self.checkbox_overwrite.setToolTip("Overwrite existing files in the target directory with the same name as the source files")
-        self.checkbox_copy = self.findChild(QtWidgets.QCheckBox, "checkBox_copy")
-        self.checkbox_copy.setToolTip("Copy files from the source directory to the target directory instead of moving them")
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
@@ -216,21 +211,8 @@ class MainWindow(QMainWindow):
         self.but_toggle.clicked.connect(lambda: self.toggleMenu())
         self.but_toggle.setToolTip("Open Menu")
         self.but_toggle.setToolTipDuration(1000)
-        self.but_toggle.setIcon(QtGui.QIcon(":/icons/icons/chevrons-right.svg"))
+        self.but_toggle.setIcon(self.icon_menu)
         self.but_toggle.setShortcut("Ctrl+M")
-
-        # Repackage buttons
-        self.but_repackage = self.findChild(QPushButton, "but_repackage")
-        self.but_repackage.setIcon(QtGui.QIcon(self.icon_repackage.pixmap(40, 40)))
-        #        self.but_repackage.clicked.connect(self.repackage_files)
-        self.but_repackage.setToolTip("Repackage files by Label")
-
-        # Move buttons
-        self.but_move = self.findChild(QPushButton, "but_move_2")
-        self.but_move.setIcon(QtGui.QIcon(self.icon_move.pixmap(40, 40)))
-        #       self.but_move.clicked.connect(self.move_files)
-        self.but_move.setToolTip("Move files from the source directory to the target directory")
-
         self.but_exit.setIcon(QtGui.QIcon(self.icon_exit.pixmap(40, 40)))
 
     def __setup_commit_button(self) -> None:
@@ -427,20 +409,20 @@ class MainWindow(QMainWindow):
         model = tree_view.model()
         if model.isDir(index):
             path = model.filePath(index)
-            #if model.rowCount(index) > 0:
+            # if model.rowCount(index) > 0:
             self.set_root_index(path, tree_view)
-          
-            #else:
-            model.directoryLoaded.connect(lambda: self.set_root_index(path,tree_view))
-              #  tree_view.expand(index)
-                
-            if(tree_view == self.tree_source):
+
+            # else:
+            model.directoryLoaded.connect(lambda: self.set_root_index(path, tree_view))
+            #  tree_view.expand(index)
+
+            if tree_view == self.tree_source:
                 self.path_source.setText(path)
                 self.directory_updated(path, ChangeType.SOURCE)
             else:
                 self.path_target.setText(path)
                 self.directory_updated(path, ChangeType.TARGET)
-                
+
     def set_root_index(self, directory, tree_view: QTreeView = None) -> None:
         model = tree_view.model()
         tree_view.setRootIndex(model.index(directory))
@@ -458,9 +440,9 @@ class MainWindow(QMainWindow):
         dir = QDir(current_root_path)
         if dir.cdUp():
             parent_path = dir.absolutePath()
-            
+
             model = QFileSystemModel()
-        
+
             model.setRootPath(parent_path)
 
             tree_view.setModel(model)
@@ -471,7 +453,7 @@ class MainWindow(QMainWindow):
             path.setText(parent_path)
             changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
             self.directory_updated(parent_path, changeType)
-        
+
     def reset_target(self) -> None:
         """
         Resets the target directory tree structure to before any changes were made.
@@ -481,25 +463,12 @@ class MainWindow(QMainWindow):
         tree_structure_target = self.tree_structure_target_original
         self._populate_target_tree(tree_structure_target)
 
-    def copy_source_to_target(self, silent=False) -> None:
+    def copy_source_to_target(self) -> None:
         """
         Copies the source directory to the target directory.
         Returns: None
         """
-
-        if self.tree_structure_source is None:
-            QMessageBox.critical(self, "Error", "Source directory not scanned")
-            return
-
-        if not silent:
-            reply = self.prompt_yes_no(
-                "Confirmation",
-                "Are you sure you want to copy the source to the target?",
-            )
-            if reply == QMessageBox.No:
-                return
-        self._populate_target_tree(self.tree_structure_source.copy())
-        self.tree_structure_target_original = self.tree_structure_target
+        self.open_directory(self.tree_target,  self.path_target, self.path_source.text())
 
     def confirm_exit(self) -> None:
         """
@@ -588,32 +557,6 @@ class MainWindow(QMainWindow):
     def _display_and_log_error(self, e) -> None:
         logging.error(traceback.format_exc())
         QMessageBox.critical(self, "Error", str(e))
-
-    def do_file_system_scan_and_display(self, directory, tree_widget, file_type) -> None:
-        """
-        Scan a directory and update the UI.
-        Returns: None
-        """
-        self.update_status(f"Scanning {file_type} directory: {directory}")
-        self.update_statusbar(f"Scanning {file_type} directory: {directory}")
-
-        tree_structure = get_dir_structure(directory, self.update_statusbar)
-        if file_type == "source":
-            self.tree_structure_source = tree_structure
-            self.path_source.setText(directory)
-        else:
-            self.tree_structure_target = tree_structure
-            self.path_target.setText(directory)
-
-        tree_widget.clear()
-
-        self.add_tree_items(tree_widget.invisibleRootItem(), tree_structure)
-
-        self.update_status(f"{file_type.capitalize()} directory scanned: {directory}")
-        self.update_statusbar(f"{file_type.capitalize()} directory scanned: {directory}")
-
-        # Expand the first top-level item
-        tree_widget.expandItem(tree_widget.topLevelItem(0))
 
     def update_status(self, text) -> None:
         """Update the text in lbl_stat."""
@@ -713,13 +656,14 @@ class MainWindow(QMainWindow):
     def toggleMenu(self) -> None:
         # get width
         width = self.frame_left_menu.width()
-        print(f"width:{width}")
-        maxExtend = 180
+        #print(f"width:{width}")
+        maxExtend = 100
         standard = 0
 
         # SET MAX WIDTH
-        widthExtended = maxExtend if width <= 100 else standard
-        print(f"widthExtended:{widthExtended}")
+        widthExtended = maxExtend if width == 0 else standard
+        #print(f"widthExtended:{widthExtended}")
+        
         # ANIMATION
         self.animation = QPropertyAnimation(self.frame_left_menu, b"minimumWidth")
         self.animation.setDuration(400)
@@ -730,7 +674,7 @@ class MainWindow(QMainWindow):
 
         # Set the ico from resources.
         # when the menu is open, the icon is chevrons-left.svg, when closed the chevrons-right.svg
-        icon = QtGui.QIcon(":/icons/icons/chevrons-left.svg") if width <= 100 else QtGui.QIcon(":/icons/icons/chevrons-right.svg")
+        icon = self.icon_left if width == 0 else self.icon_menu
         self.but_toggle.setIcon(icon)
         if width <= 0:
             self.but_toggle.setToolTip("Close Menu")
