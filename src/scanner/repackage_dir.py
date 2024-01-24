@@ -1,6 +1,5 @@
 import os
 import shutil
-from scanner.file_system_tree import FsoNode, FsoType
 import filecmp
 
 
@@ -36,7 +35,7 @@ def repackage(
         update_statusbar(f"scanning...{child.get_name()}")
         update_status(f"scanning...{child.get_name()}")
 
-        if child.get_type() == FsoType.FILE:
+        if child.get_type() == "FILE": # FsoType.FILE
             # check if audio file has a Label id3 tag else set it to "Unknown Publisher"
             label = child.get_id3_tag("LABEL") or "Unknown Publisher"
 

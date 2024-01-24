@@ -19,50 +19,13 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex
 from scanner.repackage_dir import repackage
 import configparser
-from scanner.file_system_tree import is_supported_audio_file
 import logging
 from PyQt5 import QtGui
 import qt.resources_rcc
 import os
 from enum import Enum
-
-
-class PaddedTreeWidgetItem(QTreeWidgetItem):
-    """
-    A custom QTreeWidgetItem class that adds padding to the displayed content.
-    This help visually separate the columns in the tree view.
-
-    Overrides the data() method to append spaces to the end of the content when the role is Qt.DisplayRole.
-
-    Args:
-        column (int): The column index of the item.
-        role (int): The role of the item data.
-
-    Returns:
-        Any: The data for the specified column and role."""
-
-    def data(self, column, role):
-        data = super().data(column, role)
-        if role == Qt.DisplayRole:
-            data += " " * 2  # Add spaces to the end of the content
-        return data
-
-
-class CustomFileSystemModel(QFileSystemModel):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-    def lessThan(self, left, right):
-        left_file_info = self.fileInfo(left)
-        right_file_info = self.fileInfo(right)
-
-        if left_file_info.isDir() and right_file_info.isFile():
-            return True
-        if left_file_info.isFile() and right_file_info.isDir():
-            return False
-
-        return super().lessThan(left, right)
-
+from scanner.audio_tags import AudioTags
+import scanner.audio_tags
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -111,6 +74,7 @@ class MainWindow(QMainWindow):
         self.id3_labels_target = []
         self.directory_source = "c:\\"
         self.directory_target = "c:\\"
+        self.audio_tags = AudioTags()
 
         # set up config
         self.__setup_config()
@@ -300,7 +264,7 @@ class MainWindow(QMainWindow):
         tree_view.setModel(model)
         tree_view.sortByColumn(0, Qt.AscendingOrder)
         tree_view.setRootIndex(model.index(last_dir))
-        tree_view.clicked.connect(self.on_tree_clicked)
+        tree_view.clicked.connect(lambda: self.on_tree_clicked(tree_view.selectedIndexes()[0], tree_view))
         tree_view.doubleClicked.connect(lambda: self.on_tree_double_clicked(tree_view.selectedIndexes()[0], tree_view))
         tree_view.expanded.connect(lambda: self.resize_first_column(tree_view))
         tree_view.setSortingEnabled(True)
@@ -397,13 +361,12 @@ class MainWindow(QMainWindow):
         else:
             self.open_directory(tree_view, path_line, path_line.text())
 
-    def on_tree_clicked(self, item) -> None:
+    def on_tree_clicked(self, item: QModelIndex, tree_view) -> None:
         """
         Displays the ID3 tags for the selected audio file in the source tree.
         Returns: None
         """
-
-        pass
+        self.display_id3_tags_when_an_item_is_selected(item, tree_view)
 
     def on_tree_double_clicked(self, index: QModelIndex, tree_view: QTreeView) -> None:
         model = tree_view.model()
@@ -584,7 +547,7 @@ class MainWindow(QMainWindow):
         for label in labels:
             label.setText("")
 
-    def display_id3_tags_when_an_item_is_selected(self, item) -> None:
+    def display_id3_tags_when_an_item_is_selected(self, item: QModelIndex, tree_view: QTreeView) -> None:
         """
         Displays source or Target audio tag labels when a user selects an audio
         file in a tree widget.
@@ -593,24 +556,25 @@ class MainWindow(QMainWindow):
         if item is None:
             return
 
-        source = self.sender() == self.tree_source
+        source = tree_view == self.tree_source
 
         labels = self.get_label_list(source)
 
-        if not is_supported_audio_file(item.text(1).rstrip()):
-            self.__clear_label_text(labels)
-            return
+        # Get the absolute file path from the QModelIndex
+        model = tree_view.model()
+        file_path = model.filePath(item)
 
-        tree_structure = self.tree_structure_source if source else self.tree_structure_target
-
-        item = tree_structure.get_child_node_by_name(item.text(0).rstrip())
+        # Get the ID3 tags for the selected file from AudioTags
+        audio_tags = self.audio_tags.get_tags(file_path)
 
         for label, tag in zip(labels, self.id3_tags):
+               
+            value = audio_tags[tag][0] if tag in audio_tags else "" 
+    
             if tag == "URL":
-                url = item.get_id3_tag(tag)
-                label.setText(f'<a href="{url}">{url}</a>')
+                label.setText(f'<a href="{value}">{value}</a>')
             else:
-                label.setText(item.get_id3_tag(tag))
+                label.setText(value)
 
     def get_label_list(self, source=True) -> list:
         """Returns: list of source or target ID3 labels"""
