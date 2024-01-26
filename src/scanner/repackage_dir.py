@@ -1,66 +1,69 @@
 import os
 import shutil
 import filecmp
+import tkinter as tk
+from tkinter import messagebox
+import scanner.audio_tags as AudioTags
+
+from PyQt5 import uic
+from PyQt5.QtWidgets import QDialog, QApplication
 
 
-def repackage(
-    tree_structure_source,
-    target_directory,
-    update_statusbar,
-    update_status,
-    copy_files=False,
-):
-    """
-    Repackages the files from the source directory into the target directory based on the provided tree structure.
+class CustomDialog(QDialog):
+    def __init__(self, message, parent=None):
+        super(CustomDialog, self).__init__(parent)
+        uic.loadUi("src\\qt\\custom_dialog.ui", self)
 
-    Moves or copies the files from the source directory to the target directory based on the label ID3 tag.
-    If the target file already exists and is different from the source file, it is removed before moving the file.
-    If copy_files is True, the files are copied instead of moved.
+        self.label_message.setText(message)
 
-    Args:
-        tree_structure_source (FileSystemObject): The tree structure of the source directory.
-        target_directory (str): The target directory to repackage the files into.
-        update_statusbar (function): A function to update the status bar.
-        copy_files (bool, optional): If True, the files are copied instead of moved. Defaults to False.
+        self.button_yes.clicked.connect(lambda: self.done(1))
+        self.button_no.clicked.connect(lambda: self.done(0))
+        self.button_cancel.clicked.connect(self.reject)
 
-    Returns:
-        None
-    """
+    def remember_choice(self):
+        return self.checkbox_remember.isChecked()
 
-    # set up the status bar
-    update_statusbar("Repackaging...")
+    def exec_(self):
+        result = super(CustomDialog, self).exec_()
+        return result, self.remember_choice()
 
-    # loop through the source tree and look for files to move
-    for child in tree_structure_source.get_children():
-        update_statusbar(f"scanning...{child.get_name()}")
-        update_status(f"scanning...{child.get_name()}")
 
-        if child.get_type() == "FILE": # FsoType.FILE
-            # check if audio file has a Label id3 tag else set it to "Unknown Publisher"
-            label = child.get_id3_tag("LABEL") or "Unknown Publisher"
+def repackageByLabel(source_dir, target_dir):
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    remember_choice = None
+    user_choice = None
+    audio_tags = AudioTags.AudioTags()
+    for file in os.listdir(source_dir):
+        source_file = os.path.join(source_dir, file)
 
-            # create a directory with the same name as the Label tag if it doesn't exist
-            publisher_directory = os.path.join(target_directory, label)
-            os.makedirs(publisher_directory, exist_ok=True)
+        if audio_tags.isSupported(source_file):
+            tags = audio_tags.get_tags(source_file)
+            if tags:
+                label = tags.get("LABEL", ["Unknown Publisher"])[0]
+                target_subdir = os.path.join(target_dir, label)
 
-            # move or copy the file to the directory
-            target_file = os.path.join(publisher_directory, child.get_name())
-            if (
-                copy_files
-                and os.path.exists(target_file)
-                or not copy_files
-                and os.path.exists(target_file)
-            ):
-                update_status(f"File already exists: {child.get_name()}")
-                update_statusbar(f"File already exists: {child.get_name()}")
-            elif copy_files and not os.path.exists(target_file):
-                update_status(f"Copying file: {child.get_name()}")
-                update_statusbar(f"Copying file: {child.get_name()}")
-                shutil.copy2(child.get_absolute_path(), target_file)
+                if not os.path.exists(target_subdir):
+                    os.mkdir(target_subdir)
+
+                target_file = os.path.join(target_subdir, file)
+                if not os.path.exists(target_file) or (remember_choice and user_choice):
+                    shutil.move(source_file, target_file)
+                else:
+                    if not remember_choice:
+                        message = f"The file {file} already exists in the target directory {target_subdir}. \n\nDo you want to overwrite it?"
+                        dialog = CustomDialog(message)
+                        user_choice, remember_choice = dialog.exec_()
+                    
+                    if user_choice == QDialog.Rejected:
+                        break
+
+                    if user_choice:
+                        shutil.move(source_file, target_file)
             else:
-                update_status(f"Moving file: {child.get_name()}")
-                update_statusbar(f"Moving file: {child.get_name()}")
-                shutil.move(child.get_absolute_path(), target_file)
-    # update the status bar
-    update_status("Repackaging... Done")
-    update_statusbar("Repackaging... Done")
+                print("Skipping - no tags" + source_file)
+        else:
+            print("Skipping - file not supported" + source_file)
+    
+    print("Repacking Done")

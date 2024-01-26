@@ -1,23 +1,20 @@
 import traceback
-from PyQt5 import uic, QtWidgets, QtGui
+from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
     QAction,
     QStyle,
-    QTreeWidget,
     QTreeView,
-    QTreeWidgetItem,
     QFileDialog,
     QPushButton,
     QMessageBox,
-    QTextBrowser,
     QCompleter,
     QFileSystemModel,
     QLineEdit,
 )
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex
-from scanner.repackage_dir import repackage
+from scanner.repackage_dir import repackageByLabel
 import configparser
 import logging
 from PyQt5 import QtGui
@@ -25,7 +22,7 @@ import qt.resources_rcc
 import os
 from enum import Enum
 from scanner.audio_tags import AudioTags
-import scanner.audio_tags
+
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -132,7 +129,7 @@ class MainWindow(QMainWindow):
         self.__setup_id3_tags()
         self.__clear_label_text(self.id3_labels_source)
         self.__clear_label_text(self.id3_labels_target)
-        self.__setup_commit_button()
+        self.__setup_action_buttons()
         self.__setup_menu_buttons()
         self.__setup_path_labels()
         self.__setup_dir_up_buttons()
@@ -179,8 +176,14 @@ class MainWindow(QMainWindow):
         self.but_toggle.setShortcut("Ctrl+M")
         self.but_exit.setIcon(QtGui.QIcon(self.icon_exit.pixmap(40, 40)))
 
-    def __setup_commit_button(self) -> None:
-        pass
+    def __setup_action_buttons(self) -> None:
+        """Set up the action buttons. Returns: None"""
+        # repackage button
+        self.but_repackage = self.findChild(QPushButton, "butt_repackage")
+        self.but_repackage.clicked.connect(lambda: self.on_repackage_button_clicked())
+        self.but_repackage.setToolTip("[Ctrl+R] Repackage the source directory -> target directory")
+        self.but_repackage.setToolTipDuration(1000)
+        self.but_repackage.setShortcut("Ctrl+R")
 
     def __setup_window_size(self) -> None:
         """
@@ -306,15 +309,6 @@ class MainWindow(QMainWindow):
         but_refresh = self.findChild(QPushButton, "but_refresh_target_2")
         but_refresh.clicked.connect(self.reset_target)
 
-    def __setup_commit_button(self) -> None:
-        """
-        Sets up the functionality of the commit button.
-        Returns: None
-        """
-
-        but_commit = self.findChild(QPushButton, "but_commit_2")
-        but_commit.clicked.connect(self.repackage)
-
     def __setup_dir_up_buttons(self) -> None:
         """
         Sets up the functionality of the path up buttons.
@@ -431,7 +425,7 @@ class MainWindow(QMainWindow):
         Copies the source directory to the target directory.
         Returns: None
         """
-        self.open_directory(self.tree_target,  self.path_target, self.path_source.text())
+        self.open_directory(self.tree_target, self.path_target, self.path_source.text())
 
     def confirm_exit(self) -> None:
         """
@@ -472,6 +466,10 @@ class MainWindow(QMainWindow):
         """Set up the target scan button. Returns: None"""
         but_select_target = self.findChild(QPushButton, "but_select_target")
         but_select_target.clicked.connect(lambda: self.open_directory(self.tree_target, self.path_target))
+
+    def on_repackage_button_clicked(self) -> None:
+        """Set up the repackage button. Returns: None"""
+        self.repackage()
 
     def open_directory(self, tree_view: QTreeView, path: QLineEdit, directory=None) -> None:
         """Scan the source directory. Returns: None"""
@@ -568,9 +566,8 @@ class MainWindow(QMainWindow):
         audio_tags = self.audio_tags.get_tags(file_path)
 
         for label, tag in zip(labels, self.id3_tags):
-               
-            value = audio_tags[tag][0] if tag in audio_tags else "" 
-    
+            value = audio_tags[tag][0] if tag in audio_tags else ""
+
             if tag == "URL":
                 label.setText(f'<a href="{value}">{value}</a>')
             else:
@@ -595,39 +592,36 @@ class MainWindow(QMainWindow):
         Commit the changes to the target directory.
         Returns: None
         """
+        
+        # get the root path of the trees
+        source_dir = self.tree_source.model().rootPath()
+        target_dir = self.tree_target.model().rootPath()
 
-        if self.tree_structure_source is None or self.tree_structure_source.get_absolute_path() is None:
+        if source_dir is None:
             QMessageBox.critical(self, "Error", "Source directory not scanned")
             return
 
-        if self.tree_structure_target is None or self.tree_structure_target.get_absolute_path() is None:
+        if target_dir is None:
             QMessageBox.critical(self, "Error", "Target directory not scanned")
             return
 
-        self.disable_main_window()
-
-        repackage(
-            self.tree_structure_source,
-            self.tree_structure_target.get_absolute_path(),
-            self.update_statusbar,
-            self.update_status,
-            True,
-        )
-        self.scan_target_directory(self.tree_structure_target.get_absolute_path())
-        self.update_statusbar("Repackaging... Done")
-        self.enable_main_window()
+        self.update_status("Repackaging started...")
+        repackageByLabel(source_dir, target_dir)
+        self.update_status("Repackaging completed.") 
+        
+        
 
     def toggleMenu(self) -> None:
         # get width
         width = self.frame_left_menu.width()
-        #print(f"width:{width}")
+        # print(f"width:{width}")
         maxExtend = 100
         standard = 0
 
         # SET MAX WIDTH
         widthExtended = maxExtend if width == 0 else standard
-        #print(f"widthExtended:{widthExtended}")
-        
+        # print(f"widthExtended:{widthExtended}")
+
         # ANIMATION
         self.animation = QPropertyAnimation(self.frame_left_menu, b"minimumWidth")
         self.animation.setDuration(400)
