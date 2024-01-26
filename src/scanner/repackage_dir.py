@@ -1,12 +1,13 @@
 import os
 import shutil
 import filecmp
-import tkinter as tk
+
 from tkinter import messagebox
 import scanner.audio_tags as AudioTags
-
+from PyQt5.QtCore import Qt
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDialog, QApplication
+from PyQt5.QtGui import QPixmap
 
 
 class CustomDialog(QDialog):
@@ -16,9 +17,13 @@ class CustomDialog(QDialog):
 
         self.label_message.setText(message)
 
-        self.button_yes.clicked.connect(lambda: self.done(1))
-        self.button_no.clicked.connect(lambda: self.done(0))
+        self.button_yes.clicked.connect(lambda: self.done(2))
+        self.button_no.clicked.connect(lambda: self.done(1))
         self.button_cancel.clicked.connect(self.reject)
+        self.adjustSize()
+        pixmap = QPixmap(":/icons/icons/alert-triangle.svg")
+        pixmap = pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.label_icon.setPixmap(pixmap)
 
     def remember_choice(self):
         return self.checkbox_remember.isChecked()
@@ -48,22 +53,22 @@ def repackageByLabel(source_dir, target_dir):
                     os.mkdir(target_subdir)
 
                 target_file = os.path.join(target_subdir, file)
-                if not os.path.exists(target_file) or (remember_choice and user_choice):
+                if not os.path.exists(target_file) or (remember_choice and user_choice == 2):
                     shutil.move(source_file, target_file)
                 else:
                     if not remember_choice:
-                        message = f"The file {file} already exists in the target directory {target_subdir}. \n\nDo you want to overwrite it?"
+                        message = f"The file:\n'{file}'\nalready exists in the target directory\n'{label}'. \n\nDo you want to overwrite it?"
                         dialog = CustomDialog(message)
                         user_choice, remember_choice = dialog.exec_()
-                    
+
                     if user_choice == QDialog.Rejected:
                         break
 
-                    if user_choice:
+                    if user_choice == 2:
                         shutil.move(source_file, target_file)
             else:
                 print("Skipping - no tags" + source_file)
         else:
             print("Skipping - file not supported" + source_file)
-    
+
     print("Repacking Done")
