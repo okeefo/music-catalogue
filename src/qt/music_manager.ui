@@ -503,7 +503,7 @@
                     <bool>true</bool>
                    </property>
                    <property name="selectionMode">
-                    <enum>QAbstractItemView::MultiSelection</enum>
+                    <enum>QAbstractItemView::SingleSelection</enum>
                    </property>
                    <property name="sortingEnabled">
                     <bool>true</bool>
@@ -589,7 +589,7 @@
                        </spacer>
                       </item>
                       <item>
-                       <widget class="QPushButton" name="but_commit_2">
+                       <widget class="QPushButton" name="butt_repackage">
                         <property name="text">
                          <string>Repackage</string>
                         </property>

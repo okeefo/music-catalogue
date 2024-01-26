@@ -1,17 +1,16 @@
 from pathlib import Path
 import logging
 import taglib
-#from taglib import TagLibError
 
-AUDIO_EXTENSIONS = [".mp3", ".wav"] 
+
+AUDIO_EXTENSIONS = [".mp3", ".wav"]
+
 
 # The AudioTags class is used to manage and manipulate audio tags.
 class AudioTags:
-    
     logger = logging.getLogger(__name__)
 
     def get_tags(self, absolute_path_filename: str) -> dict:
-        
         path = Path(absolute_path_filename)
 
         if not path.is_file():
@@ -43,5 +42,14 @@ class AudioTags:
 
         self.logger.info("Found tags in file %s: %s", path, tags)
         return tags
-    
 
+    def isSupported(self, absolute_path_filename: str) -> bool:
+        path = Path(absolute_path_filename)
+
+        if not path.is_file():
+            return False
+
+        if path.is_dir():
+            return False
+
+        return path.suffix in AUDIO_EXTENSIONS
