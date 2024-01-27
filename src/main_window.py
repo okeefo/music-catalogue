@@ -1,20 +1,7 @@
 import traceback
 from PyQt5 import uic, QtGui
-from PyQt5.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QAction,
-    QStyle,
-    QTreeView,
-    QFileDialog,
-    QPushButton,
-    QMessageBox,
-    QCompleter,
-    QFileSystemModel,
-    QLineEdit,
-    QMenu
-)
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex,QUrl
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl
 from scanner.repackage_dir import repackageByLabel
 import configparser
 import logging
@@ -277,11 +264,10 @@ class MainWindow(QMainWindow):
         tree_view.doubleClicked.connect(lambda: self.on_tree_double_clicked(tree_view.selectedIndexes()[0], tree_view))
         tree_view.expanded.connect(lambda: self.resize_first_column(tree_view))
         tree_view.setSortingEnabled(True)
-        
+
         # Enable custom context menu
         tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
         tree_view.customContextMenuRequested.connect(self.tree_view_context_menu)
-
 
     def __setup_exit(self) -> None:
         """
@@ -331,7 +317,7 @@ class MainWindow(QMainWindow):
 
     def resize_first_column(self, tree_view: QTreeView) -> None:
         tree_view.resizeColumnToContents(0)
-        
+
     def tree_view_context_menu(self, position):
         tree_view = self.sender()
         index = tree_view.indexAt(position)
@@ -339,7 +325,7 @@ class MainWindow(QMainWindow):
             return
 
         file_path = tree_view.model().filePath(index)
-        if not file_path.lower().endswith(('.wav', '.mp3', '.ogg', '.flac')):
+        if not file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
             return
 
         menu = QMenu(self)
@@ -361,8 +347,6 @@ class MainWindow(QMainWindow):
         elif action == pause_action:
             self.player.pause()
             self.update_status("Paused: " + file_path)
-            
-        
 
     def on_path_return_pressed(self, tree_view: QTreeView) -> None:
         if tree_view == self.tree_source:
