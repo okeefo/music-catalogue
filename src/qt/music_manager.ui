@@ -33,9 +33,68 @@
    <double>2.000000000000000</double>
   </property>
   <property name="styleSheet">
-   <string notr="true"/>
+   <string notr="true">
+
+/*-----QWidget-----
+QWidget
+{
+	background-color: rgb(92, 106, 106);
+	color: #ffffff;
+	border-color: #051a39;
+}
+
+QTreeView {
+
+     color: #ffffff;;
+     border: 1px solid black;
+      background-color: #677676;
+      alternate-background-color: #91a6a6;
+      color: black;
+      selection-background-color: #91a6a6;
+      selection-color: #ffffff
+}
+QTreeView::item {
+      padding: 5px;
+}
+ QHeaderView::section {
+        background-color: rgb(92, 106, 106);;
+        color: #ffffff;
+        border: 1px solid black;
+        padding: 5px;
+}
+*/
+QLineEdit{
+		color: #ffffff;
+		border: 1px solid black;
+        border-radius: 10px;
+        padding: 5px;
+        selection-background-color: green;
+        selection-color: white;
+}
+
+QGroupBox {
+        border: 1px solid black;
+        margin-top: 3ex; /* leave space at the top for the title */
+
+}
+QGroupBox::title {
+		color: black;
+        subcontrol-origin: margin;
+        left: 10px; /* position of the title */
+        padding: 0 5px 0 5px; /* space around the title text */
+}
+
+
+
+
+
+
+</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <layout class="QVBoxLayout" name="verticalLayout_4">
     <property name="spacing">
      <number>0</number>
@@ -448,6 +507,53 @@
                     </item>
                     <item>
                      <widget class="QPushButton" name="but_source_up">
+                      <property name="styleSheet">
+                       <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                      </property>
                       <property name="text">
                        <string/>
                       </property>
@@ -459,6 +565,53 @@
                     </item>
                     <item>
                      <widget class="QPushButton" name="but_select_source">
+                      <property name="styleSheet">
+                       <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                      </property>
                       <property name="text">
                        <string/>
                       </property>
@@ -475,6 +628,53 @@
                       </property>
                       <property name="autoFillBackground">
                        <bool>false</bool>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
                       </property>
                       <property name="text">
                        <string/>
@@ -590,6 +790,53 @@
                       </item>
                       <item>
                        <widget class="QPushButton" name="butt_repackage">
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
                         <property name="text">
                          <string>Repackage</string>
                         </property>
@@ -623,6 +870,53 @@
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_copy">
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
                         <property name="text">
                          <string>Copy</string>
                         </property>
@@ -647,6 +941,53 @@
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_move">
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
                         <property name="text">
                          <string>Move</string>
                         </property>
@@ -671,6 +1012,53 @@
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_refresh_target_2">
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
                         <property name="text">
                          <string>Reset Target</string>
                         </property>
@@ -695,6 +1083,53 @@
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_exit_2">
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
                         <property name="text">
                          <string>Exit</string>
                         </property>
@@ -727,6 +1162,9 @@
               </item>
               <item>
                <widget class="QGroupBox" name="groupBox_target_tree">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
                 <property name="title">
                  <string>Target Directory</string>
                 </property>
@@ -797,6 +1235,53 @@
                     </item>
                     <item>
                      <widget class="QPushButton" name="but_target_up">
+                      <property name="styleSheet">
+                       <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                      </property>
                       <property name="text">
                        <string/>
                       </property>
@@ -810,6 +1295,53 @@
                      <widget class="QPushButton" name="but_select_target">
                       <property name="enabled">
                        <bool>true</bool>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
                       </property>
                       <property name="text">
                        <string/>
@@ -899,6 +1431,9 @@
                        <height>0</height>
                       </size>
                      </property>
+                     <property name="styleSheet">
+                      <string notr="true">*{color:rgb(96, 98, 135);}</string>
+                     </property>
                      <property name="text">
                       <string>-- title</string>
                      </property>
@@ -924,6 +1459,9 @@
                        <width>50</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true"/>
                      </property>
                      <property name="text">
                       <string>Artist</string>
@@ -1159,6 +1697,9 @@
                        <width>500</width>
                        <height>0</height>
                       </size>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true">*{color:rgb(96, 98, 135);}</string>
                      </property>
                      <property name="text">
                       <string>-- title</string>

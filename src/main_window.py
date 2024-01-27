@@ -12,8 +12,9 @@ from PyQt5.QtWidgets import (
     QCompleter,
     QFileSystemModel,
     QLineEdit,
+    QMenu
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex,QUrl
 from scanner.repackage_dir import repackageByLabel
 import configparser
 import logging
@@ -22,6 +23,7 @@ import qt.resources_rcc
 import os
 from enum import Enum
 from scanner.audio_tags import AudioTags
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 
 
 # Create an instance of QApplication
@@ -72,6 +74,7 @@ class MainWindow(QMainWindow):
         self.directory_source = "c:\\"
         self.directory_target = "c:\\"
         self.audio_tags = AudioTags()
+        self.player = QMediaPlayer()
 
         # set up config
         self.__setup_config()
@@ -163,6 +166,9 @@ class MainWindow(QMainWindow):
         self.icon_repackage = QtGui.QIcon(":/icons/icons/package.svg")
         self.icon_move = QtGui.QIcon(":/icons/icons/move.svg")
         self.icon_exit = QtGui.QIcon(":/icons/icons/log-out.svg")
+        self.icon_play = QtGui.QIcon(":/icons/icons/play.svg")
+        self.icon_pause = QtGui.QIcon(":/icons/icons/pause.svg")
+        self.icon_stop = QtGui.QIcon(":/icons/icons/stop-circle.svg")
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
@@ -271,6 +277,11 @@ class MainWindow(QMainWindow):
         tree_view.doubleClicked.connect(lambda: self.on_tree_double_clicked(tree_view.selectedIndexes()[0], tree_view))
         tree_view.expanded.connect(lambda: self.resize_first_column(tree_view))
         tree_view.setSortingEnabled(True)
+        
+        # Enable custom context menu
+        tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
+        tree_view.customContextMenuRequested.connect(self.tree_view_context_menu)
+
 
     def __setup_exit(self) -> None:
         """
@@ -320,6 +331,38 @@ class MainWindow(QMainWindow):
 
     def resize_first_column(self, tree_view: QTreeView) -> None:
         tree_view.resizeColumnToContents(0)
+        
+    def tree_view_context_menu(self, position):
+        tree_view = self.sender()
+        index = tree_view.indexAt(position)
+        if not index.isValid():
+            return
+
+        file_path = tree_view.model().filePath(index)
+        if not file_path.lower().endswith(('.wav', '.mp3', '.ogg', '.flac')):
+            return
+
+        menu = QMenu(self)
+        play_action = QAction(self.icon_play, "Play", self)
+        menu.addAction(play_action)
+        stop_action = QAction(self.icon_stop, "Stop", self)
+        menu.addAction(stop_action)
+        pause_action = QAction(self.icon_pause, "Pause", self)  # Changed "Stop" to "Pause"
+        menu.addAction(pause_action)
+        action = menu.exec_(tree_view.mapToGlobal(position))
+
+        if action == play_action:
+            self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
+            self.update_status("Playing: " + file_path)
+            self.player.play()
+        elif action == stop_action:
+            self.player.stop()
+            self.update_status("Stopped: " + file_path)
+        elif action == pause_action:
+            self.player.pause()
+            self.update_status("Paused: " + file_path)
+            
+        
 
     def on_path_return_pressed(self, tree_view: QTreeView) -> None:
         if tree_view == self.tree_source:
@@ -592,7 +635,7 @@ class MainWindow(QMainWindow):
         Commit the changes to the target directory.
         Returns: None
         """
-        
+
         # get the root path of the trees
         source_dir = self.tree_source.model().rootPath()
         target_dir = self.tree_target.model().rootPath()
@@ -607,9 +650,7 @@ class MainWindow(QMainWindow):
 
         self.update_status("Repackaging started...")
         repackageByLabel(source_dir, target_dir)
-        self.update_status("Repackaging completed.") 
-        
-        
+        self.update_status("Repackaging completed.")
 
     def toggleMenu(self) -> None:
         # get width
