@@ -4,14 +4,15 @@ import logging
 import qt.resources_rcc
 import os
 
-from PyQt5 import uic, QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu
+from PyQt5 import uic, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu,QVBoxLayout
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl
 from scanner.repackage_dir import repackageByLabel
 from PyQt5.QtGui import QFont
 from enum import Enum
 from scanner.audio_tags import AudioTags
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+
 
 
 # Create an instance of QApplication
@@ -597,6 +598,10 @@ class MainWindow(QMainWindow):
         """
         if item is None:
             return
+        
+        # check if item is a directory if so then return
+        if tree_view.model().isDir(item):
+            return
 
         source = tree_view == self.tree_source
 
@@ -616,6 +621,43 @@ class MainWindow(QMainWindow):
                 label.setText(f'<a href="{value}">{value}</a>')
             else:
                 label.setText(value)
+       
+       # Get artwork from the audio tags
+        cover_art = self.audio_tags.get_cover_art_front(file_path)
+        
+        if not source:
+            # Clear the QStackedWidget
+            while self.stackedWidget_target.count() > 0:
+                widget = self.stackedWidget_target.widget(0)
+                self.stackedWidget_target.removeWidget(widget)
+                widget.deleteLater()
+
+            # Add the cover art images to the QStackedWidget
+            for image in cover_art:
+                label = QLabel()
+                pixmap = QPixmap()
+                pixmap.loadFromData(image)
+                label.setPixmap(pixmap)
+                self.stackedWidget_target.addWidget(label)
+            
+            # got to page 1 of the stacked eidge and sow the label
+            self.stackedWidget_target.setCurrentIndex(0)
+    """
+                # Create buttons for navigating through the images
+                next_button = QPushButton("Next")
+                prev_button = QPushButton("Previous")
+
+                next_button.clicked.connect(lambda: self.stackedWidget_target.setCurrentIndex((self.stackedWidget_target.currentIndex() + 1) % self.stackedWidget_target.count()))
+                prev_button.clicked.connect(lambda: self.stackedWidget_target.setCurrentIndex((self.stackedWidget_target.currentIndex() - 1) % self.stackedWidget_target.count()))
+
+                # Add the buttons to the layout
+                layout = QVBoxLayout()
+                layout.addWidget(self.stackedWidget_target)
+                layout.addWidget(next_button)
+                layout.addWidget(prev_button)
+                self.setLayout(layout)
+    """
+        
 
     def get_label_list(self, source=True) -> list:
         """Returns: list of source or target ID3 labels"""
