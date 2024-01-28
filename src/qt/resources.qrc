@@ -292,4 +292,52 @@
     <file>icons/zoom-in.svg</file>
     <file>icons/zoom-out.svg</file>
   </qresource>
+  <qresource prefix="media">
+    <file>icons/media/control-play-blue-icon.png</file>
+    <file>icons/media/control-repeat-blue-icon.png</file>
+    <file>icons/media/control-start-icon.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-eject.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-eject-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-end.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-end-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-equalizer.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-equalizer-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-fastforward.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-fastforward-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-pause.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-pause-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-pause-record.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-play-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-power.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-power-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-repeat.32 (1).png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-repeat.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-rewind.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-rewind-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-start-blue.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-stop.32.png</file>
+    <file>icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-End.512 (1).png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-End.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Fast-Forward.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-High-Volume.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Low-Volume.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Medium-Volume.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Pause.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Play.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Repeat.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Rewind.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Shuffle.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Skip-To-Start.512.png</file>
+    <file>icons/media/Icons8-Ios7-Media-Controls-Stop.512.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-eject.256.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-playback-pause.256.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-playback-start.256.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-playback-stop.256.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-seek-backward.256.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-seek-forward.256.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-skip-backward.256.png</file>
+    <file>icons/media/Oxygen-Icons.org-Oxygen-Actions-media-skip-forward.256.png</file>
+  </qresource>
 </RCC>
