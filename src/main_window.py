@@ -1,13 +1,14 @@
 import traceback
+import configparser
+import logging
+import qt.resources_rcc
+import os
+
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl
 from scanner.repackage_dir import repackageByLabel
-import configparser
-import logging
-from PyQt5 import QtGui
-import qt.resources_rcc
-import os
+from PyQt5.QtGui import QFont
 from enum import Enum
 from scanner.audio_tags import AudioTags
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
@@ -219,6 +220,22 @@ class MainWindow(QMainWindow):
             self.lbl_tar_discogs_id,
             self.lbl_tar_website,
         ]
+        
+        # Create a QFont object for the bold and italic font
+        font = QFont()
+        font.setBold(True)
+       # font.setItalic(True)
+        font.setPointSize(10)
+
+        # Loop over the source labels
+        for label in self.id3_labels_source:
+            label.setFont(font)
+            label.setStyleSheet("color: rgb(33, 143, 122 );")
+
+        # Loop over the target labels
+        for label in self.id3_labels_target:
+            label.setFont(font)
+            label.setStyleSheet("color: rgb(177, 162, 86);")
 
     def __setup_id3_tags(self) -> None:
         """

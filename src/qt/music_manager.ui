@@ -1418,6 +1418,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>Title</string>
                      </property>
@@ -1427,9 +1434,16 @@ QPushButton::pressed
                     <widget class="QLabel" name="lbl_src_title">
                      <property name="minimumSize">
                       <size>
-                       <width>500</width>
+                       <width>450</width>
                        <height>0</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="styleSheet">
                       <string notr="true">*{color:rgb(96, 98, 135);}</string>
@@ -1460,6 +1474,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="styleSheet">
                       <string notr="true"/>
                      </property>
@@ -1470,6 +1491,13 @@ QPushButton::pressed
                    </item>
                    <item row="1" column="1">
                     <widget class="QLabel" name="lbl_src_artist">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>-- artist</string>
                      </property>
@@ -1479,15 +1507,22 @@ QPushButton::pressed
                     <widget class="QLabel" name="label_18">
                      <property name="minimumSize">
                       <size>
-                       <width>50</width>
+                       <width>55</width>
                        <height>15</height>
                       </size>
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>60</width>
+                       <width>80</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>Side</string>
@@ -1498,15 +1533,22 @@ QPushButton::pressed
                     <widget class="QLabel" name="label_20">
                      <property name="minimumSize">
                       <size>
-                       <width>65</width>
+                       <width>55</width>
                        <height>15</height>
                       </size>
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>60</width>
+                       <width>80</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>Track No</string>
@@ -1526,6 +1568,13 @@ QPushButton::pressed
                        <width>50</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>Website</string>
@@ -1554,6 +1603,13 @@ QPushButton::pressed
                    </item>
                    <item row="3" column="1">
                     <widget class="QLabel" name="lbl_src_label">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>--label</string>
                      </property>
@@ -1573,6 +1629,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>Album</string>
                      </property>
@@ -1582,15 +1645,22 @@ QPushButton::pressed
                     <widget class="QLabel" name="label_15">
                      <property name="minimumSize">
                       <size>
-                       <width>50</width>
-                       <height>15</height>
+                       <width>55</width>
+                       <height>18</height>
                       </size>
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>60</width>
+                       <width>80</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>Discogs Id</string>
@@ -1611,6 +1681,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>Label</string>
                      </property>
@@ -1618,6 +1695,13 @@ QPushButton::pressed
                    </item>
                    <item row="2" column="1">
                     <widget class="QLabel" name="lbl_src_album">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>-- album</string>
                      </property>
@@ -1630,6 +1714,13 @@ QPushButton::pressed
                        <width>0</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>-- website</string>
@@ -1650,18 +1741,25 @@ QPushButton::pressed
                     <widget class="QLabel" name="label_13">
                      <property name="minimumSize">
                       <size>
-                       <width>50</width>
-                       <height>15</height>
+                       <width>55</width>
+                       <height>18</height>
                       </size>
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>60</width>
+                       <width>80</width>
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
-                      <string>Catalog ID</string>
+                      <string>Catalog Id</string>
                      </property>
                     </widget>
                    </item>
@@ -1694,9 +1792,16 @@ QPushButton::pressed
                     <widget class="QLabel" name="lbl_tar_title">
                      <property name="minimumSize">
                       <size>
-                       <width>500</width>
+                       <width>450</width>
                        <height>0</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="styleSheet">
                       <string notr="true">*{color:rgb(96, 98, 135);}</string>
@@ -1727,6 +1832,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>Artist</string>
                      </property>
@@ -1734,6 +1846,13 @@ QPushButton::pressed
                    </item>
                    <item row="1" column="1">
                     <widget class="QLabel" name="lbl_tar_artist">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>-- artist</string>
                      </property>
@@ -1749,9 +1868,16 @@ QPushButton::pressed
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>60</width>
+                       <width>80</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>Track No</string>
@@ -1779,6 +1905,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>Title</string>
                      </property>
@@ -1789,14 +1922,21 @@ QPushButton::pressed
                      <property name="minimumSize">
                       <size>
                        <width>50</width>
-                       <height>20</height>
+                       <height>18</height>
                       </size>
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>60</width>
+                       <width>80</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>Discogs Id</string>
@@ -1830,6 +1970,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>Website</string>
                      </property>
@@ -1842,6 +1989,13 @@ QPushButton::pressed
                        <width>0</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>-- website</string>
@@ -1872,6 +2026,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>Album</string>
                      </property>
@@ -1879,6 +2040,13 @@ QPushButton::pressed
                    </item>
                    <item row="3" column="1">
                     <widget class="QLabel" name="lbl_tar_label">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>--label</string>
                      </property>
@@ -1886,6 +2054,13 @@ QPushButton::pressed
                    </item>
                    <item row="2" column="1">
                     <widget class="QLabel" name="lbl_tar_album">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>-- album</string>
                      </property>
@@ -1896,17 +2071,24 @@ QPushButton::pressed
                      <property name="minimumSize">
                       <size>
                        <width>50</width>
-                       <height>15</height>
+                       <height>18</height>
                       </size>
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>60</width>
+                       <width>80</width>
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
-                      <string>Catalog ID</string>
+                      <string>Catalog Id</string>
                      </property>
                     </widget>
                    </item>
@@ -1924,6 +2106,13 @@ QPushButton::pressed
                        <height>15</height>
                       </size>
                      </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
                      <property name="text">
                       <string>Label</string>
                      </property>
@@ -1939,9 +2128,16 @@ QPushButton::pressed
                      </property>
                      <property name="maximumSize">
                       <size>
-                       <width>60</width>
+                       <width>80</width>
                        <height>15</height>
                       </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>8</pointsize>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
                      </property>
                      <property name="text">
                       <string>Side</string>
