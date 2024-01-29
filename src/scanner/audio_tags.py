@@ -2,7 +2,7 @@ from pathlib import Path
 import logging
 import taglib
 from mutagen.wave import WAVE 
-from mutagen.id3 import ID3, PictureType
+from mutagen.id3 import ID3, PictureType, APIC
 from tinytag import TinyTag
 from PIL import Image
 import io
@@ -64,28 +64,9 @@ class AudioTags:
 
         return path.suffix in AUDIO_EXTENSIONS
     
-    def get_cover_art_front3(self, absolute_path_filename: str):
-        
-        path = Path(absolute_path_filename)
-        if not self.isSupported(path):
-            return None
-        
-        if path.suffix == ".wav":
-            filedata = WAVE(absolute_path_filename)
-            artwork = filedata.tags.getall('APIC')[0].data
-        else:
-            filedata = ID3(absolute_path_filename)
-            #return artwork from mp3
-            artwork = filedata.getall("APIC")[0].data
-            
-       # metadata = mutagen.File(filename)
-#        for tag in filedata.tags.values():
- #           if tag.FrameID == 'APIC':
-                    
-        return artwork
-             
 
-    def get_cover_art_front(self, absolute_path_filename: str):
+    def get_cover_art(self, absolute_path_filename: str) -> list[APIC]:
+        """ Returns a list of APIC tags for the artwork of the file. """
         
         path = Path(absolute_path_filename)
         if not self.isSupported(path):
@@ -115,66 +96,7 @@ class AudioTags:
             print("Image size: {:.2f} KB".format(image_size_kb))
             print(f"Picture desc:", tag.desc)
             
-            image.show()
+           # image.show()
 
         # No cover art found
-        return []  
-    
-    def get_cover_art_front4(self, absolute_path_filename: str):
-
-        filedata = WAVE(absolute_path_filename)
-        
-        
-       # metadata = mutagen.File(filename)
-        for tag in filedata.tags.values():
-            if tag.FrameID == 'APIC':
-                    image_data = io.BytesIO(tag.data)
-                    image = Image.open(image_data)
-                    image.show()
-             
-
-        # No cover art found
-        return []
-    
-    def get_cover_art_front2(self, absolute_path_filename: str):
-        try:
-            tag = TinyTag.get(absolute_path_filename, image=True)
-
-            if tag.get_image():
-                image_data = io.BytesIO(tag.get_image())
-                image = Image.open(image_data)
-                image.show()
-            else:
-                print("No cover art found")
-        except TinyTagException as e:
-            print("Unable to read audio file:", e)
-
-            # No cover art found
-            return None
-    
-    def get_cover_art_all(self, absolute_path_filename: str) -> list:
-        # Get the tags using tinytag
-        try:
-            tags = TinyTag.get(absolute_path_filename)
-        except TinyTagException:
-            self.logger.warning("File %s is not a supported audio file format", absolute_path_filename)
-            return []
-
-        # Check if the file has cover art
-        if hasattr(tags, 'picture') and tags.picture:
-            return [tags.picture]
-        else:
-            self.logger.warning("File %s does not have cover art", absolute_path_filename)
-            return []
-        
-    def get_cover_art_all_2(self, absolute_path_filename: str) -> list:
-        # Get the ID3 tags using mutagen
-        id3_tags = ID3(absolute_path_filename)
-
-        # Find the cover art
-        cover_arts = []
-        for frame in id3_tags.values():
-            if frame.FrameID == "APIC":  # APIC is the frame ID for attached picture
-                cover_arts.append(frame.data)
-
-        return cover_arts
+        return artwork;  

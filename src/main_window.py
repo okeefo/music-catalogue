@@ -5,13 +5,14 @@ import qt.resources_rcc
 import os
 
 from PyQt5 import uic, QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu,QVBoxLayout
+from PyQt5.QtWidgets import QLabel, QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu,QVBoxLayout
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl
 from scanner.repackage_dir import repackageByLabel
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPixmap
 from enum import Enum
 from scanner.audio_tags import AudioTags
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
+from mutagen.id3 import PictureType, APIC
 
 
 
@@ -27,9 +28,8 @@ CONFIG_WINDOW_WIDTH = "Width"
 CONFIG_LAST_TARGET_DIRECTORY = "last_target_directory"
 CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
 
-
-# create a enum that can be used to denote changes are being made either in the source or target views
-# create two methods isSource and isTarget if the changeType is SOURCE or TARGET respectively
+ # Create a dictionary that maps picture type numbers to descriptions
+PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith('_')}      
 
 
 class ChangeType(Enum):
@@ -46,6 +46,14 @@ class ChangeType(Enum):
 # Set logging instance
 logger = logging.getLogger(__name__)
 
+class ImageLabel(QLabel):
+    def __init__(self, pixmap):
+        super().__init__()
+        self.pixmap = pixmap
+
+    def resizeEvent(self, event):
+        scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio)
+        self.setPixmap(scaled_pixmap)
 
 class MainWindow(QMainWindow):
     """Main window class for the application."""
@@ -623,7 +631,7 @@ class MainWindow(QMainWindow):
                 label.setText(value)
        
        # Get artwork from the audio tags
-        cover_art = self.audio_tags.get_cover_art_front(file_path)
+        cover_art = self.audio_tags.get_cover_art(file_path)
         
         if not source:
             # Clear the QStackedWidget
@@ -634,30 +642,18 @@ class MainWindow(QMainWindow):
 
             # Add the cover art images to the QStackedWidget
             for image in cover_art:
-                label = QLabel()
                 pixmap = QPixmap()
-                pixmap.loadFromData(image)
-                label.setPixmap(pixmap)
+                pixmap.loadFromData(image.data)
+                label = ImageLabel(pixmap)
                 self.stackedWidget_target.addWidget(label)
             
-            # got to page 1 of the stacked eidge and sow the label
+            # got to page 1 of the stacked widget and sow the label
             self.stackedWidget_target.setCurrentIndex(0)
-    """
-                # Create buttons for navigating through the images
-                next_button = QPushButton("Next")
-                prev_button = QPushButton("Previous")
+            self.tar_image_next.clicked.connect(lambda: self.stackedWidget_target.setCurrentIndex((self.stackedWidget_target.currentIndex() + 1) % self.stackedWidget_target.count()))
+            self.tar_image_prev.clicked.connect(lambda: self.stackedWidget_target.setCurrentIndex((self.stackedWidget_target.currentIndex() - 1) % self.stackedWidget_target.count()))
 
-                next_button.clicked.connect(lambda: self.stackedWidget_target.setCurrentIndex((self.stackedWidget_target.currentIndex() + 1) % self.stackedWidget_target.count()))
-                prev_button.clicked.connect(lambda: self.stackedWidget_target.setCurrentIndex((self.stackedWidget_target.currentIndex() - 1) % self.stackedWidget_target.count()))
-
-                # Add the buttons to the layout
-                layout = QVBoxLayout()
-                layout.addWidget(self.stackedWidget_target)
-                layout.addWidget(next_button)
-                layout.addWidget(prev_button)
-                self.setLayout(layout)
-    """
-        
+#     def __do_display_id3_details(self, qtr):_> None:
+            
 
     def get_label_list(self, source=True) -> list:
         """Returns: list of source or target ID3 labels"""
