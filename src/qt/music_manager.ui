@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>2029</width>
-    <height>1057</height>
+    <width>2472</width>
+    <height>1136</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -1389,13 +1389,19 @@ QPushButton::pressed
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
-                  <height>200</height>
+                  <height>300</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
-                  <height>200</height>
+                  <height>300</height>
+                 </size>
+                </property>
+                <property name="sizeIncrement">
+                 <size>
+                  <width>0</width>
+                  <height>0</height>
                  </size>
                 </property>
                 <property name="autoFillBackground">
@@ -1405,9 +1411,45 @@ QPushButton::pressed
                  <string>Source ID3</string>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_10">
+                 <property name="leftMargin">
+                  <number>11</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
                  <item>
                   <layout class="QGridLayout" name="gridLayout_2">
-                   <item row="0" column="0">
+                   <item row="0" column="4">
+                    <widget class="QLabel" name="lbl_src_title">
+                     <property name="minimumSize">
+                      <size>
+                       <width>450</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true"/>
+                     </property>
+                     <property name="text">
+                      <string>-- title</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="3">
                     <widget class="QLabel" name="label_3">
                      <property name="minimumSize">
                       <size>
@@ -1434,46 +1476,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="1">
-                    <widget class="QLabel" name="lbl_src_title">
-                     <property name="minimumSize">
-                      <size>
-                       <width>450</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true"/>
-                     </property>
-                     <property name="text">
-                      <string>-- title</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="3">
-                    <widget class="QLabel" name="lbl_src_side">
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>-- aside</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
+                   <item row="1" column="3">
                     <widget class="QLabel" name="label_19">
                      <property name="minimumSize">
                       <size>
@@ -1503,7 +1506,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="1">
+                   <item row="1" column="4">
                     <widget class="QLabel" name="lbl_src_artist">
                      <property name="font">
                       <font>
@@ -1518,7 +1521,22 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="2">
+                   <item row="0" column="6">
+                    <widget class="QLabel" name="lbl_src_side">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>-- aside</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="5">
                     <widget class="QLabel" name="label_18">
                      <property name="minimumSize">
                       <size>
@@ -1545,11 +1563,11 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="2">
+                   <item row="1" column="5">
                     <widget class="QLabel" name="label_20">
                      <property name="minimumSize">
                       <size>
-                       <width>55</width>
+                       <width>70</width>
                        <height>15</height>
                       </size>
                      </property>
@@ -1572,7 +1590,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="4" column="0">
+                   <item row="4" column="3">
                     <widget class="QLabel" name="label_17">
                      <property name="minimumSize">
                       <size>
@@ -1599,7 +1617,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="3">
+                   <item row="3" column="6">
                     <widget class="QLabel" name="lbl_src_discogs_id">
                      <property name="minimumSize">
                       <size>
@@ -1620,7 +1638,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="3">
+                   <item row="1" column="6">
                     <widget class="QLabel" name="lbl_src_track">
                      <property name="font">
                       <font>
@@ -1635,7 +1653,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="1">
+                   <item row="3" column="4">
                     <widget class="QLabel" name="lbl_src_label">
                      <property name="font">
                       <font>
@@ -1646,11 +1664,11 @@ QPushButton::pressed
                       </font>
                      </property>
                      <property name="text">
-                      <string>--label</string>
+                      <string>-- label</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="0">
+                   <item row="2" column="3">
                     <widget class="QLabel" name="label_7">
                      <property name="minimumSize">
                       <size>
@@ -1677,7 +1695,22 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="2">
+                   <item row="2" column="4">
+                    <widget class="QLabel" name="lbl_src_album">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>-- album</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="5">
                     <widget class="QLabel" name="label_15">
                      <property name="minimumSize">
                       <size>
@@ -1704,7 +1737,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="0">
+                   <item row="3" column="3">
                     <widget class="QLabel" name="label_14">
                      <property name="minimumSize">
                       <size>
@@ -1731,22 +1764,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="1">
-                    <widget class="QLabel" name="lbl_src_album">
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>-- album</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="1" colspan="3">
+                   <item row="4" column="4" colspan="3">
                     <widget class="QLabel" name="lbl_src_website">
                      <property name="minimumSize">
                       <size>
@@ -1770,7 +1788,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="3">
+                   <item row="2" column="6">
                     <widget class="QLabel" name="lbl_src_catalog">
                      <property name="font">
                       <font>
@@ -1785,7 +1803,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="2">
+                   <item row="2" column="5">
                     <widget class="QLabel" name="label_13">
                      <property name="minimumSize">
                       <size>
@@ -1812,6 +1830,251 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
+                   <item row="0" column="2" rowspan="5">
+                    <widget class="Line" name="line">
+                     <property name="minimumSize">
+                      <size>
+                       <width>20</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
+                     </property>
+                     <property name="orientation">
+                      <enum>Qt::Vertical</enum>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0" rowspan="5">
+                    <widget class="QFrame" name="source_image_frame">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>350</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Raised</enum>
+                     </property>
+                     <layout class="QHBoxLayout" name="horizontalLayout_14">
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>11</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <layout class="QGridLayout" name="gridLayout_5">
+                        <item row="1" column="1">
+                         <widget class="QLabel" name="label_source_mime">
+                          <property name="minimumSize">
+                           <size>
+                            <width>60</width>
+                            <height>0</height>
+                           </size>
+                          </property>
+                          <property name="text">
+                           <string>image/jpg</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="5" column="0">
+                         <layout class="QHBoxLayout" name="horizontalLayout_12">
+                          <item>
+                           <widget class="QLabel" name="label_21">
+                            <property name="text">
+                             <string>TextLabel</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <widget class="QPushButton" name="src_image_next_2">
+                            <property name="maximumSize">
+                             <size>
+                              <width>20</width>
+                              <height>20</height>
+                             </size>
+                            </property>
+                            <property name="styleSheet">
+                             <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                            </property>
+                            <property name="text">
+                             <string/>
+                            </property>
+                            <property name="icon">
+                             <iconset resource="resources.qrc">
+                              <normaloff>:/icons/icons/arrow-left.svg</normaloff>:/icons/icons/arrow-left.svg</iconset>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <widget class="QPushButton" name="src_image_next">
+                            <property name="maximumSize">
+                             <size>
+                              <width>20</width>
+                              <height>20</height>
+                             </size>
+                            </property>
+                            <property name="styleSheet">
+                             <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                            </property>
+                            <property name="text">
+                             <string/>
+                            </property>
+                            <property name="icon">
+                             <iconset resource="resources.qrc">
+                              <normaloff>:/icons/icons/arrow-right.svg</normaloff>:/icons/icons/arrow-right.svg</iconset>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </item>
+                        <item row="3" column="1">
+                         <widget class="QLabel" name="label_source_size">
+                          <property name="text">
+                           <string>1345,678KB</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="1">
+                         <widget class="QLabel" name="label_source_resolution">
+                          <property name="text">
+                           <string>800x600</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="1">
+                         <widget class="QLabel" name="label_source_desc">
+                          <property name="text">
+                           <string>rekordbox</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="0" column="1">
+                         <widget class="QLabel" name="label_source_art_type">
+                          <property name="text">
+                           <string>Front Cover</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="0" column="0" rowspan="4">
+                         <widget class="QStackedWidget" name="stackedWidget">
+                          <property name="currentIndex">
+                           <number>1</number>
+                          </property>
+                          <widget class="QWidget" name="page_11"/>
+                          <widget class="QWidget" name="page_12"/>
+                         </widget>
+                        </item>
+                       </layout>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
                   </layout>
                  </item>
                 </layout>
@@ -1822,13 +2085,13 @@ QPushButton::pressed
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
-                  <height>100</height>
+                  <height>300</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
-                  <height>200</height>
+                  <height>300</height>
                  </size>
                 </property>
                 <property name="autoFillBackground">
@@ -1841,19 +2104,22 @@ QPushButton::pressed
                  <string>Target Audio ID3</string>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_9">
+                 <property name="leftMargin">
+                  <number>11</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
                  <item>
                   <layout class="QGridLayout" name="gridLayout">
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_2">
+                   <item row="4" column="5" colspan="3">
+                    <widget class="QLabel" name="lbl_tar_website">
                      <property name="minimumSize">
                       <size>
-                       <width>50</width>
-                       <height>15</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>50</width>
+                       <width>0</width>
                        <height>15</height>
                       </size>
                      </property>
@@ -1866,48 +2132,15 @@ QPushButton::pressed
                       </font>
                      </property>
                      <property name="text">
-                      <string>Title</string>
+                      <string>-- website</string>
+                     </property>
+                     <property name="openExternalLinks">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="1">
-                    <widget class="QLabel" name="lbl_tar_title">
-                     <property name="minimumSize">
-                      <size>
-                       <width>450</width>
-                       <height>0</height>
-                      </size>
-                     </property>
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="styleSheet">
-                      <string notr="true"/>
-                     </property>
-                     <property name="text">
-                      <string>-- title</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="2">
-                    <widget class="QLabel" name="label_12">
-                     <property name="minimumSize">
-                      <size>
-                       <width>50</width>
-                       <height>15</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>80</width>
-                       <height>15</height>
-                      </size>
-                     </property>
+                   <item row="1" column="7">
+                    <widget class="QLabel" name="lbl_tar_track">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -1917,68 +2150,11 @@ QPushButton::pressed
                       </font>
                      </property>
                      <property name="text">
-                      <string>Side</string>
+                      <string>-- trak</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="3">
-                    <widget class="QLabel" name="lbl_tar_side">
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>-- aside</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_5">
-                     <property name="minimumSize">
-                      <size>
-                       <width>50</width>
-                       <height>15</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>50</width>
-                       <height>15</height>
-                      </size>
-                     </property>
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>Artist</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QLabel" name="lbl_tar_artist">
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>-- artist</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="2">
+                   <item row="1" column="6">
                     <widget class="QLabel" name="label_10">
                      <property name="minimumSize">
                       <size>
@@ -2005,64 +2181,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="1" column="3">
-                    <widget class="QLabel" name="lbl_tar_track">
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>-- trak</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="0">
-                    <widget class="QLabel" name="label_6">
-                     <property name="minimumSize">
-                      <size>
-                       <width>50</width>
-                       <height>15</height>
-                      </size>
-                     </property>
-                     <property name="maximumSize">
-                      <size>
-                       <width>50</width>
-                       <height>15</height>
-                      </size>
-                     </property>
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>Album</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="1">
-                    <widget class="QLabel" name="lbl_tar_album">
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>-- album</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="2">
+                   <item row="2" column="6">
                     <widget class="QLabel" name="label_11">
                      <property name="minimumSize">
                       <size>
@@ -2089,8 +2208,8 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="3">
-                    <widget class="QLabel" name="lbl_tar_catalog">
+                   <item row="0" column="7">
+                    <widget class="QLabel" name="lbl_tar_side">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2100,11 +2219,364 @@ QPushButton::pressed
                       </font>
                      </property>
                      <property name="text">
-                      <string>-- catalog</string>
+                      <string>-- aside</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="0">
+                   <item row="0" column="6">
+                    <widget class="QLabel" name="label_12">
+                     <property name="minimumSize">
+                      <size>
+                       <width>50</width>
+                       <height>15</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>80</width>
+                       <height>15</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>Side</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0" rowspan="5">
+                    <widget class="QFrame" name="target_image_frame">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>350</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="frameShape">
+                      <enum>QFrame::NoFrame</enum>
+                     </property>
+                     <property name="frameShadow">
+                      <enum>QFrame::Plain</enum>
+                     </property>
+                     <layout class="QHBoxLayout" name="horizontalLayout_13">
+                      <property name="spacing">
+                       <number>0</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>11</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <layout class="QGridLayout" name="image_frame_grid">
+                        <property name="spacing">
+                         <number>7</number>
+                        </property>
+                        <item row="1" column="1">
+                         <widget class="QLabel" name="label_target_mime">
+                          <property name="minimumSize">
+                           <size>
+                            <width>60</width>
+                            <height>0</height>
+                           </size>
+                          </property>
+                          <property name="text">
+                           <string>image/jpg</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="0">
+                         <layout class="QHBoxLayout" name="horizontalLayout_11">
+                          <item>
+                           <widget class="QLabel" name="label_target_page_num">
+                            <property name="text">
+                             <string>TextLabel</string>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <widget class="QPushButton" name="tar_image_prev">
+                            <property name="maximumSize">
+                             <size>
+                              <width>20</width>
+                              <height>20</height>
+                             </size>
+                            </property>
+                            <property name="styleSheet">
+                             <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                            </property>
+                            <property name="text">
+                             <string/>
+                            </property>
+                            <property name="icon">
+                             <iconset resource="resources.qrc">
+                              <normaloff>:/icons/icons/arrow-left.svg</normaloff>:/icons/icons/arrow-left.svg</iconset>
+                            </property>
+                           </widget>
+                          </item>
+                          <item>
+                           <widget class="QPushButton" name="tar_image_next">
+                            <property name="maximumSize">
+                             <size>
+                              <width>20</width>
+                              <height>20</height>
+                             </size>
+                            </property>
+                            <property name="styleSheet">
+                             <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                            </property>
+                            <property name="text">
+                             <string/>
+                            </property>
+                            <property name="icon">
+                             <iconset resource="resources.qrc">
+                              <normaloff>:/icons/icons/arrow-right.svg</normaloff>:/icons/icons/arrow-right.svg</iconset>
+                            </property>
+                           </widget>
+                          </item>
+                         </layout>
+                        </item>
+                        <item row="0" column="0" rowspan="4">
+                         <widget class="QStackedWidget" name="stackedWidget_target">
+                          <property name="currentIndex">
+                           <number>-1</number>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="2" column="1">
+                         <widget class="QLabel" name="label_target_size">
+                          <property name="text">
+                           <string>1345,678KB</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="4" column="1">
+                         <widget class="QLabel" name="label_target_desc">
+                          <property name="text">
+                           <string>rekordbox</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="0" column="1">
+                         <widget class="QLabel" name="label_target_art_type">
+                          <property name="text">
+                           <string>Front Cover</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item row="3" column="1">
+                         <widget class="QLabel" name="label_target_resolution">
+                          <property name="text">
+                           <string>800x600</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                   <item row="0" column="4">
+                    <widget class="QLabel" name="label_2">
+                     <property name="minimumSize">
+                      <size>
+                       <width>50</width>
+                       <height>15</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>50</width>
+                       <height>15</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>Title</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="5">
+                    <widget class="QLabel" name="lbl_tar_title">
+                     <property name="minimumSize">
+                      <size>
+                       <width>450</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="styleSheet">
+                      <string notr="true"/>
+                     </property>
+                     <property name="text">
+                      <string>-- title</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="4">
+                    <widget class="QLabel" name="label_5">
+                     <property name="minimumSize">
+                      <size>
+                       <width>50</width>
+                       <height>15</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>50</width>
+                       <height>15</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>Artist</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="5">
+                    <widget class="QLabel" name="lbl_tar_artist">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>-- artist</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="4">
                     <widget class="QLabel" name="label_8">
                      <property name="minimumSize">
                       <size>
@@ -2131,22 +2603,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="1">
-                    <widget class="QLabel" name="lbl_tar_label">
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>--label</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="3" column="2">
+                   <item row="3" column="6">
                     <widget class="QLabel" name="label_9">
                      <property name="minimumSize">
                       <size>
@@ -2173,7 +2630,7 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="3">
+                   <item row="3" column="7">
                     <widget class="QLabel" name="lbl_tar_discogs_id">
                      <property name="minimumSize">
                       <size>
@@ -2194,7 +2651,79 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="4" column="0">
+                   <item row="3" column="5">
+                    <widget class="QLabel" name="lbl_tar_label">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>-- label</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="4">
+                    <widget class="QLabel" name="label_6">
+                     <property name="minimumSize">
+                      <size>
+                       <width>50</width>
+                       <height>15</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>50</width>
+                       <height>15</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>Album</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="5">
+                    <widget class="QLabel" name="lbl_tar_album">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>-- album</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="7">
+                    <widget class="QLabel" name="lbl_tar_catalog">
+                     <property name="font">
+                      <font>
+                       <pointsize>9</pointsize>
+                       <weight>50</weight>
+                       <italic>false</italic>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>-- catalog</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="4">
                     <widget class="QLabel" name="label_16">
                      <property name="minimumSize">
                       <size>
@@ -2221,54 +2750,16 @@ QPushButton::pressed
                      </property>
                     </widget>
                    </item>
-                   <item row="4" column="1" colspan="3">
-                    <widget class="QLabel" name="lbl_tar_website">
+                   <item row="0" column="3" rowspan="5">
+                    <widget class="Line" name="line_2">
                      <property name="minimumSize">
                       <size>
-                       <width>0</width>
-                       <height>15</height>
+                       <width>20</width>
+                       <height>0</height>
                       </size>
                      </property>
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>50</weight>
-                       <italic>false</italic>
-                       <bold>false</bold>
-                      </font>
-                     </property>
-                     <property name="text">
-                      <string>-- website</string>
-                     </property>
-                     <property name="openExternalLinks">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="4" rowspan="4">
-                    <widget class="QStackedWidget" name="stackedWidget_target">
-                     <property name="currentIndex">
-                      <number>-1</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="4">
-                    <widget class="QLabel" name="label_coverType">
-                     <property name="font">
-                      <font>
-                       <pointsize>9</pointsize>
-                       <weight>75</weight>
-                       <bold>true</bold>
-                      </font>
-                     </property>
-                     <property name="frameShadow">
-                      <enum>QFrame::Sunken</enum>
-                     </property>
-                     <property name="text">
-                      <string>No Art Work</string>
-                     </property>
-                     <property name="alignment">
-                      <set>Qt::AlignCenter</set>
+                     <property name="orientation">
+                      <enum>Qt::Vertical</enum>
                      </property>
                     </widget>
                    </item>
@@ -2294,7 +2785,7 @@ QPushButton::pressed
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>2029</width>
+     <width>2472</width>
      <height>26</height>
     </rect>
    </property>
