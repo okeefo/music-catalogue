@@ -4,8 +4,8 @@ import logging
 import qt.resources_rcc
 import os
 
-from PyQt5 import uic, QtGui, QtWidgets
-from PyQt5.QtWidgets import QLabel, QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu,QVBoxLayout
+from PyQt5 import uic, QtGui
+from PyQt5.QtWidgets import QStackedWidget,QDialog, QLabel, QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu, QVBoxLayout
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl
 from scanner.repackage_dir import repackageByLabel
 from PyQt5.QtGui import QFont, QPixmap
@@ -13,7 +13,9 @@ from enum import Enum
 from scanner.audio_tags import AudioTags
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from mutagen.id3 import PictureType, APIC
-
+from mutagen.id3 import error as ID3Error
+from scanner.audio_tags import PictureTypeDescription
+from typing import Dict
 
 
 # Create an instance of QApplication
@@ -28,8 +30,8 @@ CONFIG_WINDOW_WIDTH = "Width"
 CONFIG_LAST_TARGET_DIRECTORY = "last_target_directory"
 CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
 
- # Create a dictionary that maps picture type numbers to descriptions
-PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith('_')}      
+# Create a dictionary that maps picture type numbers to descriptions
+PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
 
 class ChangeType(Enum):
@@ -46,14 +48,34 @@ class ChangeType(Enum):
 # Set logging instance
 logger = logging.getLogger(__name__)
 
+
 class ImageLabel(QLabel):
-    def __init__(self, pixmap):
+    def __init__(self, pixmap: QPixmap, image: APIC):
         super().__init__()
         self.pixmap = pixmap
+        self.image = image
 
     def resizeEvent(self, event):
         scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio)
         self.setPixmap(scaled_pixmap)
+
+    def mouseDoubleClickEvent(self, event):
+        # Create a QDialog to show the image
+        dialog = QDialog()
+        dialog.setWindowTitle("Cover Art")
+        dialog.setLayout(QVBoxLayout())
+
+        # Create a QLabel, set its pixmap to the pixmap of the ImageLabel, and add it to the QDialog
+        label = QLabel(dialog)
+        label.setPixmap(self.pixmap)
+        label.setScaledContents(True)
+        dialog.setWindowTitle(PictureTypeDescription.get_description(self.image.type))
+        dialog.setWindowIcon(QtGui.QIcon(":/icons/icons/headphones.svg"))
+        dialog.layout().addWidget(label)
+
+        # Show the QDialog
+        dialog.exec_()
+
 
 class MainWindow(QMainWindow):
     """Main window class for the application."""
@@ -127,6 +149,7 @@ class MainWindow(QMainWindow):
         self.__setup_refresh_button()
         self.__setup_id3_label_caches()
         self.__setup_id3_tags()
+        self.__setup_image_label_caches()
         self.__clear_label_text(self.id3_labels_source)
         self.__clear_label_text(self.id3_labels_target)
         self.__setup_action_buttons()
@@ -229,11 +252,11 @@ class MainWindow(QMainWindow):
             self.lbl_tar_discogs_id,
             self.lbl_tar_website,
         ]
-        
+
         # Create a QFont object for the bold and italic font
         font = QFont()
         font.setBold(True)
-       # font.setItalic(True)
+        # font.setItalic(True)
         font.setPointSize(10)
 
         # Loop over the source labels
@@ -263,6 +286,24 @@ class MainWindow(QMainWindow):
             "DISCOGS_RELEASE_ID",
             "URL",
         ]
+
+    def __setup_image_label_caches(self) -> None:
+        self.image_labels_source = {
+            "art": self.label_source_art_type,
+            "res": self.label_source_resolution,
+            "size": self.label_source_size,
+            "mime": self.label_source_mime,
+            "desc": self.label_source_desc,
+            "page": self.label_source_page_num,
+        }
+        self.image_labels_target = {
+            "art": self.label_target_art_type,
+            "res": self.label_target_resolution,
+            "size": self.label_target_size,
+            "mime": self.label_target_mime,
+            "desc": self.label_target_desc,
+            "page": self.label_target_page_num,
+        }
 
     def __setup_tree_widgets(self) -> None:
         """
@@ -604,23 +645,76 @@ class MainWindow(QMainWindow):
         file in a tree widget.
         Returns: None
         """
-        if item is None:
+
+        absolute_filename = tree_view.model().filePath(item)
+
+        if not self.audio_tags.isSupported(absolute_filename):
+            return
+
+        self._display_id3_tags(absolute_filename, tree_view)
+        self._display_cover_artwork(absolute_filename, tree_view)
+
+    def _display_cover_artwork(self, absolute_file_path: str, tree_view: QTreeView) -> None:
+        # Get artwork from the audio tags
+        cover_art = self.audio_tags.get_cover_art(absolute_file_path)
+
+        stacked_widget = self.stacked_widget_target if tree_view == self.tree_target else self.stacked_widget_source
+        
+        # Clear the QStackedWidget
+        while stacked_widget.count() > 0:
+            widget =stacked_widget.widget(0)
+            stacked_widget.removeWidget(widget)
+            widget.deleteLater()
+
+
+            # Add the cover art images to the QStackedWidget
+        for image in cover_art:
+            pixmap = QPixmap()
+            pixmap.loadFromData(image.data)
+            label = ImageLabel(pixmap, image)
+            stacked_widget.addWidget(label)
+
+        # Store the sizes of the images in bytes in a list
+        self.image_sizes = [len(image.data) for image in cover_art]
+       
+        label_map = self.get_image_label_map(tree_view)
+        page_number_label = label_map.get("page")
+        
+        page_number_label.setText(f"{stacked_widget.currentIndex() + 1} / {stacked_widget.count()}")
+        stacked_widget.setCurrentIndex(0)
+        self.tar_image_next.clicked.connect(lambda: stacked_widget.setCurrentIndex((stacked_widget.currentIndex() + 1) % stacked_widget.count()))
+        self.tar_image_prev.clicked.connect(lambda: stacked_widget.setCurrentIndex((stacked_widget.currentIndex() - 1) % stacked_widget.count()))
+
+        stacked_widget.currentChanged.connect(lambda: page_number_label.setText(f"{stacked_widget.currentIndex() + 1} / {stacked_widget.count()}"))
+        stacked_widget.currentChanged.connect(lambda: self.update_image_labels(stacked_widget, label_map))
+
+    def update_image_labels(self, stacked_widget: QStackedWidget, label_map: Dict[str, int]) -> None:
+        # Get the current pixmap
+        widget = stacked_widget.currentWidget()
+
+        if widget is None:
             return
         
-        # check if item is a directory if so then return
-        if tree_view.model().isDir(item):
-            return
+        pixmap = widget.pixmap
 
-        source = tree_view == self.tree_source
+        # Update the resolution label
+        resolution = f"{pixmap.width()}x{pixmap.height()}"
+        label_map.get("res").setText(resolution)
 
-        labels = self.get_label_list(source)
+        # Update the size label
+        current_index = stacked_widget.currentIndex()
+        size = self.image_sizes[current_index] / 1024  # size in KB
+        label_map.get("size").setText(f"{size:.2f} KB")
+        
+        label_map.get("art").setText(PictureTypeDescription.get_description(widget.image.type))
+        label_map.get("mime").setText(widget.image.mime)
+        label_map.get("desc").setText(widget.image.desc)
 
-        # Get the absolute file path from the QModelIndex
-        model = tree_view.model()
-        file_path = model.filePath(item)
+    def _display_id3_tags(self, absolute_file_path: str, tree_view: QTreeView) -> None:
+        labels = self.get_id3_label_list(tree_view)
 
         # Get the ID3 tags for the selected file from AudioTags
-        audio_tags = self.audio_tags.get_tags(file_path)
+        audio_tags = self.audio_tags.get_tags(absolute_file_path)
 
         for label, tag in zip(labels, self.id3_tags):
             value = audio_tags[tag][0] if tag in audio_tags else ""
@@ -629,36 +723,19 @@ class MainWindow(QMainWindow):
                 label.setText(f'<a href="{value}">{value}</a>')
             else:
                 label.setText(value)
-       
-       # Get artwork from the audio tags
-        cover_art = self.audio_tags.get_cover_art(file_path)
-        
-        if not source:
-            # Clear the QStackedWidget
-            while self.stackedWidget_target.count() > 0:
-                widget = self.stackedWidget_target.widget(0)
-                self.stackedWidget_target.removeWidget(widget)
-                widget.deleteLater()
 
-            # Add the cover art images to the QStackedWidget
-            for image in cover_art:
-                pixmap = QPixmap()
-                pixmap.loadFromData(image.data)
-                label = ImageLabel(pixmap)
-                self.stackedWidget_target.addWidget(label)
-            
-            # got to page 1 of the stacked widget and sow the label
-            self.stackedWidget_target.setCurrentIndex(0)
-            self.tar_image_next.clicked.connect(lambda: self.stackedWidget_target.setCurrentIndex((self.stackedWidget_target.currentIndex() + 1) % self.stackedWidget_target.count()))
-            self.tar_image_prev.clicked.connect(lambda: self.stackedWidget_target.setCurrentIndex((self.stackedWidget_target.currentIndex() - 1) % self.stackedWidget_target.count()))
-
-#     def __do_display_id3_details(self, qtr):_> None:
-            
-
-    def get_label_list(self, source=True) -> list:
+    def get_id3_label_list(self, tree_view: QTreeView) -> list:
         """Returns: list of source or target ID3 labels"""
-        return self.id3_labels_source if source else self.id3_labels_target
+        return self.id3_labels_source if tree_view == self.tree_source else self.id3_labels_target
 
+    def get_image_label_list(self, tree_view: QTreeView) -> list:
+        """Returns: list of source or target ID3 labels"""
+        return self.image_labels_source if tree_view == self.tree_source else self.image_labels_target
+
+    def get_image_label_map(self, tree_view: QTreeView) -> dict:
+        """Returns: dictionary of source or target image labels"""
+        return self.image_labels_source if tree_view == self.tree_source else self.image_labels_target
+    
     def resizeColumns(self) -> None:
         """Resize the columns of the tree widget. Returns: None"""
         if self.sender() == self.tree_source:
