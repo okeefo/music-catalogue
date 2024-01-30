@@ -1502,7 +1502,7 @@ QPushButton::pressed
                            </widget>
                           </item>
                           <item>
-                           <widget class="QPushButton" name="src_image_next_2">
+                           <widget class="QPushButton" name="src_image_prev">
                             <property name="maximumSize">
                              <size>
                               <width>20</width>

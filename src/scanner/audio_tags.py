@@ -46,10 +46,7 @@ class AudioTags:
         if not path.is_file():
             return False
 
-        if path.is_dir():
-            return False
-
-        return path.suffix in AUDIO_EXTENSIONS
+        return False if path.is_dir() else path.suffix in AUDIO_EXTENSIONS
 
     def get_cover_art(self, absolute_path_filename: str) -> list[APIC]:
         """Returns a list of APIC tags for the artwork of the file."""
@@ -81,7 +78,7 @@ class AudioTags:
             print(f"picture size: {image.size[0]}x{image.size[1]}")
             image_size_kb = len(tag.data) / 1024
             print("Image size: {:.2f} KB".format(image_size_kb))
-            print(f"Picture desc:", tag.desc)
+            print("Picture desc:", tag.desc)
 
         # image.show()
 
