@@ -5,7 +5,24 @@ import qt.resources_rcc
 import os
 
 from PyQt5 import uic, QtGui
-from PyQt5.QtWidgets import QStackedWidget,QDialog, QLabel, QApplication, QMainWindow, QAction, QStyle, QTreeView, QFileDialog, QPushButton, QMessageBox, QCompleter, QFileSystemModel, QLineEdit, QMenu, QVBoxLayout
+from PyQt5.QtWidgets import (
+    QStackedWidget,
+    QDialog,
+    QLabel,
+    QApplication,
+    QMainWindow,
+    QAction,
+    QStyle,
+    QTreeView,
+    QFileDialog,
+    QPushButton,
+    QMessageBox,
+    QCompleter,
+    QFileSystemModel,
+    QLineEdit,
+    QMenu,
+    QVBoxLayout,
+)
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl
 from scanner.repackage_dir import repackageByLabel
 from PyQt5.QtGui import QFont, QPixmap
@@ -16,6 +33,8 @@ from mutagen.id3 import PictureType, APIC
 from mutagen.id3 import error as ID3Error
 from scanner.audio_tags import PictureTypeDescription
 from typing import Dict
+from typing import Union
+from PIL import Image
 
 
 # Create an instance of QApplication
@@ -29,7 +48,7 @@ CONFIG_WINDOW_HIGHT = "hight"
 CONFIG_WINDOW_WIDTH = "Width"
 CONFIG_LAST_TARGET_DIRECTORY = "last_target_directory"
 CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
-
+INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to install the K-Lite Codec Pack. You can download it from the official website:<br><a href="https://www.codecguide.com/download_kl.htm">https://www.codecguide.com/download_kl.htm</a>'
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
@@ -105,10 +124,33 @@ class MainWindow(QMainWindow):
             self,
         )
 
-        # QResource.registerResource("c:\\dev\\projects\\python\\music-catalog\\src\\qt\\resources.qrc")
+        # Sets up the user interface of the main window.
+        self.update_status("Welcome - select a directory to scan either from the menu or the scan button")
+        self.__setup_icons()
+        self.__setup_window_size()
+        self.__setup_exit()
+        self.__setup_scan_source()
+        self.__setup_scan_target()
+        self.__setup_copy_source_button()
+        self.__setup_tree_widgets()
+        self.__setup_refresh_button()
+        self.__setup_id3_label_caches()
+        self.__setup_id3_tags()
+        self.__setup_image_label_caches()
+        self.__clear_label_text(self.id3_labels_source)
+        self.__clear_label_text(self.id3_labels_target)
+        self.__setup_action_buttons()
+        self.__setup_menu_buttons()
+        self.__setup_path_labels()
+        self.__setup_dir_up_buttons()
+        self.__setup_media_player()
 
-        # Call the setup_ui method to set up the UI
-        self.__setup_ui()
+    def __setup_media_player(self) -> None:
+        """
+        Sets up the media player.
+        Returns: None
+        """
+        self.player.mediaStatusChanged.connect(self.handle_media_status_changed)
 
     def __setup_config(self) -> None:
         """
@@ -131,31 +173,6 @@ class MainWindow(QMainWindow):
             )
         if CONFIG_SECTION_WINDOW not in self.config:
             self.config.add_section(CONFIG_SECTION_WINDOW)
-
-    def __setup_ui(self) -> None:
-        """
-        Sets up the user interface of the main window.
-        Returns: None
-        """
-        self.update_status("Welcome - select a directory to scan either from the menu or the scan button")
-        # set window size from config
-        self.__setup_icons()
-        self.__setup_window_size()
-        self.__setup_exit()
-        self.__setup_scan_source()
-        self.__setup_scan_target()
-        self.__setup_copy_source_button()
-        self.__setup_tree_widgets()
-        self.__setup_refresh_button()
-        self.__setup_id3_label_caches()
-        self.__setup_id3_tags()
-        self.__setup_image_label_caches()
-        self.__clear_label_text(self.id3_labels_source)
-        self.__clear_label_text(self.id3_labels_target)
-        self.__setup_action_buttons()
-        self.__setup_menu_buttons()
-        self.__setup_path_labels()
-        self.__setup_dir_up_buttons()
 
     def __setup_path_labels(self) -> None:
         # Create a file system model
@@ -288,21 +305,25 @@ class MainWindow(QMainWindow):
         ]
 
     def __setup_image_label_caches(self) -> None:
-        self.image_labels_source = {
+        self.source_artwork_labels = {
             "art": self.label_source_art_type,
             "res": self.label_source_resolution,
             "size": self.label_source_size,
             "mime": self.label_source_mime,
             "desc": self.label_source_desc,
             "page": self.label_source_page_num,
+            "next": self.src_image_next,
+            "prev": self.src_image_prev,
         }
-        self.image_labels_target = {
+        self.target_artwork_labels = {
             "art": self.label_target_art_type,
             "res": self.label_target_resolution,
             "size": self.label_target_size,
             "mime": self.label_target_mime,
             "desc": self.label_target_desc,
             "page": self.label_target_page_num,
+            "next": self.tar_image_next,
+            "prev": self.tar_image_prev,
         }
 
     def __setup_tree_widgets(self) -> None:
@@ -405,12 +426,20 @@ class MainWindow(QMainWindow):
         action = menu.exec_(tree_view.mapToGlobal(position))
 
         if action == play_action:
-            self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
+            # if the media player is already loaded with the same file and is playing, do nothing
+            if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
+                if self.player.mediaStatus() == QMediaPlayer.PlayingState:
+                    return
+            else:
+                self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
+
             self.update_status("Playing: " + file_path)
             self.player.play()
+
         elif action == stop_action:
             self.player.stop()
             self.update_status("Stopped: " + file_path)
+
         elif action == pause_action:
             self.player.pause()
             self.update_status("Paused: " + file_path)
@@ -460,19 +489,27 @@ class MainWindow(QMainWindow):
         model = tree_view.model()
         if model.isDir(index):
             path = model.filePath(index)
-            # if model.rowCount(index) > 0:
-            self.set_root_index(path, tree_view)
+            self.handle_tree_double_click_dir(path, tree_view)
+        elif index.data(Qt.UserRole) == "image":
+            image = Image.open(model.filePath(index))
+            image.show()
 
-            # else:
-            model.directoryLoaded.connect(lambda: self.set_root_index(path, tree_view))
+    def handle_tree_double_click_dir(self, path: str, tree_view: QTreeView) -> None:
+        model = tree_view.model()
+        self.set_root_index(path, tree_view)
+
+        model.directoryLoaded.connect(lambda: self.set_root_index(path, tree_view))
+        model.directoryLoaded.connect(lambda: self.set_root_index(path, tree_view))
+            #  tree_view.expand(index)
+        model.directoryLoaded.connect(lambda: self.set_root_index(path, tree_view))
             #  tree_view.expand(index)
 
-            if tree_view == self.tree_source:
-                self.path_source.setText(path)
-                self.directory_updated(path, ChangeType.SOURCE)
-            else:
-                self.path_target.setText(path)
-                self.directory_updated(path, ChangeType.TARGET)
+        if tree_view == self.tree_source:
+            self.path_source.setText(path)
+            self.directory_updated(path, ChangeType.SOURCE)
+        else:
+            self.path_target.setText(path)
+            self.directory_updated(path, ChangeType.TARGET)
 
     def set_root_index(self, directory, tree_view: QTreeView = None) -> None:
         model = tree_view.model()
@@ -656,7 +693,7 @@ class MainWindow(QMainWindow):
 
     def _display_cover_artwork(self, absolute_file_path: str, tree_view: QTreeView) -> None:
         # Get artwork from the audio tags
-        cover_art = self.audio_tags.get_cover_art(absolute_file_path)
+        cover_art_images = self.audio_tags.get_cover_art(absolute_file_path)
 
         stacked_widget = self.stacked_widget_target if tree_view == self.tree_target else self.stacked_widget_source
         
@@ -668,22 +705,22 @@ class MainWindow(QMainWindow):
 
 
             # Add the cover art images to the QStackedWidget
-        for image in cover_art:
+        for image in cover_art_images:
             pixmap = QPixmap()
             pixmap.loadFromData(image.data)
             label = ImageLabel(pixmap, image)
             stacked_widget.addWidget(label)
 
         # Store the sizes of the images in bytes in a list
-        self.image_sizes = [len(image.data) for image in cover_art]
-       
-        label_map = self.get_image_label_map(tree_view)
+        self.image_sizes = [len(image.data) for image in cover_art_images]
+
+        label_map = self.get_labels(tree_view, "artwork_labels")
         page_number_label = label_map.get("page")
-        
+
         page_number_label.setText(f"{stacked_widget.currentIndex() + 1} / {stacked_widget.count()}")
         stacked_widget.setCurrentIndex(0)
-        self.tar_image_next.clicked.connect(lambda: stacked_widget.setCurrentIndex((stacked_widget.currentIndex() + 1) % stacked_widget.count()))
-        self.tar_image_prev.clicked.connect(lambda: stacked_widget.setCurrentIndex((stacked_widget.currentIndex() - 1) % stacked_widget.count()))
+        label_map.get("next").clicked.connect(lambda: stacked_widget.setCurrentIndex((stacked_widget.currentIndex() + 1) % stacked_widget.count()))
+        label_map.get("prev").clicked.connect(lambda: stacked_widget.setCurrentIndex((stacked_widget.currentIndex() - 1) % stacked_widget.count()))
 
         stacked_widget.currentChanged.connect(lambda: page_number_label.setText(f"{stacked_widget.currentIndex() + 1} / {stacked_widget.count()}"))
         stacked_widget.currentChanged.connect(lambda: self.update_image_labels(stacked_widget, label_map))
@@ -703,15 +740,16 @@ class MainWindow(QMainWindow):
 
         # Update the size label
         current_index = stacked_widget.currentIndex()
-        size = self.image_sizes[current_index] / 1024  # size in KB
-        label_map.get("size").setText(f"{size:.2f} KB")
-        
+        if(current_index > 0):
+            size = self.image_sizes[current_index] / 1024  # size in KB
+            label_map.get("size").setText(f"{size:.2f} KB")
+
         label_map.get("art").setText(PictureTypeDescription.get_description(widget.image.type))
         label_map.get("mime").setText(widget.image.mime)
         label_map.get("desc").setText(widget.image.desc)
 
     def _display_id3_tags(self, absolute_file_path: str, tree_view: QTreeView) -> None:
-        labels = self.get_id3_label_list(tree_view)
+        labels = self.get_labels(tree_view, "id3")
 
         # Get the ID3 tags for the selected file from AudioTags
         audio_tags = self.audio_tags.get_tags(absolute_file_path)
@@ -723,63 +761,47 @@ class MainWindow(QMainWindow):
                 label.setText(f'<a href="{value}">{value}</a>')
             else:
                 label.setText(value)
-
-    def get_id3_label_list(self, tree_view: QTreeView) -> list:
-        """Returns: list of source or target ID3 labels"""
-        return self.id3_labels_source if tree_view == self.tree_source else self.id3_labels_target
-
-    def get_image_label_list(self, tree_view: QTreeView) -> list:
-        """Returns: list of source or target ID3 labels"""
-        return self.image_labels_source if tree_view == self.tree_source else self.image_labels_target
-
-    def get_image_label_map(self, tree_view: QTreeView) -> dict:
-        """Returns: dictionary of source or target image labels"""
-        return self.image_labels_source if tree_view == self.tree_source else self.image_labels_target
     
+    def get_labels(self, tree_view: QTreeView, label_type: str) -> Union[list, dict]:
+        """Returns a list or dictionary of source or target labels based on label_type."""
+        label_map = {
+            'id3': (self.id3_labels_source, self.id3_labels_target),
+            'artwork_labels': (self.source_artwork_labels, self.target_artwork_labels)  # Assuming this should be a different attribute
+        }
+        source, target = label_map.get(label_type, (None, None))
+        return source if tree_view == self.tree_source else target
+
     def resizeColumns(self) -> None:
         """Resize the columns of the tree widget. Returns: None"""
-        if self.sender() == self.tree_source:
-            tree_widget = self.tree_source
-        else:
-            tree_widget = self.tree_target
+        for i in range(self.sender().columnCount()):
+            self.sender().resizeColumnToContents(i)
 
-        for i in range(tree_widget.columnCount()):
-            tree_widget.resizeColumnToContents(i)
+    def check_directory_scanned(self, directory, error_message):
+        if directory is None:
+            QMessageBox.critical(self, "Error", error_message)
+            return False
+        return True
 
     def repackage(self) -> None:
-        """
-        Commit the changes to the target directory.
-        Returns: None
-        """
+        """moves the files from the source directory to the target directory based on the LABEL tag. Returns: None"""
 
-        # get the root path of the trees
         source_dir = self.tree_source.model().rootPath()
         target_dir = self.tree_target.model().rootPath()
 
-        if source_dir is None:
-            QMessageBox.critical(self, "Error", "Source directory not scanned")
+        if not self.check_directory_scanned(source_dir, "Source directory not scanned"):
             return
 
-        if target_dir is None:
-            QMessageBox.critical(self, "Error", "Target directory not scanned")
+        if not self.check_directory_scanned(target_dir, "Target directory not scanned"):
             return
 
         self.update_status("Repackaging started...")
         repackageByLabel(source_dir, target_dir)
-        self.update_status("Repackaging completed.")
 
     def toggleMenu(self) -> None:
-        # get width
         width = self.frame_left_menu.width()
-        # print(f"width:{width}")
         maxExtend = 100
-        standard = 0
 
-        # SET MAX WIDTH
-        widthExtended = maxExtend if width == 0 else standard
-        # print(f"widthExtended:{widthExtended}")
-
-        # ANIMATION
+        widthExtended = maxExtend if width == 0 else 0
         self.animation = QPropertyAnimation(self.frame_left_menu, b"minimumWidth")
         self.animation.setDuration(400)
         self.animation.setStartValue(width)
@@ -787,15 +809,27 @@ class MainWindow(QMainWindow):
         self.animation.setEasingCurve(QEasingCurve.InOutQuart)
         self.animation.start()
 
-        # Set the ico from resources.
-        # when the menu is open, the icon is chevrons-left.svg, when closed the chevrons-right.svg
         icon = self.icon_left if width == 0 else self.icon_menu
         self.but_toggle.setIcon(icon)
-        if width <= 0:
-            self.but_toggle.setToolTip("Close Menu")
-            self.but_toggle.setToolTipDuration(1000)
-        else:
-            self.but_toggle.setToolTip("Open Menu")
+
+        tooltip = "Close Menu" if width <= 0 else "Open Menu"
+        self.but_toggle.setToolTip(tooltip)
+        self.but_toggle.setToolTipDuration(1000 if width <= 0 else 0)
+
+    def handle_media_status_changed(self, status):
+        """
+        Handle changes in media player status.
+
+        Show error message if media is invalid.
+        """
+
+        if status == QMediaPlayer.InvalidMedia:
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Warning)
+            msgBox.setWindowTitle("Error")
+            msgBox.setText(INVALID_MEDIA_ERROR_MSG)
+            msgBox.setTextFormat(Qt.RichText)
+            msgBox.exec()
 
 
 if __name__ == "__main__":
