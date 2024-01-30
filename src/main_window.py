@@ -1,5 +1,6 @@
 import traceback
 import configparser
+import contextlib
 import logging
 import qt.resources_rcc
 import os
@@ -80,21 +81,24 @@ class ImageLabel(QLabel):
 
     def mouseDoubleClickEvent(self, event):
         # Create a QDialog to show the image
+        pop_up_image_dialogue(PictureTypeDescription.get_description(self.image.type), self.pixmap)
+
+def pop_up_image_dialogue(title: str, pixmap: QPixmap) -> None:
         dialog = QDialog()
-        dialog.setWindowTitle("Cover Art")
+        dialog.setWindowTitle(title)
         dialog.setLayout(QVBoxLayout())
+        dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)  # Remove the '?' from the title bar
+
 
         # Create a QLabel, set its pixmap to the pixmap of the ImageLabel, and add it to the QDialog
         label = QLabel(dialog)
-        label.setPixmap(self.pixmap)
+        label.setPixmap(pixmap)
         label.setScaledContents(True)
-        dialog.setWindowTitle(PictureTypeDescription.get_description(self.image.type))
         dialog.setWindowIcon(QtGui.QIcon(":/icons/icons/headphones.svg"))
         dialog.layout().addWidget(label)
-
+      
         # Show the QDialog
         dialog.exec_()
-
 
 class MainWindow(QMainWindow):
     """Main window class for the application."""
@@ -107,8 +111,6 @@ class MainWindow(QMainWindow):
         # Set up instance variables
         self.config = configparser.ConfigParser()
         self.id3_tags = []
-        self.id3_labels_source = []
-        self.id3_labels_target = []
         self.directory_source = "c:\\"
         self.directory_target = "c:\\"
         self.audio_tags = AudioTags()
@@ -134,11 +136,10 @@ class MainWindow(QMainWindow):
         self.__setup_copy_source_button()
         self.__setup_tree_widgets()
         self.__setup_refresh_button()
-        self.__setup_id3_label_caches()
         self.__setup_id3_tags()
-        self.__setup_image_label_caches()
-        self.__clear_label_text(self.id3_labels_source)
-        self.__clear_label_text(self.id3_labels_target)
+        self.__setup_label_cache()
+        self.__setup_label_style_sheet()
+        self.__clear_labels()
         self.__setup_action_buttons()
         self.__setup_menu_buttons()
         self.__setup_path_labels()
@@ -240,52 +241,6 @@ class MainWindow(QMainWindow):
 
         self.setMinimumSize(QSize(800, 600))
 
-    def __setup_id3_label_caches(self) -> None:
-        """
-        Populates the source_id3_labels and target_id3_labels lists with the corresponding label widgets.
-        Returns: None
-        """
-
-        self.id3_labels_source = [
-            self.lbl_src_title,
-            self.lbl_src_artist,
-            self.lbl_src_album,
-            self.lbl_src_label,
-            self.lbl_src_side,
-            self.lbl_src_track,
-            self.lbl_src_catalog,
-            self.lbl_src_discogs_id,
-            self.lbl_src_website,
-        ]
-
-        self.id3_labels_target = [
-            self.lbl_tar_title,
-            self.lbl_tar_artist,
-            self.lbl_tar_album,
-            self.lbl_tar_label,
-            self.lbl_tar_side,
-            self.lbl_tar_track,
-            self.lbl_tar_catalog,
-            self.lbl_tar_discogs_id,
-            self.lbl_tar_website,
-        ]
-
-        # Create a QFont object for the bold and italic font
-        font = QFont()
-        font.setBold(True)
-        # font.setItalic(True)
-        font.setPointSize(10)
-
-        # Loop over the source labels
-        for label in self.id3_labels_source:
-            label.setFont(font)
-            label.setStyleSheet("color: rgb(33, 143, 122 );")
-
-        # Loop over the target labels
-        for label in self.id3_labels_target:
-            label.setFont(font)
-            label.setStyleSheet("color: rgb(177, 162, 86);")
-
     def __setup_id3_tags(self) -> None:
         """
         Populates the id3_tags list with the names of the supported ID3 tags.
@@ -304,8 +259,31 @@ class MainWindow(QMainWindow):
             "URL",
         ]
 
-    def __setup_image_label_caches(self) -> None:
-        self.source_artwork_labels = {
+    def __setup_label_cache(self) -> None:
+        id3_labels_source = [
+            self.lbl_src_title,
+            self.lbl_src_artist,
+            self.lbl_src_album,
+            self.lbl_src_label,
+            self.lbl_src_side,
+            self.lbl_src_track,
+            self.lbl_src_catalog,
+            self.lbl_src_discogs_id,
+            self.lbl_src_website,
+        ]
+
+        id3_labels_target = [
+            self.lbl_tar_title,
+            self.lbl_tar_artist,
+            self.lbl_tar_album,
+            self.lbl_tar_label,
+            self.lbl_tar_side,
+            self.lbl_tar_track,
+            self.lbl_tar_catalog,
+            self.lbl_tar_discogs_id,
+            self.lbl_tar_website,
+        ]
+        source_artwork_labels = {
             "art": self.label_source_art_type,
             "res": self.label_source_resolution,
             "size": self.label_source_size,
@@ -315,7 +293,7 @@ class MainWindow(QMainWindow):
             "next": self.src_image_next,
             "prev": self.src_image_prev,
         }
-        self.target_artwork_labels = {
+        target_artwork_labels = {
             "art": self.label_target_art_type,
             "res": self.label_target_resolution,
             "size": self.label_target_size,
@@ -325,6 +303,26 @@ class MainWindow(QMainWindow):
             "next": self.tar_image_next,
             "prev": self.tar_image_prev,
         }
+
+        self.label_cache = {"id3": (id3_labels_source, id3_labels_target), "artwork": (source_artwork_labels, target_artwork_labels)}
+
+    def __setup_label_style_sheet(self) -> None:
+        """Set style sheet for the labels. Returns: None"""
+        # Create a QFont object for the bold and italic font
+        font = QFont()
+        font.setBold(True)
+        font.setPointSize(10)
+
+        source_labels, target_labels = self.label_cache.get("id3")
+        # Loop over the source labels
+        for label in source_labels:
+            label.setFont(font)
+            label.setStyleSheet("color: rgb(33, 143, 122 );")
+
+        # Loop over the target labels
+        for label in target_labels:
+            label.setFont(font)
+            label.setStyleSheet("color: rgb(177, 162, 86);")
 
     def __setup_tree_widgets(self) -> None:
         """
@@ -343,10 +341,7 @@ class MainWindow(QMainWindow):
     def __setup_tree_view(self, tree_view: QTreeView, last_dir) -> None:
         model = QFileSystemModel()
         model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
-        model.setRootPath(last_dir)
-
-        tree_view.setModel(model)
-        tree_view.sortByColumn(0, Qt.AscendingOrder)
+        self.set_root_path_for_tree_view(model, last_dir, tree_view)
         tree_view.setRootIndex(model.index(last_dir))
         tree_view.clicked.connect(lambda: self.on_tree_clicked(tree_view.selectedIndexes()[0], tree_view))
         tree_view.doubleClicked.connect(lambda: self.on_tree_double_clicked(tree_view.selectedIndexes()[0], tree_view))
@@ -377,36 +372,26 @@ class MainWindow(QMainWindow):
         mf_exit.setShortcut("Ctrl+Q")
 
     def __setup_copy_source_button(self) -> None:
-        """
-        Sets up the functionality of the copy source button.
-        Returns: None
-        """
-
+        """Sets up the functionality of the copy source button. Returns: None"""
         but_copy_source = self.findChild(QPushButton, "but_copy_source")
         but_copy_source.clicked.connect(self.copy_source_to_target)
 
     def __setup_refresh_button(self) -> None:
-        """
-        Sets up the functionality of the refresh button.
-        Returns: None
-        """
-
+        """Sets up the functionality of the refresh button. Returns: None"""
         but_refresh = self.findChild(QPushButton, "but_refresh_target_2")
         but_refresh.clicked.connect(self.reset_target)
 
     def __setup_dir_up_buttons(self) -> None:
-        """
-        Sets up the functionality of the path up buttons.
-        Returns: None
-        """
-
+        """Sets up the functionality of the path up buttons. Returns: None"""
         self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_source))
         self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_target))
 
     def resize_first_column(self, tree_view: QTreeView) -> None:
+        """Resize the first column of the tree view to fit the longest filename. Returns: None"""
         tree_view.resizeColumnToContents(0)
 
     def tree_view_context_menu(self, position):
+        """Displays a context menu when right clicking on a tree view. Returns: None"""
         tree_view = self.sender()
         index = tree_view.indexAt(position)
         if not index.isValid():
@@ -433,16 +418,16 @@ class MainWindow(QMainWindow):
             else:
                 self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
 
-            self.update_status("Playing: " + file_path)
+            self.update_status(f"Playing: {file_path}")
             self.player.play()
 
         elif action == stop_action:
             self.player.stop()
-            self.update_status("Stopped: " + file_path)
+            self.update_status(f"Stopped: {file_path}")
 
         elif action == pause_action:
             self.player.pause()
-            self.update_status("Paused: " + file_path)
+            self.update_status(f"Paused: {file_path}")
 
     def on_path_return_pressed(self, tree_view: QTreeView) -> None:
         if tree_view == self.tree_source:
@@ -487,22 +472,28 @@ class MainWindow(QMainWindow):
 
     def on_tree_double_clicked(self, index: QModelIndex, tree_view: QTreeView) -> None:
         model = tree_view.model()
+        path = model.filePath(index)
+       
         if model.isDir(index):
-            path = model.filePath(index)
             self.handle_tree_double_click_dir(path, tree_view)
-        elif index.data(Qt.UserRole) == "image":
-            image = Image.open(model.filePath(index))
-            image.show()
+       
+        # check if paths is a file and an image like jpg, png etc
+        elif os.path.isfile(path) and path.lower().endswith((".jpg", ".png", ".jpeg")):
+            # load image to a pixmap
+            pixmap = QPixmap(path)
+            #pop image in a new dialog
+            pop_up_image_dialogue(path, pixmap)
+
 
     def handle_tree_double_click_dir(self, path: str, tree_view: QTreeView) -> None:
         model = tree_view.model()
-        self.set_root_index(path, tree_view)
+        self.set_root_index_of_tree_view(path, tree_view)
 
-        model.directoryLoaded.connect(lambda: self.set_root_index(path, tree_view))
-        model.directoryLoaded.connect(lambda: self.set_root_index(path, tree_view))
-            #  tree_view.expand(index)
-        model.directoryLoaded.connect(lambda: self.set_root_index(path, tree_view))
-            #  tree_view.expand(index)
+        model.directoryLoaded.connect(lambda: self.set_root_index_of_tree_view(path, tree_view))
+        model.directoryLoaded.connect(lambda: self.set_root_index_of_tree_view(path, tree_view))
+        #  tree_view.expand(index)
+        model.directoryLoaded.connect(lambda: self.set_root_index_of_tree_view(path, tree_view))
+        #  tree_view.expand(index)
 
         if tree_view == self.tree_source:
             self.path_source.setText(path)
@@ -511,42 +502,44 @@ class MainWindow(QMainWindow):
             self.path_target.setText(path)
             self.directory_updated(path, ChangeType.TARGET)
 
-    def set_root_index(self, directory, tree_view: QTreeView = None) -> None:
+    def set_root_index_of_tree_view(self, directory, tree_view: QTreeView = None) -> None:
+        """ Sets the root index of the tree view. """
         model = tree_view.model()
         tree_view.setRootIndex(model.index(directory))
         for column in range(model.columnCount()):
             tree_view.resizeColumnToContents(column)
 
-        try:
+        with contextlib.suppress(TypeError):
             model.directoryLoaded.disconnect()
-        except TypeError:
-            pass
 
     def go_up_dir_level(self, tree_view: QTreeView, path: QLineEdit) -> None:
         model = tree_view.model()
         current_root_path = model.filePath(tree_view.rootIndex())
-        dir = QDir(current_root_path)
-        if dir.cdUp():
-            parent_path = dir.absolutePath()
+        directory = QDir(current_root_path)
+        if directory.cdUp():
+            self._change_dir_up(directory, tree_view, path)
 
-            model = QFileSystemModel()
+    # TODO Rename this here and in `go_up_dir_level`
+    def _change_dir_up(self, directory: QDir, tree_view: QTreeView, path: QLineEdit) -> None:
+        """ Changes the directory up one level. """
+        parent_path = directory.absolutePath()
 
-            model.setRootPath(parent_path)
+        model = QFileSystemModel()
 
-            tree_view.setModel(model)
-            tree_view.sortByColumn(0, Qt.AscendingOrder)
-            self.set_root_index(parent_path, tree_view)
-            model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
+        self.set_root_path_for_tree_view(model, parent_path, tree_view)
+        self.set_root_index_of_tree_view(parent_path, tree_view)
+        model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
 
-            path.setText(parent_path)
-            changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
-            self.directory_updated(parent_path, changeType)
+        self._set_absolute_path(path, parent_path, tree_view)
+
+    def set_root_path_for_tree_view(self, model: QFileSystemModel, absolute_path: str, tree_view: QTreeView):
+        """Sets the root path for the given tree view."""
+        model.setRootPath(absolute_path)
+        tree_view.setModel(model)
+        tree_view.sortByColumn(0, Qt.AscendingOrder)
 
     def reset_target(self) -> None:
-        """
-        Resets the target directory tree structure to before any changes were made.
-        Returns: None
-        """
+        """Resets the target directory tree structure to before any changes were made. Returns: None"""
 
         tree_structure_target = self.tree_structure_target_original
         self._populate_target_tree(tree_structure_target)
@@ -629,12 +622,15 @@ class MainWindow(QMainWindow):
             # set a directory to the root path of the source tree
 
             tree_view.setRootIndex(tree_view.model().index(directory))
-            path.setText(directory)
-            changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
-            self.directory_updated(directory, changeType)
-
+            self._set_absolute_path(path, directory, tree_view)
         except Exception as e:
             self._display_and_log_error(e)
+
+    # TODO Rename this here and in `go_up_dir_level` and `open_directory`
+    def _set_absolute_path(self, path: QLineEdit, absolute_path: str, tree_view: QTreeView):
+        path.setText(absolute_path)
+        changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
+        self.directory_updated(absolute_path, changeType)
 
     def directory_updated(self, directory, changeType: ChangeType) -> None:
         """Update the source or target directory config settings, and the base reference based on the given directory."""
@@ -671,7 +667,16 @@ class MainWindow(QMainWindow):
             QMessageBox.No,
         )
 
-    def __clear_label_text(self, labels) -> None:
+    def __clear_labels(self) -> None:
+        """Clears label tags . Returns: None"""
+        src, tar = self.label_cache.get("id3")
+        self.clear_labels(src)
+        self.clear_labels(tar)
+        src, tar = self.label_cache.get("artwork")
+        self.clear_labels(src.values())
+        self.clear_labels(tar.values())
+
+    def clear_labels(self, labels) -> None:
         """Clears label tags . Returns: None"""
         for label in labels:
             label.setText("")
@@ -696,13 +701,12 @@ class MainWindow(QMainWindow):
         cover_art_images = self.audio_tags.get_cover_art(absolute_file_path)
 
         stacked_widget = self.stacked_widget_target if tree_view == self.tree_target else self.stacked_widget_source
-        
+
         # Clear the QStackedWidget
         while stacked_widget.count() > 0:
-            widget =stacked_widget.widget(0)
+            widget = stacked_widget.widget(0)
             stacked_widget.removeWidget(widget)
             widget.deleteLater()
-
 
             # Add the cover art images to the QStackedWidget
         for image in cover_art_images:
@@ -714,7 +718,7 @@ class MainWindow(QMainWindow):
         # Store the sizes of the images in bytes in a list
         self.image_sizes = [len(image.data) for image in cover_art_images]
 
-        label_map = self.get_labels(tree_view, "artwork_labels")
+        label_map = self.get_labels(tree_view, "artwork")
         page_number_label = label_map.get("page")
 
         page_number_label.setText(f"{stacked_widget.currentIndex() + 1} / {stacked_widget.count()}")
@@ -731,7 +735,7 @@ class MainWindow(QMainWindow):
 
         if widget is None:
             return
-        
+
         pixmap = widget.pixmap
 
         # Update the resolution label
@@ -740,7 +744,7 @@ class MainWindow(QMainWindow):
 
         # Update the size label
         current_index = stacked_widget.currentIndex()
-        if(current_index > 0):
+        if current_index > 0:
             size = self.image_sizes[current_index] / 1024  # size in KB
             label_map.get("size").setText(f"{size:.2f} KB")
 
@@ -761,14 +765,10 @@ class MainWindow(QMainWindow):
                 label.setText(f'<a href="{value}">{value}</a>')
             else:
                 label.setText(value)
-    
+
     def get_labels(self, tree_view: QTreeView, label_type: str) -> Union[list, dict]:
         """Returns a list or dictionary of source or target labels based on label_type."""
-        label_map = {
-            'id3': (self.id3_labels_source, self.id3_labels_target),
-            'artwork_labels': (self.source_artwork_labels, self.target_artwork_labels)  # Assuming this should be a different attribute
-        }
-        source, target = label_map.get(label_type, (None, None))
+        source, target = self.label_cache.get(label_type, (None, None))
         return source if tree_view == self.tree_source else target
 
     def resizeColumns(self) -> None:
