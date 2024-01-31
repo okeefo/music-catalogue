@@ -4,6 +4,8 @@ import contextlib
 import logging
 import qt.resources_rcc
 import os
+import subprocess
+import winreg
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
@@ -24,9 +26,9 @@ from PyQt5.QtWidgets import (
     QMenu,
     QVBoxLayout,
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl, QProcess
 from scanner.repackage_dir import repackageByLabel
-from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtGui import QFont, QPixmap, QDesktopServices
 from enum import Enum
 from scanner.audio_tags import AudioTags
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
@@ -36,7 +38,6 @@ from scanner.audio_tags import PictureTypeDescription
 from typing import Dict
 from typing import Union
 from PIL import Image
-
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -83,22 +84,23 @@ class ImageLabel(QLabel):
         # Create a QDialog to show the image
         pop_up_image_dialogue(PictureTypeDescription.get_description(self.image.type), self.pixmap)
 
+
 def pop_up_image_dialogue(title: str, pixmap: QPixmap) -> None:
-        dialog = QDialog()
-        dialog.setWindowTitle(title)
-        dialog.setLayout(QVBoxLayout())
-        dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)  # Remove the '?' from the title bar
+    dialog = QDialog()
+    dialog.setWindowTitle(title)
+    dialog.setLayout(QVBoxLayout())
+    dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)  # Remove the '?' from the title bar
 
+    # Create a QLabel, set its pixmap to the pixmap of the ImageLabel, and add it to the QDialog
+    label = QLabel(dialog)
+    label.setPixmap(pixmap)
+    label.setScaledContents(True)
+    dialog.setWindowIcon(QtGui.QIcon(":/icons/icons/headphones.svg"))
+    dialog.layout().addWidget(label)
 
-        # Create a QLabel, set its pixmap to the pixmap of the ImageLabel, and add it to the QDialog
-        label = QLabel(dialog)
-        label.setPixmap(pixmap)
-        label.setScaledContents(True)
-        dialog.setWindowIcon(QtGui.QIcon(":/icons/icons/headphones.svg"))
-        dialog.layout().addWidget(label)
-      
-        # Show the QDialog
-        dialog.exec_()
+    # Show the QDialog
+    dialog.exec_()
+
 
 class MainWindow(QMainWindow):
     """Main window class for the application."""
@@ -145,6 +147,21 @@ class MainWindow(QMainWindow):
         self.__setup_path_labels()
         self.__setup_dir_up_buttons()
         self.__setup_media_player()
+        self.__setup_mp3tag_path()
+    
+    def __setup_mp3tag_path(self) -> None:
+        """ get mp3tag path from registry """
+        
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Mp3tag.exe') as key:
+                self.mp3tag_path = winreg.QueryValueEx(key, '')[0]
+
+        except Exception as e:
+            print(f"Failed to get Mp3tag path from registry: {e}")
+
+        if self.mp3tag_path is None:
+            self.mp3tag_path = "C:\\Program Files\\Mp3tag\\Mp3tag.exe"
+            
 
     def __setup_media_player(self) -> None:
         """
@@ -207,6 +224,7 @@ class MainWindow(QMainWindow):
         self.icon_play = QtGui.QIcon(":/icons/icons/play.svg")
         self.icon_pause = QtGui.QIcon(":/icons/icons/pause.svg")
         self.icon_stop = QtGui.QIcon(":/icons/icons/stop-circle.svg")
+        self.icon_mp3tag = QtGui.QIcon(os.path.abspath("src/qt/icons/mp3tag_icon.png"))
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
@@ -402,12 +420,20 @@ class MainWindow(QMainWindow):
             return
 
         menu = QMenu(self)
+
+        # Add "Open in MP3Tag" action to the menu
+        open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
+        menu.addAction(open_in_mp3tag_action)
+
         play_action = QAction(self.icon_play, "Play", self)
         menu.addAction(play_action)
+
         stop_action = QAction(self.icon_stop, "Stop", self)
         menu.addAction(stop_action)
+
         pause_action = QAction(self.icon_pause, "Pause", self)  # Changed "Stop" to "Pause"
         menu.addAction(pause_action)
+
         action = menu.exec_(tree_view.mapToGlobal(position))
 
         if action == play_action:
@@ -428,6 +454,17 @@ class MainWindow(QMainWindow):
         elif action == pause_action:
             self.player.pause()
             self.update_status(f"Paused: {file_path}")
+
+        elif action == open_in_mp3tag_action:
+            self.open_in_mp3tag(file_path)
+
+    def open_in_mp3tag(self, file_path):
+
+        try:
+            command = f'"{self.mp3tag_path}" /fn:"{file_path}"'
+            subprocess.run(command, shell=True, check=True)
+        except Exception as e:
+            print(f"Failed to open file in MP3Tag: {e}")
 
     def on_path_return_pressed(self, tree_view: QTreeView) -> None:
         if tree_view == self.tree_source:
@@ -473,17 +510,16 @@ class MainWindow(QMainWindow):
     def on_tree_double_clicked(self, index: QModelIndex, tree_view: QTreeView) -> None:
         model = tree_view.model()
         path = model.filePath(index)
-       
+
         if model.isDir(index):
             self.handle_tree_double_click_dir(path, tree_view)
-       
+
         # check if paths is a file and an image like jpg, png etc
         elif os.path.isfile(path) and path.lower().endswith((".jpg", ".png", ".jpeg")):
             # load image to a pixmap
             pixmap = QPixmap(path)
-            #pop image in a new dialog
+            # pop image in a new dialog
             pop_up_image_dialogue(path, pixmap)
-
 
     def handle_tree_double_click_dir(self, path: str, tree_view: QTreeView) -> None:
         model = tree_view.model()
@@ -503,7 +539,7 @@ class MainWindow(QMainWindow):
             self.directory_updated(path, ChangeType.TARGET)
 
     def set_root_index_of_tree_view(self, directory, tree_view: QTreeView = None) -> None:
-        """ Sets the root index of the tree view. """
+        """Sets the root index of the tree view."""
         model = tree_view.model()
         tree_view.setRootIndex(model.index(directory))
         for column in range(model.columnCount()):
@@ -521,7 +557,7 @@ class MainWindow(QMainWindow):
 
     # TODO Rename this here and in `go_up_dir_level`
     def _change_dir_up(self, directory: QDir, tree_view: QTreeView, path: QLineEdit) -> None:
-        """ Changes the directory up one level. """
+        """Changes the directory up one level."""
         parent_path = directory.absolutePath()
 
         model = QFileSystemModel()
