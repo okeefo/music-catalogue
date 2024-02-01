@@ -148,20 +148,19 @@ class MainWindow(QMainWindow):
         self.__setup_dir_up_buttons()
         self.__setup_media_player()
         self.__setup_mp3tag_path()
-    
+
     def __setup_mp3tag_path(self) -> None:
-        """ get mp3tag path from registry """
-        
+        """get mp3tag path from registry"""
+
         try:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Mp3tag.exe') as key:
-                self.mp3tag_path = winreg.QueryValueEx(key, '')[0]
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Mp3tag.exe") as key:
+                self.mp3tag_path = winreg.QueryValueEx(key, "")[0]
 
         except Exception as e:
             print(f"Failed to get Mp3tag path from registry: {e}")
 
         if self.mp3tag_path is None:
             self.mp3tag_path = "C:\\Program Files\\Mp3tag\\Mp3tag.exe"
-            
 
     def __setup_media_player(self) -> None:
         """
@@ -416,27 +415,36 @@ class MainWindow(QMainWindow):
             return
 
         file_path = tree_view.model().filePath(index)
-        if not file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
-            return
 
         menu = QMenu(self)
 
-        # Add "Open in MP3Tag" action to the menu
-        open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
-        menu.addAction(open_in_mp3tag_action)
+        # file_path is a dir
+        if os.path.isdir(file_path):
+            open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
+            menu.addAction(open_in_mp3tag_action)
 
-        play_action = QAction(self.icon_play, "Play", self)
-        menu.addAction(play_action)
+        elif not file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
+            return
 
-        stop_action = QAction(self.icon_stop, "Stop", self)
-        menu.addAction(stop_action)
+        else:
+            open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
+            menu.addAction(open_in_mp3tag_action)
 
-        pause_action = QAction(self.icon_pause, "Pause", self)  # Changed "Stop" to "Pause"
-        menu.addAction(pause_action)
+            play_action = QAction(self.icon_play, "Play", self)
+            menu.addAction(play_action)
+
+            stop_action = QAction(self.icon_stop, "Stop", self)
+            menu.addAction(stop_action)
+
+            pause_action = QAction(self.icon_pause, "Pause", self)  # Changed "Stop" to "Pause"
+            menu.addAction(pause_action)
 
         action = menu.exec_(tree_view.mapToGlobal(position))
 
-        if action == play_action:
+        if action == open_in_mp3tag_action:
+            self.open_in_mp3tag(file_path)
+            
+        elif action == play_action:
             # if the media player is already loaded with the same file and is playing, do nothing
             if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
                 if self.player.mediaStatus() == QMediaPlayer.PlayingState:
@@ -455,16 +463,18 @@ class MainWindow(QMainWindow):
             self.player.pause()
             self.update_status(f"Paused: {file_path}")
 
-        elif action == open_in_mp3tag_action:
-            self.open_in_mp3tag(file_path)
+
 
     def open_in_mp3tag(self, file_path):
-
+        """Opens a file/directory in MP3Tag. Returns: None"""
+        
         try:
-            command = f'"{self.mp3tag_path}" /fn:"{file_path}"'
+            option = "/fp:" if os.path.isdir(file_path) else "/fn:"
+            command = f'"{self.mp3tag_path}" {option}"{file_path}"'
             subprocess.run(command, shell=True, check=True)
+
         except Exception as e:
-            print(f"Failed to open file in MP3Tag: {e}")
+            print(f"Failed to open file/dir in MP3Tag: {e}")
 
     def on_path_return_pressed(self, tree_view: QTreeView) -> None:
         if tree_view == self.tree_source:
