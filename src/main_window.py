@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (
     QMenu,
     QVBoxLayout,
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl, QProcess
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl, QItemSelectionModel
 from scanner.repackage_dir import repackageByLabel
 from PyQt5.QtGui import QFont, QPixmap, QDesktopServices
 from enum import Enum
@@ -69,6 +69,23 @@ class ChangeType(Enum):
 # Set logging instance
 logger = logging.getLogger(__name__)
 
+class MyTreeView(QTreeView):    
+    """ A TreeView that allows to select multiple items at once. """
+        
+    def mousePressEvent(self, event):
+        """ Select multiple items on mouse click."""
+        index = self.indexAt(event.pos())
+        if event.button() == Qt.LeftButton:
+            if index.isValid():
+                self.clearSelection()
+                self.setCurrentIndex(index)
+                self.selectionModel().select(index, QItemSelectionModel.Select)
+        elif event.button() == Qt.RightButton:
+            if index.isValid() and not self.selectionModel().isSelected(index):
+             #   self.clearSelection()
+                self.setCurrentIndex(index)
+                self.selectionModel().select(index, QItemSelectionModel.Select)
+        super().mousePressEvent(event)
 
 class ImageLabel(QLabel):
     def __init__(self, pixmap: QPixmap, image: APIC):
@@ -86,6 +103,7 @@ class ImageLabel(QLabel):
 
 
 def pop_up_image_dialogue(title: str, pixmap: QPixmap) -> None:
+    """Set up image dialogue pop up - shown when a user double clicks on an image in the UI."""
     dialog = QDialog()
     dialog.setWindowTitle(title)
     dialog.setLayout(QVBoxLayout())
@@ -127,7 +145,10 @@ class MainWindow(QMainWindow):
             "src\\qt\\music_manager.ui",
             self,
         )
+        self.__setup_ui()
 
+    def __setup_ui(self):
+        """ Set up the user interface. Returns: None"""
         # Sets up the user interface of the main window.
         self.update_status("Welcome - select a directory to scan either from the menu or the scan button")
         self.__setup_icons()
@@ -157,23 +178,17 @@ class MainWindow(QMainWindow):
                 self.mp3tag_path = winreg.QueryValueEx(key, "")[0]
 
         except Exception as e:
-            print(f"Failed to get Mp3tag path from registry: {e}")
+            logger.error(f"Failed to get Mp3tag path from registry: {e}")
 
         if self.mp3tag_path is None:
             self.mp3tag_path = "C:\\Program Files\\Mp3tag\\Mp3tag.exe"
 
     def __setup_media_player(self) -> None:
-        """
-        Sets up the media player.
-        Returns: None
-        """
+        """Sets up the media player. Returns: None"""
         self.player.mediaStatusChanged.connect(self.handle_media_status_changed)
 
     def __setup_config(self) -> None:
-        """
-        Sets up the configuration by reading the config.ini file and adding missing sections if necessary.
-        Returns: None
-        """
+        """Sets up the configuration by reading the config.ini file and adding missing sections if necessary. Returns: None"""
 
         self.config.read("config.ini")
         if CONFIG_SECTION_DIRECTORIES not in self.config:
@@ -192,6 +207,7 @@ class MainWindow(QMainWindow):
             self.config.add_section(CONFIG_SECTION_WINDOW)
 
     def __setup_path_labels(self) -> None:
+        """Set up the path labels. Returns: None"""
         # Create a file system model
         model = QFileSystemModel()
         model.setRootPath(QDir.rootPath())
@@ -206,14 +222,14 @@ class MainWindow(QMainWindow):
         self.path_target = self.findChild(QLineEdit, "path_target")
         self.path_target.setCompleter(completer)
 
-        #       self.path_source = self.findChild(QtWidgets.QLabel, "path_label_source")
-        # self.path_target = self.findChild(QtWidgets.QLabel, "path_label_target")
         self.path_source.returnPressed.connect(lambda: self.on_path_return_pressed(self.tree_source))
         self.path_target.returnPressed.connect(lambda: self.on_path_return_pressed(self.tree_target))
         self.path_source.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY])
         self.path_target.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY])
 
     def __setup_icons(self) -> None:
+        """Set up the icons. Returns: None"""
+
         self.icon_left = QtGui.QIcon(":/icons/icons/chevrons-left.svg")
         self.icon_right = QtGui.QIcon(":/icons/icons/chevrons-right.svg")
         self.icon_menu = QtGui.QIcon(":/icons/icons/menu.svg")
@@ -247,10 +263,7 @@ class MainWindow(QMainWindow):
         self.but_repackage.setShortcut("Ctrl+R")
 
     def __setup_window_size(self) -> None:
-        """
-        Sets up the size of the main window based on the configuration settings.
-        Returns: None
-        """
+        """Sets up the size of the main window based on the configuration settings. Returns: None"""
         self.resize(
             self.config.getint(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, fallback=800),
             self.config.getint(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, fallback=600),
@@ -259,10 +272,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(800, 600))
 
     def __setup_id3_tags(self) -> None:
-        """
-        Populates the id3_tags list with the names of the supported ID3 tags.
-        Returns: None
-        """
+        """Populates the id3_tags list with the names of the supported ID3 tags. Returns: None"""
 
         self.id3_tags = [
             "TITLE",
@@ -342,10 +352,7 @@ class MainWindow(QMainWindow):
             label.setStyleSheet("color: rgb(177, 162, 86);")
 
     def __setup_tree_widgets(self) -> None:
-        """
-        Populates the id3_tags list with the names of the supported ID3 tags.
-        Returns: None
-        """
+        """Populates the id3_tags list with the names of the supported ID3 tags. Returns: None"""
 
         self.tree_source = self.findChild(QTreeView, "tree_source")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY]
@@ -355,13 +362,15 @@ class MainWindow(QMainWindow):
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
         self.__setup_tree_view(self.tree_target, last_dir)
 
-    def __setup_tree_view(self, tree_view: QTreeView, last_dir) -> None:
+    def __setup_tree_view(self, tree_view: MyTreeView, last_dir) -> None:
+        """Sets up the tree view. Returns: None"""
+
         model = QFileSystemModel()
         model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
         self.set_root_path_for_tree_view(model, last_dir, tree_view)
         tree_view.setRootIndex(model.index(last_dir))
-        tree_view.clicked.connect(lambda: self.on_tree_clicked(tree_view.selectedIndexes()[0], tree_view))
-        tree_view.doubleClicked.connect(lambda: self.on_tree_double_clicked(tree_view.selectedIndexes()[0], tree_view))
+        tree_view.clicked.connect(lambda index: self.on_tree_clicked(index, tree_view)) 
+        tree_view.doubleClicked.connect(lambda index: self.on_tree_double_clicked(index, tree_view))
         tree_view.expanded.connect(lambda: self.resize_first_column(tree_view))
         tree_view.setSortingEnabled(True)
 
@@ -370,11 +379,7 @@ class MainWindow(QMainWindow):
         tree_view.customContextMenuRequested.connect(self.tree_view_context_menu)
 
     def __setup_exit(self) -> None:
-        """
-        Sets up the exit functionality of the main window.
-        Returns: None
-        """
-
+        """Sets up the exit button. Returns: None"""
         mf_exit = self.findChild(QAction, "mf_exit")
         self.but_exit = self.findChild(QPushButton, "but_exit")
         self.but_exit_2 = self.findChild(QPushButton, "but_exit_2")
@@ -442,8 +447,17 @@ class MainWindow(QMainWindow):
         action = menu.exec_(tree_view.mapToGlobal(position))
 
         if action == open_in_mp3tag_action:
-            self.open_in_mp3tag(file_path)
             
+            #selected_indexes = tree_view.selectionModel().selectedIndexes()
+            #selected_file_paths = [tree_view.model().filePath(i) for i in selected_indexes]            
+            #selected_file_paths = ', '.join(tree_view.model().filePath(i) for i in selected_indexes)
+            
+            selected_indexes = tree_view.selectionModel().selectedRows()
+            #for the select rows create a list of file paths
+            selected_file_paths = [tree_view.model().filePath(i) for i in selected_indexes]
+            
+            self.open_in_mp3tag(selected_file_paths)
+
         elif action == play_action:
             # if the media player is already loaded with the same file and is playing, do nothing
             if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
@@ -463,18 +477,23 @@ class MainWindow(QMainWindow):
             self.player.pause()
             self.update_status(f"Paused: {file_path}")
 
-
-
-    def open_in_mp3tag(self, file_path):
+    def open_in_mp3tag(self, file_path:dict) -> None:
         """Opens a file/directory in MP3Tag. Returns: None"""
-        
+
         try:
-            option = "/fp:" if os.path.isdir(file_path) else "/fn:"
-            command = f'"{self.mp3tag_path}" {option}"{file_path}"'
-            subprocess.run(command, shell=True, check=True)
+            command = f'"{self.mp3tag_path}"'
+
+            for i in range(len(file_path)):
+                option = "/fp:" if os.path.isdir(file_path[i]) else "/fn:"
+                if i > 0:
+                    option = f"/add {option}"
+                
+                command = f'{command} {option}"{file_path[i]}"'
+        
+            subprocess.Popen(command, shell=False)
 
         except Exception as e:
-            print(f"Failed to open file/dir in MP3Tag: {e}")
+            logger.error(f"Failed to open file/dir in MP3Tag: {e}")
 
     def on_path_return_pressed(self, tree_view: QTreeView) -> None:
         if tree_view == self.tree_source:
@@ -493,16 +512,7 @@ class MainWindow(QMainWindow):
             )
 
     def handle_directory(self, error_message, path_line: QLineEdit, original_path, tree_view: QTreeView) -> None:
-        """
-        Handles the directory selection.
-        Args:
-        error_message: The error message to display if the directory is not found.
-        path_line: The line edit where the path is stored.
-        original_path: The original path.
-        tree_view: The tree view where the directory is selected.
-
-        Returns: None
-        """
+        """Handles the directory when the return key is pressed. Returns: None"""
 
         if not os.path.isdir(path_line.text()):
             QMessageBox.critical(self, "Error", error_message)
@@ -511,13 +521,11 @@ class MainWindow(QMainWindow):
             self.open_directory(tree_view, path_line, path_line.text())
 
     def on_tree_clicked(self, item: QModelIndex, tree_view) -> None:
-        """
-        Displays the ID3 tags for the selected audio file in the source tree.
-        Returns: None
-        """
+        """Handles the tree view click event. Returns: None"""
         self.display_id3_tags_when_an_item_is_selected(item, tree_view)
 
     def on_tree_double_clicked(self, index: QModelIndex, tree_view: QTreeView) -> None:
+        """Handles the tree view double click event. Returns: None"""
         model = tree_view.model()
         path = model.filePath(index)
 
@@ -532,6 +540,7 @@ class MainWindow(QMainWindow):
             pop_up_image_dialogue(path, pixmap)
 
     def handle_tree_double_click_dir(self, path: str, tree_view: QTreeView) -> None:
+        """Handles the tree view double click event for directories. Returns: None"""
         model = tree_view.model()
         self.set_root_index_of_tree_view(path, tree_view)
 
@@ -559,6 +568,7 @@ class MainWindow(QMainWindow):
             model.directoryLoaded.disconnect()
 
     def go_up_dir_level(self, tree_view: QTreeView, path: QLineEdit) -> None:
+        """Goes up one directory level."""
         model = tree_view.model()
         current_root_path = model.filePath(tree_view.rootIndex())
         directory = QDir(current_root_path)
@@ -591,17 +601,11 @@ class MainWindow(QMainWindow):
         self._populate_target_tree(tree_structure_target)
 
     def copy_source_to_target(self) -> None:
-        """
-        Copies the source directory to the target directory.
-        Returns: None
-        """
+        """Copies the source directory to the target directory. Returns: None"""
         self.open_directory(self.tree_target, self.path_target, self.path_source.text())
 
     def confirm_exit(self) -> None:
-        """
-        Confirms the exit action with the user.
-        Returns: None
-        """
+        """Confirms the exit of the application. Returns: None"""
 
         if self.prompt_yes_no("Exit", "Are you sure you want to exit?") == QMessageBox.No:
             return
@@ -611,10 +615,7 @@ class MainWindow(QMainWindow):
         self.application.quit()
 
     def __update_config_file(self) -> None:
-        """
-        Updates the configuration file with the current window size.
-        Returns: None
-        """
+        """Updates the config file with the current window size and position. Returns: None"""
 
         # Write the window size to the config file
         self.config.set(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, f"{self.size().height()}")
@@ -664,9 +665,6 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            # self.tree_source.setRootIndex(self.source_model.index(QDir.rootPath()))
-            # set a directory to the root path of the source tree
-
             tree_view.setRootIndex(tree_view.model().index(directory))
             self._set_absolute_path(path, directory, tree_view)
         except Exception as e:
@@ -674,6 +672,7 @@ class MainWindow(QMainWindow):
 
     # TODO Rename this here and in `go_up_dir_level` and `open_directory`
     def _set_absolute_path(self, path: QLineEdit, absolute_path: str, tree_view: QTreeView):
+        """Sets the absolute path for the given path and tree view."""
         path.setText(absolute_path)
         changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
         self.directory_updated(absolute_path, changeType)
@@ -689,6 +688,7 @@ class MainWindow(QMainWindow):
             self.directory_target = directory
 
     def _display_and_log_error(self, e) -> None:
+        """Displays the error message and logs the error to the log file. Returns: None"""
         logging.error(traceback.format_exc())
         QMessageBox.critical(self, "Error", str(e))
 
@@ -701,10 +701,7 @@ class MainWindow(QMainWindow):
         self.statusbar.showMessage(text)
 
     def prompt_yes_no(self, title, message) -> int:
-        """Prompt the user for a yes or no response.
-        Returns:
-            QMessageBox.Yes or QMessageBox.No
-        """
+        """Displays a yes/no prompt to the user. Returns: QMessageBox.Yes or QMessageBox.No"""
         return QMessageBox.question(
             self,
             title,
@@ -728,11 +725,7 @@ class MainWindow(QMainWindow):
             label.setText("")
 
     def display_id3_tags_when_an_item_is_selected(self, item: QModelIndex, tree_view: QTreeView) -> None:
-        """
-        Displays source or Target audio tag labels when a user selects an audio
-        file in a tree widget.
-        Returns: None
-        """
+        """ " Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
 
         absolute_filename = tree_view.model().filePath(item)
 
@@ -743,6 +736,7 @@ class MainWindow(QMainWindow):
         self._display_cover_artwork(absolute_filename, tree_view)
 
     def _display_cover_artwork(self, absolute_file_path: str, tree_view: QTreeView) -> None:
+        """Displays the cover artwork for the selected audio file in the source tree. Returns: None"""
         # Get artwork from the audio tags
         cover_art_images = self.audio_tags.get_cover_art(absolute_file_path)
 
@@ -776,6 +770,7 @@ class MainWindow(QMainWindow):
         stacked_widget.currentChanged.connect(lambda: self.update_image_labels(stacked_widget, label_map))
 
     def update_image_labels(self, stacked_widget: QStackedWidget, label_map: Dict[str, int]) -> None:
+        """Update the image labels when the current index of the stacked widget changes."""
         # Get the current pixmap
         widget = stacked_widget.currentWidget()
 
@@ -799,6 +794,7 @@ class MainWindow(QMainWindow):
         label_map.get("desc").setText(widget.image.desc)
 
     def _display_id3_tags(self, absolute_file_path: str, tree_view: QTreeView) -> None:
+        """Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
         labels = self.get_labels(tree_view, "id3")
 
         # Get the ID3 tags for the selected file from AudioTags
@@ -844,6 +840,7 @@ class MainWindow(QMainWindow):
         repackageByLabel(source_dir, target_dir)
 
     def toggleMenu(self) -> None:
+        """Toggles the left menu. Returns: None"""
         width = self.frame_left_menu.width()
         maxExtend = 100
 
@@ -863,12 +860,7 @@ class MainWindow(QMainWindow):
         self.but_toggle.setToolTipDuration(1000 if width <= 0 else 0)
 
     def handle_media_status_changed(self, status):
-        """
-        Handle changes in media player status.
-
-        Show error message if media is invalid.
-        """
-
+        """Handles the media status changed event."""
         if status == QMediaPlayer.InvalidMedia:
             msgBox = QMessageBox()
             msgBox.setIcon(QMessageBox.Warning)
