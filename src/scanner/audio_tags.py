@@ -58,32 +58,10 @@ class AudioTags:
 
         if path.suffix == ".wav":
             filedata = WAVE(absolute_path_filename)
-            artwork = filedata.tags.getall("APIC")
+            return filedata.tags.getall("APIC")
         else:
             filedata = ID3(absolute_path_filename)
-            # return artwork from mp3
-            artwork = filedata.getall("APIC")
-
-        # Create a dictionary that maps picture type numbers to descriptions
-        picture_types = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
-
-        # loop round artwork and open (show) each image
-        for tag in artwork:
-            # print the mime type of the image, the PictureType as description, size in KB or MB adn ratio
-            print("Picture type:", picture_types.get(tag.type, "Unknown"))
-            print("Picture mime:", tag.mime)
-
-            image_data = io.BytesIO(tag.data)
-            image = Image.open(image_data)
-            print(f"picture size: {image.size[0]}x{image.size[1]}")
-            image_size_kb = len(tag.data) / 1024
-            print("Image size: {:.2f} KB".format(image_size_kb))
-            print("Picture desc:", tag.desc)
-
-        # image.show()
-
-        # No cover art found
-        return artwork
+            return filedata.getall("APIC")
 
 
 class PictureTypeDescription:

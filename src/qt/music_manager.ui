@@ -64,7 +64,7 @@ QTreeView::item {
 }
 */
 QLineEdit{
-		color: #ffffff;
+		color: black;
 		border: 1px solid black;
         border-radius: 10px;
         padding: 5px;
@@ -692,18 +692,21 @@ QPushButton::pressed
                   </widget>
                  </item>
                  <item>
-                  <widget class="QTreeView" name="tree_source">
+                  <widget class="MyTreeView" name="tree_source">
                    <property name="frameShape">
                     <enum>QFrame::WinPanel</enum>
                    </property>
                    <property name="frameShadow">
                     <enum>QFrame::Sunken</enum>
                    </property>
+                   <property name="tabKeyNavigation">
+                    <bool>true</bool>
+                   </property>
                    <property name="alternatingRowColors">
                     <bool>true</bool>
                    </property>
                    <property name="selectionMode">
-                    <enum>QAbstractItemView::SingleSelection</enum>
+                    <enum>QAbstractItemView::ContiguousSelection</enum>
                    </property>
                    <property name="sortingEnabled">
                     <bool>true</bool>
@@ -1356,15 +1359,21 @@ QPushButton::pressed
                   </widget>
                  </item>
                  <item>
-                  <widget class="QTreeView" name="tree_target">
+                  <widget class="MyTreeView" name="tree_target">
                    <property name="frameShape">
                     <enum>QFrame::WinPanel</enum>
                    </property>
                    <property name="frameShadow">
                     <enum>QFrame::Sunken</enum>
                    </property>
+                   <property name="tabKeyNavigation">
+                    <bool>true</bool>
+                   </property>
                    <property name="alternatingRowColors">
                     <bool>true</bool>
+                   </property>
+                   <property name="selectionMode">
+                    <enum>QAbstractItemView::ContiguousSelection</enum>
                    </property>
                    <property name="sortingEnabled">
                     <bool>true</bool>
@@ -2933,7 +2942,7 @@ QPushButton::pressed
      <x>0</x>
      <y>0</y>
      <width>2472</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -2980,6 +2989,13 @@ QPushButton::pressed
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>MyTreeView</class>
+   <extends>QTreeView</extends>
+   <header>main_window</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="resources.qrc"/>
  </resources>
