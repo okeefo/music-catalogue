@@ -2,10 +2,10 @@ import traceback
 import configparser
 import contextlib
 import logging
-import qt.resources_rcc
 import os
 import subprocess
 import winreg
+import winshell
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
@@ -27,17 +27,18 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
 )
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl, QItemSelectionModel
-from scanner.repackage_dir import repackageByLabel
-from PyQt5.QtGui import QFont, QPixmap, QDesktopServices
+from scanner.repackage_dir import repackage_by_label
+from PyQt5.QtGui import QFont, QPixmap
 from enum import Enum
 from scanner.audio_tags import AudioTags
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from mutagen.id3 import PictureType, APIC
-from mutagen.id3 import error as ID3Error
 from scanner.audio_tags import PictureTypeDescription
 from typing import Dict
 from typing import Union
-from PIL import Image
+from ui.custom_dialog import CustomDialog
+import qt.resources_rcc
+import send2trash
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -69,11 +70,12 @@ class ChangeType(Enum):
 # Set logging instance
 logger = logging.getLogger(__name__)
 
-class MyTreeView(QTreeView):    
-    """ A TreeView that allows to select multiple items at once. """
-        
+
+class MyTreeView(QTreeView):
+    """A TreeView that allows to select multiple items at once."""
+
     def mousePressEvent(self, event):
-        """ Select multiple items on mouse click."""
+        """Select multiple items on mouse click."""
         index = self.indexAt(event.pos())
         if event.button() == Qt.LeftButton:
             if index.isValid():
@@ -82,10 +84,11 @@ class MyTreeView(QTreeView):
                 self.selectionModel().select(index, QItemSelectionModel.Select)
         elif event.button() == Qt.RightButton:
             if index.isValid() and not self.selectionModel().isSelected(index):
-             #   self.clearSelection()
+                #   self.clearSelection()
                 self.setCurrentIndex(index)
                 self.selectionModel().select(index, QItemSelectionModel.Select)
         super().mousePressEvent(event)
+
 
 class ImageLabel(QLabel):
     def __init__(self, pixmap: QPixmap, image: APIC):
@@ -148,10 +151,11 @@ class MainWindow(QMainWindow):
         self.__setup_ui()
 
     def __setup_ui(self):
-        """ Set up the user interface. Returns: None"""
+        """Set up the user interface. Returns: None"""
         # Sets up the user interface of the main window.
         self.update_status("Welcome - select a directory to scan either from the menu or the scan button")
         self.__setup_icons()
+        self.__setup_context_menus()
         self.__setup_window_size()
         self.__setup_exit()
         self.__setup_scan_source()
@@ -169,6 +173,35 @@ class MainWindow(QMainWindow):
         self.__setup_dir_up_buttons()
         self.__setup_media_player()
         self.__setup_mp3tag_path()
+
+    def __setup_context_menus(self):
+        """Set up the context menus for the tree views. Returns: None"""
+
+        # define actions
+        self.open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
+        self.play_action = QAction(self.icon_play, "Play", self)
+        self.stop_action = QAction(self.icon_stop, "Stop", self)
+        self.pause_action = QAction(self.icon_pause, "Pause", self)
+        self.delete_action = QAction(self.icon_delete, "Delete", self)
+
+        # menu 1 - MP3 tag only
+        menu = QMenu(self)
+        menu.addAction(self.open_in_mp3tag_action)
+        menu.addSeparator()
+        menu.addAction(self.delete_action)
+        self.cm_mp3tag_only = menu
+
+        # menu 2 - MP3 tag and media
+        menu = QMenu(self)
+        menu.addAction(self.open_in_mp3tag_action)
+        menu.addSeparator()
+        menu.addAction(self.play_action)
+        menu.addAction(self.stop_action)
+        menu.addAction(self.pause_action)
+        menu.addSeparator()
+        menu.addAction(self.delete_action)
+
+        self.cm_mp3tag_and_media = menu
 
     def __setup_mp3tag_path(self) -> None:
         """get mp3tag path from registry"""
@@ -239,6 +272,7 @@ class MainWindow(QMainWindow):
         self.icon_play = QtGui.QIcon(":/icons/icons/play.svg")
         self.icon_pause = QtGui.QIcon(":/icons/icons/pause.svg")
         self.icon_stop = QtGui.QIcon(":/icons/icons/stop-circle.svg")
+        self.icon_delete = QtGui.QIcon(":/icons/icons/delete.svg")
         self.icon_mp3tag = QtGui.QIcon(os.path.abspath("src/qt/icons/mp3tag_icon.png"))
 
     def __setup_menu_buttons(self) -> None:
@@ -369,7 +403,7 @@ class MainWindow(QMainWindow):
         model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
         self.set_root_path_for_tree_view(model, last_dir, tree_view)
         tree_view.setRootIndex(model.index(last_dir))
-        tree_view.clicked.connect(lambda index: self.on_tree_clicked(index, tree_view)) 
+        tree_view.clicked.connect(lambda index: self.on_tree_clicked(index, tree_view))
         tree_view.doubleClicked.connect(lambda index: self.on_tree_double_clicked(index, tree_view))
         tree_view.expanded.connect(lambda: self.resize_first_column(tree_view))
         tree_view.setSortingEnabled(True)
@@ -421,45 +455,27 @@ class MainWindow(QMainWindow):
 
         file_path = tree_view.model().filePath(index)
 
-        menu = QMenu(self)
-
-        # file_path is a dir
-        if os.path.isdir(file_path):
-            open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
-            menu.addAction(open_in_mp3tag_action)
+        if os.path.isdir(file_path) or len(tree_view.selectionModel().selectedRows()) > 1:
+            menu = self.cm_mp3tag_only
 
         elif not file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
             return
 
         else:
-            open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
-            menu.addAction(open_in_mp3tag_action)
-
-            play_action = QAction(self.icon_play, "Play", self)
-            menu.addAction(play_action)
-
-            stop_action = QAction(self.icon_stop, "Stop", self)
-            menu.addAction(stop_action)
-
-            pause_action = QAction(self.icon_pause, "Pause", self)  # Changed "Stop" to "Pause"
-            menu.addAction(pause_action)
+            menu = self.cm_mp3tag_and_media
 
         action = menu.exec_(tree_view.mapToGlobal(position))
 
-        if action == open_in_mp3tag_action:
-            
-            #selected_indexes = tree_view.selectionModel().selectedIndexes()
-            #selected_file_paths = [tree_view.model().filePath(i) for i in selected_indexes]            
-            #selected_file_paths = ', '.join(tree_view.model().filePath(i) for i in selected_indexes)
-            
-            selected_indexes = tree_view.selectionModel().selectedRows()
-            #for the select rows create a list of file paths
-            selected_file_paths = [tree_view.model().filePath(i) for i in selected_indexes]
-            
-            self.open_in_mp3tag(selected_file_paths)
+        if action in [self.open_in_mp3tag_action, self.delete_action]:
 
-        elif action == play_action:
-            # if the media player is already loaded with the same file and is playing, do nothing
+            selected_indexes = tree_view.selectionModel().selectedRows()
+            selected_file_paths = [tree_view.model().filePath(i) for i in selected_indexes]
+            if action == self.delete_action:
+                self.delete_files(selected_file_paths)
+            else:
+                self.open_in_mp3tag(selected_file_paths)
+
+        elif action == self.play_action:
             if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
                 if self.player.mediaStatus() == QMediaPlayer.PlayingState:
                     return
@@ -469,15 +485,36 @@ class MainWindow(QMainWindow):
             self.update_status(f"Playing: {file_path}")
             self.player.play()
 
-        elif action == stop_action:
+        elif action == self.stop_action:
             self.player.stop()
             self.update_status(f"Stopped: {file_path}")
 
-        elif action == pause_action:
+        elif action == self.pause_action:
             self.player.pause()
             self.update_status(f"Paused: {file_path}")
 
-    def open_in_mp3tag(self, file_path:dict) -> None:
+    def delete_files(self, file_path: dict) -> None:
+
+        selected_files = 0
+        selected_dirs = 0
+        for i in range(len(file_path)):
+            if os.path.isdir(file_path[i]):
+                selected_dirs += 1
+            else:
+                selected_files += 1
+
+        message = f"Are you sure you want to delete {selected_files} files"
+        message += f" and {selected_dirs} directories?" if selected_dirs > 0 else "?"
+        message += f"\n\nNote: files will be moved to the recycle bin."
+
+        response, choice = CustomDialog(message, hide_remember=True).show_dialog()
+
+        if response == QMessageBox.Yes:
+            for item in file_path:
+                correct_file_path = os.path.normpath(item)
+                send2trash.send2trash(correct_file_path)
+
+    def open_in_mp3tag(self, file_path: dict) -> None:
         """Opens a file/directory in MP3Tag. Returns: None"""
 
         try:
@@ -487,9 +524,9 @@ class MainWindow(QMainWindow):
                 option = "/fp:" if os.path.isdir(file_path[i]) else "/fn:"
                 if i > 0:
                     option = f"/add {option}"
-                
+
                 command = f'{command} {option}"{file_path[i]}"'
-        
+
             subprocess.Popen(command, shell=False)
 
         except Exception as e:
@@ -837,7 +874,7 @@ class MainWindow(QMainWindow):
             return
 
         self.update_status("Repackaging started...")
-        repackageByLabel(source_dir, target_dir)
+        repackage_by_label(source_dir, target_dir)
 
     def toggleMenu(self) -> None:
         """Toggles the left menu. Returns: None"""
