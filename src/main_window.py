@@ -3,9 +3,9 @@ import configparser
 import contextlib
 import logging
 import os
-import subprocess
 import winreg
 import winshell
+from  main_window_context_menu_handler import TreeViewContextMenuHandler
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
@@ -26,9 +26,9 @@ from PyQt5.QtWidgets import (
     QMenu,
     QVBoxLayout,
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl, QItemSelectionModel
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl, QItemSelectionModel, QPoint
 from scanner.repackage_dir import repackage_by_label
-from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtGui import QFont, QPixmap, QCursor
 from enum import Enum
 from scanner.audio_tags import AudioTags
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
@@ -157,6 +157,7 @@ class MainWindow(QMainWindow):
         # Sets up the user interface of the main window.
         self.update_status("Welcome - select a directory to scan either from the menu or the scan button")
         self.__setup_icons()
+        self.__setup_media_player()
         self.__setup_context_menus()
         self.__setup_window_size()
         self.__setup_exit()
@@ -173,50 +174,13 @@ class MainWindow(QMainWindow):
         self.__setup_menu_buttons()
         self.__setup_path_labels()
         self.__setup_dir_up_buttons()
-        self.__setup_media_player()
-        self.__setup_mp3tag_path()
+        
+      #  self.__setup_mp3tag_path()
 
     def __setup_context_menus(self):
         """Set up the context menus for the tree views. Returns: None"""
+        self.tree_view_cm_handler = TreeViewContextMenuHandler(self.player, self.update_status)
 
-        # define actions
-        self.open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
-        self.play_action = QAction(self.icon_play, "Play", self)
-        self.stop_action = QAction(self.icon_stop, "Stop", self)
-        self.pause_action = QAction(self.icon_pause, "Pause", self)
-        self.delete_action = QAction(self.icon_delete, "Delete", self)
-
-        # menu 1 - MP3 tag only
-        menu = QMenu(self)
-        menu.addAction(self.open_in_mp3tag_action)
-        menu.addSeparator()
-        menu.addAction(self.delete_action)
-        self.cm_mp3tag_only = menu
-
-        # menu 2 - MP3 tag and media
-        menu = QMenu(self)
-        menu.addAction(self.open_in_mp3tag_action)
-        menu.addSeparator()
-        menu.addAction(self.play_action)
-        menu.addAction(self.stop_action)
-        menu.addAction(self.pause_action)
-        menu.addSeparator()
-        menu.addAction(self.delete_action)
-
-        self.cm_mp3tag_and_media = menu
-
-    def __setup_mp3tag_path(self) -> None:
-        """get mp3tag path from registry"""
-
-        try:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Mp3tag.exe") as key:
-                self.mp3tag_path = winreg.QueryValueEx(key, "")[0]
-
-        except Exception as e:
-            logger.error(f"Failed to get Mp3tag path from registry: {e}")
-
-        if self.mp3tag_path is None:
-            self.mp3tag_path = "C:\\Program Files\\Mp3tag\\Mp3tag.exe"
 
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
@@ -271,11 +235,7 @@ class MainWindow(QMainWindow):
         self.icon_repackage = QtGui.QIcon(":/icons/icons/package.svg")
         self.icon_move = QtGui.QIcon(":/icons/icons/move.svg")
         self.icon_exit = QtGui.QIcon(":/icons/icons/log-out.svg")
-        self.icon_play = QtGui.QIcon(":/icons/icons/play.svg")
-        self.icon_pause = QtGui.QIcon(":/icons/icons/pause.svg")
-        self.icon_stop = QtGui.QIcon(":/icons/icons/stop-circle.svg")
-        self.icon_delete = QtGui.QIcon(":/icons/icons/delete.svg")
-        self.icon_mp3tag = QtGui.QIcon(os.path.abspath("src/qt/icons/mp3tag_icon.png"))
+    
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
@@ -418,8 +378,8 @@ class MainWindow(QMainWindow):
 
         # Enable custom context menu
         tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
-        tree_view.customContextMenuRequested.connect(self.tree_view_context_menu)
-
+        tree_view.customContextMenuRequested.connect(lambda position: self.onContextMenuRequested(tree_view, position))
+        
     def __setup_exit(self) -> None:
         """Sets up the exit button. Returns: None"""
         mf_exit = self.findChild(QAction, "mf_exit")
@@ -450,6 +410,13 @@ class MainWindow(QMainWindow):
         self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_source))
         self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_target))
 
+    def onContextMenuRequested(self, tree_view: MyTreeView, position: QPoint):
+        index = tree_view.indexAt(position)
+        if not index.isValid():
+            return
+        self.tree_view_cm_handler.handler(tree_view, index, position)
+
+    
     def on_restore_button_clicked(self) -> None:
         """Restore files from the recycle bin. Returns: None"""
         
@@ -471,92 +438,6 @@ class MainWindow(QMainWindow):
     def resize_first_column(self, tree_view: QTreeView) -> None:
         """Resize the first column of the tree view to fit the longest filename. Returns: None"""
         tree_view.resizeColumnToContents(0)
-
-    def tree_view_context_menu(self, position):
-        """Displays a context menu when right clicking on a tree view. Returns: None"""
-        tree_view = self.sender()
-        index = tree_view.indexAt(position)
-        if not index.isValid():
-            return
-
-        file_path = tree_view.model().filePath(index)
-
-        if os.path.isdir(file_path) or len(tree_view.selectionModel().selectedRows()) > 1:
-            menu = self.cm_mp3tag_only
-
-        elif not file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
-            return
-
-        else:
-            menu = self.cm_mp3tag_and_media
-
-        action = menu.exec_(tree_view.mapToGlobal(position))
-
-        if action in [self.open_in_mp3tag_action, self.delete_action]:
-
-            selected_indexes = tree_view.selectionModel().selectedRows()
-            selected_file_paths = [tree_view.model().filePath(i) for i in selected_indexes]
-            if action == self.delete_action:
-                self.delete_files(selected_file_paths)
-            else:
-                self.open_in_mp3tag(selected_file_paths)
-
-        elif action == self.play_action:
-            if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
-                if self.player.mediaStatus() == QMediaPlayer.PlayingState:
-                    return
-            else:
-                self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
-
-            self.update_status(f"Playing: {file_path}")
-            self.player.play()
-
-        elif action == self.stop_action:
-            self.player.stop()
-            self.update_status(f"Stopped: {file_path}")
-
-        elif action == self.pause_action:
-            self.player.pause()
-            self.update_status(f"Paused: {file_path}")
-
-    def delete_files(self, file_path: dict) -> None:
-
-        selected_files = 0
-        selected_dirs = 0
-        for i in range(len(file_path)):
-            if os.path.isdir(file_path[i]):
-                selected_dirs += 1
-            else:
-                selected_files += 1
-
-        message = f"Are you sure you want to delete {selected_files} files"
-        message += f" and {selected_dirs} directories?" if selected_dirs > 0 else "?"
-        message += f"\n\nNote: files will be moved to the recycle bin."
-
-        response, choice = CustomDialog(message, hide_remember=True).show_dialog()
-
-        if response == QMessageBox.Yes:
-            for item in file_path:
-                correct_file_path = os.path.normpath(item)
-                send2trash.send2trash(correct_file_path)
-
-    def open_in_mp3tag(self, file_path: dict) -> None:
-        """Opens a file/directory in MP3Tag. Returns: None"""
-
-        try:
-            command = f'"{self.mp3tag_path}"'
-
-            for i in range(len(file_path)):
-                option = "/fp:" if os.path.isdir(file_path[i]) else "/fn:"
-                if i > 0:
-                    option = f"/add {option}"
-
-                command = f'{command} {option}"{file_path[i]}"'
-
-            subprocess.Popen(command, shell=False)
-
-        except Exception as e:
-            logger.error(f"Failed to open file/dir in MP3Tag: {e}")
 
     def on_path_return_pressed(self, tree_view: QTreeView) -> None:
         if tree_view == self.tree_source:

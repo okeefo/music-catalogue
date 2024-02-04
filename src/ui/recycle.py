@@ -2,8 +2,11 @@ import sys, os, winshell
 from PyQt5.QtWidgets import QApplication, QDialog, QFileDialog, QAbstractItemView
 import PyQt5.QtGui as QtGui
 from PyQt5.uic import loadUi
+import logging 
 
-
+# create logger and set the logging level to info
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class RestoreDialog(QDialog):
     def __init__(self):
@@ -36,12 +39,10 @@ class RestoreDialog(QDialog):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select File to Restore")
         if file_path:
             # Perform restore operation using the selected file
-            print(f"Restoring file: {file_path}")
+            logger.info(f"Restoring file: {file_path}")
 
     def closeEvent(self, event):
-        # Do something here
-        print("Window is being closed")
-
+        logger.info("Window is being closed")
         # Call the parent class's closeEvent method to actually close the window
         super().closeEvent(event)
 
