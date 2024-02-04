@@ -5,7 +5,7 @@ import logging
 import os
 import winreg
 import winshell
-from  main_window_context_menu_handler import TreeViewContextMenuHandler
+from  ui.main_window_context_menu_handler import TreeViewContextMenuHandler
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
