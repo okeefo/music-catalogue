@@ -553,9 +553,9 @@ class MainWindow(QMainWindow):
 
         if self.prompt_yes_no("Exit", "Are you sure you want to exit?") == QMessageBox.No:
             return
-
+        
+        self.hide()
         self.__update_config_file()
-
         self.application.quit()
 
     def __update_config_file(self) -> None:
