@@ -26,6 +26,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.update_status = update_status
         self.__setup_mp3tag_path()
         self.__setup_menus()
+        self.__setup_vlc_path()
         logging.info("TreeViewContextMenuHandler initialised...")
     
     def __setup_menus(self):
@@ -35,9 +36,11 @@ class TreeViewContextMenuHandler(QWidget):
         self.icon_stop = QtGui.QIcon(":/icons/icons/stop-circle.svg")
         self.icon_delete = QtGui.QIcon(":/icons/icons/delete.svg")
         self.icon_mp3tag = QtGui.QIcon(os.path.abspath("src/qt/icons/mp3tag_icon.png"))
+        self.icon_vlc = QtGui.QIcon(os.path.abspath("src/qt/icons/vlc.ico"))
 
         # define actions
         self.open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
+        self.open_in_vlc_action = QAction(self.icon_vlc, "Open in VLC", self)
         self.play_action = QAction(self.icon_play, "Play", self)
         self.stop_action = QAction(self.icon_stop, "Stop", self)
         self.pause_action = QAction(self.icon_pause, "Pause", self)
@@ -53,6 +56,7 @@ class TreeViewContextMenuHandler(QWidget):
         # menu 2 - MP3 tag and media
         menu = QMenu(self)
         menu.addAction(self.open_in_mp3tag_action)
+        menu.addAction(self.open_in_vlc_action) 
         menu.addSeparator()
         menu.addAction(self.play_action)
         menu.addAction(self.stop_action)
@@ -76,6 +80,21 @@ class TreeViewContextMenuHandler(QWidget):
         if self.mp3tag_path is None:
             self.mp3tag_path = "C:\\Program Files\\Mp3tag\\Mp3tag.exe"
             logger.warning(f"Mp3tag path not found in registry. Using default path: {self.mp3tag_path}")
+
+    def __setup_vlc_path(self) -> None:
+            
+        #get VLC path from registry
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\vlc.exe") as key:
+                self.vlc_path = winreg.QueryValueEx(key, "")[0]
+            
+        except Exception as e:
+            logger.error(f"Failed to get VLC path from registry: {e}")
+            
+        if self.vlc_path is None:
+            self.vlc_path = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
+            logger.warning(f"VLC path not found in registry. Using default path: {self.vlc_path}")
+
             
     def handler(self, tree_view: QTreeView, index: QModelIndex, position: QPoint ) -> None:
         """Displays a context menu when right clicking on a tree view. Returns: None"""
@@ -101,6 +120,12 @@ class TreeViewContextMenuHandler(QWidget):
                 self.delete_files(selected_file_paths)
             else:
                 self.open_in_mp3tag(selected_file_paths)
+        
+        elif action == self.open_in_vlc_action:
+            normalized_path = os.path.normpath(file_path)
+            
+            logger.info(f"Opening file in VLC: {self.vlc_path,normalized_path}")
+            subprocess.Popen( [self.vlc_path,normalized_path] )
 
         elif action == self.play_action:
             if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
