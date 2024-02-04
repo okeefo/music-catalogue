@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>recycle_dialog</class>
+ <widget class="QDialog" name="recycle_dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1329</width>
+    <height>763</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Recycle Bin Restorer</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/icons/icons/headphones.svg</normaloff>:/icons/icons/headphones.svg</iconset>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+
+/*-----QWidget-----
+QWidget
+{
+	background-color: rgb(92, 106, 106);
+	color: #ffffff;
+	border-color: #051a39;
+}
+
+QTreeView {
+
+     color: #ffffff;;
+     border: 1px solid black;
+      background-color: #677676;
+      alternate-background-color: #91a6a6;
+      color: black;
+      selection-background-color: #91a6a6;
+      selection-color: #ffffff
+}
+QTreeView::item {
+      padding: 5px;
+}
+ QHeaderView::section {
+        background-color: rgb(92, 106, 106);;
+        color: #ffffff;
+        border: 1px solid black;
+        padding: 5px;
+}
+*/
+QLineEdit{
+		color: black;
+		border: 1px solid black;
+        border-radius: 10px;
+        padding: 5px;
+        selection-background-color: green;
+        selection-color: white;
+}
+
+QGroupBox {
+        border: 1px solid black;
+        margin-top: 3ex; /* leave space at the top for the title */
+
+}
+QGroupBox::title {
+		color: black;
+        subcontrol-origin: margin;
+        left: 10px; /* position of the title */
+        padding: 0 5px 0 5px; /* space around the title text */
+}
+
+
+
+
+
+</string>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_2">
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>RecycleBin</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QTableView" name="tableView"/>
+      </item>
+      <item>
+       <widget class="QWidget" name="widget" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="restoreButton">
+             <property name="styleSheet">
+              <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+             </property>
+             <property name="text">
+              <string>Restore</string>
+             </property>
+             <property name="icon">
+              <iconset resource="resources.qrc">
+               <normaloff>:/icons/icons/trash-undo.svg</normaloff>:/icons/icons/trash-undo.svg</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="exitButton">
+             <property name="styleSheet">
+              <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+             </property>
+             <property name="text">
+              <string>Exit</string>
+             </property>
+             <property name="icon">
+              <iconset resource="resources.qrc">
+               <normaloff>:/icons/icons/log-out.svg</normaloff>:/icons/icons/log-out.svg</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
