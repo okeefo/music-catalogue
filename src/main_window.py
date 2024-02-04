@@ -37,6 +37,7 @@ from scanner.audio_tags import PictureTypeDescription
 from typing import Dict
 from typing import Union
 from ui.custom_dialog import CustomDialog
+from ui.recycle import RestoreDialog
 import qt.resources_rcc
 import send2trash
 
@@ -69,6 +70,7 @@ class ChangeType(Enum):
 
 # Set logging instance
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 class MyTreeView(QTreeView):
@@ -296,6 +298,12 @@ class MainWindow(QMainWindow):
         self.but_repackage.setToolTipDuration(1000)
         self.but_repackage.setShortcut("Ctrl+R")
 
+        self.but_restore = self.findChild(QPushButton, "but_restore")
+        self.but_restore.clicked.connect(lambda: self.on_restore_button_clicked())
+        self.but_restore.setToolTip("[Ctrl+T] Restore from the recycle bin")
+        self.but_restore.setToolTipDuration(1000)
+        self.but_restore.setShortcut("Ctrl+T")
+
     def __setup_window_size(self) -> None:
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
         self.resize(
@@ -441,6 +449,24 @@ class MainWindow(QMainWindow):
         """Sets up the functionality of the path up buttons. Returns: None"""
         self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_source))
         self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_target))
+
+    def on_restore_button_clicked(self) -> None:
+        """Restore files from the recycle bin. Returns: None"""
+        
+        r = list(winshell.recycle_bin())  # this lists the original path of all the all items in the recycling bin
+        logger.info(f"Recycle bin: {r}")
+        #winshell.undelete(r[0].original_filename())
+        
+        RestoreDialog().exec_()
+            
+        
+        #logger.info(f"Recycle bin: {r}")
+        
+       # index = r.index("C:\ORIGINAL\PATH\test.txt") # to determine the index of your file
+
+        # winshell.undelete(r[index].original_filename())
+                
+        
 
     def resize_first_column(self, tree_view: QTreeView) -> None:
         """Resize the first column of the tree view to fit the longest filename. Returns: None"""
