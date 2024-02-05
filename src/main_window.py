@@ -5,7 +5,7 @@ import logging
 import os
 import winreg
 import winshell
-from  ui.main_window_context_menu_handler import TreeViewContextMenuHandler
+from ui.main_window_context_menu_handler import TreeViewContextMenuHandler
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
@@ -28,16 +28,17 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl, QItemSelectionModel, QPoint
 from scanner.repackage_dir import repackage_by_label
-from PyQt5.QtGui import QFont, QPixmap, QCursor
+from PyQt5.QtGui import QFont, QPixmap
 from enum import Enum
 from scanner.audio_tags import AudioTags
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from mutagen.id3 import PictureType, APIC
+from PyQt5.QtMultimedia import QMediaPlayer
+from mutagen.id3 import PictureType
 from scanner.audio_tags import PictureTypeDescription
 from typing import Dict
 from typing import Union
 from ui.custom_dialog import CustomDialog
 from ui.recycle import RestoreDialog
+from ui.custom_widgets import MyTreeView, ImageLabel, pop_up_image_dialogue
 import qt.resources_rcc
 import send2trash
 
@@ -71,58 +72,6 @@ class ChangeType(Enum):
 # Set logging instance
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
-
-class MyTreeView(QTreeView):
-    """A TreeView that allows to select multiple items at once."""
-
-    def mousePressEvent(self, event):
-        """Select multiple items on mouse click."""
-        index = self.indexAt(event.pos())
-        if event.button() == Qt.LeftButton:
-            if index.isValid():
-                self.clearSelection()
-                self.setCurrentIndex(index)
-                self.selectionModel().select(index, QItemSelectionModel.Select)
-        elif event.button() == Qt.RightButton:
-            if index.isValid() and not self.selectionModel().isSelected(index):
-                #   self.clearSelection()
-                self.setCurrentIndex(index)
-                self.selectionModel().select(index, QItemSelectionModel.Select)
-        super().mousePressEvent(event)
-
-
-class ImageLabel(QLabel):
-    def __init__(self, pixmap: QPixmap, image: APIC):
-        super().__init__()
-        self.pixmap = pixmap
-        self.image = image
-
-    def resizeEvent(self, event):
-        scaled_pixmap = self.pixmap.scaled(self.size(), Qt.KeepAspectRatio)
-        self.setPixmap(scaled_pixmap)
-
-    def mouseDoubleClickEvent(self, event):
-        # Create a QDialog to show the image
-        pop_up_image_dialogue(PictureTypeDescription.get_description(self.image.type), self.pixmap)
-
-
-def pop_up_image_dialogue(title: str, pixmap: QPixmap) -> None:
-    """Set up image dialogue pop up - shown when a user double clicks on an image in the UI."""
-    dialog = QDialog()
-    dialog.setWindowTitle(title)
-    dialog.setLayout(QVBoxLayout())
-    dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)  # Remove the '?' from the title bar
-
-    # Create a QLabel, set its pixmap to the pixmap of the ImageLabel, and add it to the QDialog
-    label = QLabel(dialog)
-    label.setPixmap(pixmap)
-    label.setScaledContents(True)
-    dialog.setWindowIcon(QtGui.QIcon(":/icons/icons/headphones.svg"))
-    dialog.layout().addWidget(label)
-
-    # Show the QDialog
-    dialog.exec_()
 
 
 class MainWindow(QMainWindow):
@@ -174,13 +123,12 @@ class MainWindow(QMainWindow):
         self.__setup_menu_buttons()
         self.__setup_path_labels()
         self.__setup_dir_up_buttons()
-        
-      #  self.__setup_mp3tag_path()
+
+    #  self.__setup_mp3tag_path()
 
     def __setup_context_menus(self):
         """Set up the context menus for the tree views. Returns: None"""
         self.tree_view_cm_handler = TreeViewContextMenuHandler(self.player, self.update_status)
-
 
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
@@ -235,7 +183,6 @@ class MainWindow(QMainWindow):
         self.icon_repackage = QtGui.QIcon(":/icons/icons/package.svg")
         self.icon_move = QtGui.QIcon(":/icons/icons/move.svg")
         self.icon_exit = QtGui.QIcon(":/icons/icons/log-out.svg")
-    
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
@@ -379,7 +326,7 @@ class MainWindow(QMainWindow):
         # Enable custom context menu
         tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
         tree_view.customContextMenuRequested.connect(lambda position: self.onContextMenuRequested(tree_view, position))
-        
+
     def __setup_exit(self) -> None:
         """Sets up the exit button. Returns: None"""
         mf_exit = self.findChild(QAction, "mf_exit")
@@ -416,24 +363,20 @@ class MainWindow(QMainWindow):
             return
         self.tree_view_cm_handler.handler(tree_view, index, position)
 
-    
     def on_restore_button_clicked(self) -> None:
         """Restore files from the recycle bin. Returns: None"""
-        
+
         r = list(winshell.recycle_bin())  # this lists the original path of all the all items in the recycling bin
         logger.info(f"Recycle bin: {r}")
-        #winshell.undelete(r[0].original_filename())
-        
-        RestoreDialog().exec_()
-            
-        
-        #logger.info(f"Recycle bin: {r}")
-        
-       # index = r.index("C:\ORIGINAL\PATH\test.txt") # to determine the index of your file
+        # winshell.undelete(r[0].original_filename())
 
-        # winshell.undelete(r[index].original_filename())
-                
-        
+        RestoreDialog().exec_()
+
+        # logger.info(f"Recycle bin: {r}")
+
+    # index = r.index("C:\ORIGINAL\PATH\test.txt") # to determine the index of your file
+
+    # winshell.undelete(r[index].original_filename())
 
     def resize_first_column(self, tree_view: QTreeView) -> None:
         """Resize the first column of the tree view to fit the longest filename. Returns: None"""
@@ -553,7 +496,7 @@ class MainWindow(QMainWindow):
 
         if self.prompt_yes_no("Exit", "Are you sure you want to exit?") == QMessageBox.No:
             return
-        
+
         self.hide()
         self.__update_config_file()
         self.application.quit()
