@@ -10,8 +10,7 @@ from ui.main_window_context_menu_handler import TreeViewContextMenuHandler
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
     QStackedWidget,
-    QDialog,
-    QLabel,
+    QAbstractItemView,
     QApplication,
     QMainWindow,
     QAction,
@@ -23,10 +22,8 @@ from PyQt5.QtWidgets import (
     QCompleter,
     QFileSystemModel,
     QLineEdit,
-    QMenu,
-    QVBoxLayout,
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QUrl, QItemSelectionModel, QPoint
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QFileInfo, QFile, QPoint
 from scanner.repackage_dir import repackage_by_label
 from PyQt5.QtGui import QFont, QPixmap
 from enum import Enum
@@ -72,6 +69,56 @@ class ChangeType(Enum):
 # Set logging instance
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+class FileSystemModel(QFileSystemModel):
+    def flags(self, index):
+        default_flags = super().flags(index)
+        if index.isValid():
+            return default_flags | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+        else:
+            return default_flags | Qt.ItemIsDropEnabled
+
+    def supportedDropActions(self):
+        return Qt.CopyAction | Qt.MoveAction
+
+    def dropMimeData(self, data, action, row, column, parent):
+        logger.info(f"dropMimeData: data={data}, action={action}, row={row}, column={column}, parent={parent}")
+
+        # Implement logic to move/copy files or directories based on the data, action, and parent parameters
+        if action == Qt.IgnoreAction:
+            return True
+
+        if not data.hasUrls():
+            return False
+
+        if column > 0:
+            return False
+
+        success = all(self.copy_or_move_file(url, parent) for url in data.urls())
+
+        if success:
+            self.directoryLoaded.emit(self.filePath(parent))
+
+        return success
+
+    def copy_or_move_file(self, url, parent):
+        file_path = url.toLocalFile()
+        file_name = QFileInfo(file_path).fileName()
+        destination_path = self.filePath(parent) + QDir.separator() + file_name
+
+        logger.info(f"Moving file from {file_path} to {destination_path}")
+
+        if QFile.exists(destination_path):
+            logger.info(f"File already exists at {destination_path}")
+            return False
+
+        if QFile.rename(file_path, destination_path):  # Move the file
+            logger.info(f"Successfully moved file to {destination_path}")
+            return True
+        else:
+            logger.info(f"Failed to move file to {destination_path}")
+            return False
 
 
 class MainWindow(QMainWindow):
@@ -211,6 +258,12 @@ class MainWindow(QMainWindow):
         self.but_restore.setToolTipDuration(1000)
         self.but_restore.setShortcut("Ctrl+T")
 
+        self.but_move = self.findChild(QPushButton, "but_move")
+        self.but_move.clicked.connect(lambda: self.on_move_button_clicked())
+        self.but_move.setToolTip("[Ctrl+M] Move the select items in the source directory -> target directory")
+        self.but_move.setToolTipDuration(1000)
+        self.but_move.setShortcut("Ctrl+M")
+
     def __setup_window_size(self) -> None:
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
         self.resize(
@@ -314,7 +367,7 @@ class MainWindow(QMainWindow):
     def __setup_tree_view(self, tree_view: MyTreeView, last_dir) -> None:
         """Sets up the tree view. Returns: None"""
 
-        model = QFileSystemModel()
+        model = FileSystemModel()
         model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
         self.set_root_path_for_tree_view(model, last_dir, tree_view)
         tree_view.setRootIndex(model.index(last_dir))
@@ -322,6 +375,11 @@ class MainWindow(QMainWindow):
         tree_view.doubleClicked.connect(lambda index: self.on_tree_double_clicked(index, tree_view))
         tree_view.expanded.connect(lambda: self.resize_first_column(tree_view))
         tree_view.setSortingEnabled(True)
+
+        tree_view.setDragEnabled(True)
+        tree_view.setAcceptDrops(True)
+        tree_view.setDragDropMode(QAbstractItemView.InternalMove)
+        tree_view.setDefaultDropAction(Qt.MoveAction)
 
         # Enable custom context menu
         tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -363,20 +421,20 @@ class MainWindow(QMainWindow):
             return
         self.tree_view_cm_handler.handler(tree_view, index, position)
 
+    def on_move_button_clicked(self) -> None:
+        """Move files from the source directory to the target directory. Returns: None"""
+        # logger.info("Moving files from source to target")
+        source_dir = self.tree_source.model().rootPath()
+        target_dir = self.tree_target.model().rootPath()
+        logger.info("source_dir: {0}, target_dir: {1}".format(source_dir, target_dir))
+
     def on_restore_button_clicked(self) -> None:
         """Restore files from the recycle bin. Returns: None"""
 
         r = list(winshell.recycle_bin())  # this lists the original path of all the all items in the recycling bin
         logger.info(f"Recycle bin: {r}")
-        # winshell.undelete(r[0].original_filename())
 
         RestoreDialog().exec_()
-
-        # logger.info(f"Recycle bin: {r}")
-
-    # index = r.index("C:\ORIGINAL\PATH\test.txt") # to determine the index of your file
-
-    # winshell.undelete(r[index].original_filename())
 
     def resize_first_column(self, tree_view: QTreeView) -> None:
         """Resize the first column of the tree view to fit the longest filename. Returns: None"""
@@ -430,9 +488,8 @@ class MainWindow(QMainWindow):
         """Handles the tree view double click event for directories. Returns: None"""
         model = tree_view.model()
         self.set_root_index_of_tree_view(path, tree_view)
+        self.set_root_path_for_tree_view(model, path, tree_view)
 
-        model.directoryLoaded.connect(lambda: self.set_root_index_of_tree_view(path, tree_view))
-        model.directoryLoaded.connect(lambda: self.set_root_index_of_tree_view(path, tree_view))
         #  tree_view.expand(index)
         model.directoryLoaded.connect(lambda: self.set_root_index_of_tree_view(path, tree_view))
         #  tree_view.expand(index)
@@ -467,7 +524,7 @@ class MainWindow(QMainWindow):
         """Changes the directory up one level."""
         parent_path = directory.absolutePath()
 
-        model = QFileSystemModel()
+        model = FileSystemModel()
 
         self.set_root_path_for_tree_view(model, parent_path, tree_view)
         self.set_root_index_of_tree_view(parent_path, tree_view)
@@ -553,6 +610,8 @@ class MainWindow(QMainWindow):
 
         try:
             tree_view.setRootIndex(tree_view.model().index(directory))
+            self.set_root_index_of_tree_view(directory, tree_view)
+            self.set_root_path_for_tree_view(tree_view.model(), directory, tree_view)
             self._set_absolute_path(path, directory, tree_view)
         except Exception as e:
             self._display_and_log_error(e)
@@ -724,7 +783,8 @@ class MainWindow(QMainWindow):
             return
 
         self.update_status("Repackaging started...")
-        repackage_by_label(source_dir, target_dir)
+        logger.info("Repackaging started...%s -> %s", source_dir, target_dir)
+        repackage_by_label(source_dir, target_dir, self.audio_tags)
 
     def toggleMenu(self) -> None:
         """Toggles the left menu. Returns: None"""
