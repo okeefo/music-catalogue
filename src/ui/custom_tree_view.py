@@ -1,9 +1,13 @@
+import os
+
 from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView, QLineEdit
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
-from ui.custom_image_label import ImageLabel, pop_up_image_dialogue
-
+from PyQt5.QtGui import QPixmap
+from ui.custom_image_label import  pop_up_image_dialogue
 from log_config import get_logger
+
 import contextlib
+
 
 # create logger
 logger = get_logger(__name__)
@@ -13,12 +17,12 @@ class FileSystemModel(QFileSystemModel):
     def flags(self, index):
         default_flags = super().flags(index)
         if index.isValid():
-            return default_flags | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
+            return default_flags | Qt.ItemFlag.ItemIsDragEnabled | Qt.ItemFlag.ItemIsDropEnabled
         else:
-            return default_flags | Qt.ItemIsDropEnabled
+            return default_flags | Qt.ItemFlag.ItemIsDropEnabled
 
     def supportedDropActions(self):
-        return Qt.CopyAction | Qt.MoveAction
+        return Qt.DropAction.CopyAction | Qt.DropAction.MoveAction
 
     def dropMimeData(self, data, action, row, column, parent):
         logger.info(f"dropMimeData: data={data}, action={action}, row={row}, column={column}, parent={parent}")
@@ -92,7 +96,7 @@ class MyTreeView(QTreeView):
     def set_dir_as(self, last_dir) -> None:
         model = FileSystemModel()
         model.directoryLoaded.connect(self.resize_first_column)
-        self.set_root_path_for_tree_view(model, last_dir)
+        self.__set_root_path_for_tree_view(model, last_dir)
         self.setRootIndex(model.index(last_dir))
 
     def set_single_click_handler(self, single_click_fn) -> None:
@@ -111,22 +115,15 @@ class MyTreeView(QTreeView):
         """Resize the first column of the tree view to fit the longest filename. Returns: None"""
         self.resizeColumnToContents(0)
 
-    def handle_tree_double_click_dir(self, path: str) -> None:
+    def __handle_tree_double_click_dir(self, path: str) -> None:
         """Handles the tree view double click event for directories. Returns: None"""
+       
         model = self.model()
-        self.set_root_index_of_tree_view(path)
-        self.set_root_path_for_tree_view(model, path)
+        self.__set_root_index_of_tree_view(path)
+        self.__set_root_path_for_tree_view(model, path)
 
-        #  tree_view.expand(index)
-        model.directoryLoaded.connect(lambda: self.set_root_index_of_tree_view(path))
-        #  tree_view.expand(index)
+        model.directoryLoaded.connect(lambda: self.__set_root_index_of_tree_view(path))
 
-        # if tree_view == self.tree_source:
-        #    self.path_source.setText(path)
-        #    self.directory_updated(path, ChangeType.SOURCE)
-        # else:
-        #    self.path_target.setText(path)
-        #    self.directory_updated(path, ChangeType.TARGET)
 
     def on_tree_double_clicked(self, index: QModelIndex) -> None:
         """Handles the tree view double click event. Returns: None"""
@@ -135,23 +132,22 @@ class MyTreeView(QTreeView):
         path = model.filePath(index)
 
         if model.isDir(index):
-            self.handle_tree_double_click_dir(path)
+            self.__handle_tree_double_click_dir(path)
 
-        # check if paths is a file and an image like jpg, png etc
         elif os.path.isfile(path) and path.lower().endswith((".jpg", ".png", ".jpeg")):
-            # load image to a pixmap
             pixmap = QPixmap(path)
-            # pop image in a new dialog
             pop_up_image_dialogue(path, pixmap)
 
-    def set_root_path_for_tree_view(self, model: QFileSystemModel, absolute_path: str):
+    def __set_root_path_for_tree_view(self, model: QFileSystemModel, absolute_path: str):
         """Sets the root path for the given tree view."""
+      
         model.setRootPath(absolute_path)
         self.setModel(model)
         self.sortByColumn(0, Qt.AscendingOrder)
 
-    def set_root_index_of_tree_view(self, directory) -> None:
+    def __set_root_index_of_tree_view(self, directory) -> None:
         """Sets the root index of the tree view."""
+       
         model = self.model()
         self.setRootIndex(model.index(directory))
         for column in range(model.columnCount()):
@@ -162,8 +158,21 @@ class MyTreeView(QTreeView):
 
     def go_up_one_dir_level(self) -> None:
         """Goes up one directory level."""
+       
         model = self.model()
         current_root_path = model.filePath(self.rootIndex())
         directory = QDir(current_root_path)
         if directory.cdUp():
             self.set_dir_as(directory.absolutePath())
+            
+    def change_dir(self, directory) -> None:
+        """Changes the directory of the tree view."""
+       
+        logger.info(f"Tree View {self.objectName()} Changing directory to {directory}")
+       
+        self.set_dir_as(directory)
+        self.resize_first_column()
+        self.clearSelection()
+        self.setCurrentIndex(self.model().index(directory))
+        self.selectionModel().select(self.model().index(directory), QItemSelectionModel.Select)
+        self.selectionModel().setCurrentIndex(self.model().index(directory), QItemSelectionModel.Select)
