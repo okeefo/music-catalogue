@@ -1,16 +1,13 @@
 import traceback
 import configparser
-import contextlib
 import logging
 import os
-import winreg
 import winshell
-from ui.main_window_context_menu_handler import TreeViewContextMenuHandler
+import qt.resources_rcc
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
     QStackedWidget,
-    QAbstractItemView,
     QApplication,
     QMainWindow,
     QAction,
@@ -24,20 +21,28 @@ from PyQt5.QtWidgets import (
     QLineEdit,
 )
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QFileInfo, QFile, QPoint
-from scanner.repackage_dir import repackage_by_label
 from PyQt5.QtGui import QFont, QPixmap
-from enum import Enum
-from scanner.audio_tags import AudioTags
 from PyQt5.QtMultimedia import QMediaPlayer
+
+from enum import Enum
 from mutagen.id3 import PictureType
-from scanner.audio_tags import PictureTypeDescription
 from typing import Dict
 from typing import Union
-from ui.custom_dialog import CustomDialog
+
+from scanner.audio_tags import AudioTags
+from scanner.audio_tags import PictureTypeDescription
+from scanner.repackage_dir import repackage_by_label
+
 from ui.recycle import RestoreDialog
-from ui.custom_widgets import MyTreeView, ImageLabel, pop_up_image_dialogue
-import qt.resources_rcc
-import send2trash
+from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
+from ui.custom_image_label import ImageLabel, pop_up_image_dialogue
+from ui.custom_tree_view import MyTreeView
+
+# Set logging instance
+from log_config import get_logger
+
+logger = get_logger(__name__)
+
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -64,61 +69,6 @@ class ChangeType(Enum):
 
     def isTarget(self):
         return self == ChangeType.TARGET
-
-
-# Set logging instance
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
-
-class FileSystemModel(QFileSystemModel):
-    def flags(self, index):
-        default_flags = super().flags(index)
-        if index.isValid():
-            return default_flags | Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled
-        else:
-            return default_flags | Qt.ItemIsDropEnabled
-
-    def supportedDropActions(self):
-        return Qt.CopyAction | Qt.MoveAction
-
-    def dropMimeData(self, data, action, row, column, parent):
-        logger.info(f"dropMimeData: data={data}, action={action}, row={row}, column={column}, parent={parent}")
-
-        # Implement logic to move/copy files or directories based on the data, action, and parent parameters
-        if action == Qt.IgnoreAction:
-            return True
-
-        if not data.hasUrls():
-            return False
-
-        if column > 0:
-            return False
-
-        success = all(self.copy_or_move_file(url, parent) for url in data.urls())
-
-        if success:
-            self.directoryLoaded.emit(self.filePath(parent))
-
-        return success
-
-    def copy_or_move_file(self, url, parent):
-        file_path = url.toLocalFile()
-        file_name = QFileInfo(file_path).fileName()
-        destination_path = self.filePath(parent) + QDir.separator() + file_name
-
-        logger.info(f"Moving file from {file_path} to {destination_path}")
-
-        if QFile.exists(destination_path):
-            logger.info(f"File already exists at {destination_path}")
-            return False
-
-        if QFile.rename(file_path, destination_path):  # Move the file
-            logger.info(f"Successfully moved file to {destination_path}")
-            return True
-        else:
-            logger.info(f"Failed to move file to {destination_path}")
-            return False
 
 
 class MainWindow(QMainWindow):
@@ -356,34 +306,18 @@ class MainWindow(QMainWindow):
     def __setup_tree_widgets(self) -> None:
         """Populates the id3_tags list with the names of the supported ID3 tags. Returns: None"""
 
-        self.tree_source = self.findChild(QTreeView, "tree_source")
+        self.tree_source = self.findChild(MyTreeView, "tree_source")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY]
-        self.__setup_tree_view(self.tree_source, last_dir)
-
-        self.tree_target = self.findChild(QTreeView, "tree_target")
+        self.__set_tree_actions(self.tree_source, last_dir, self.path_source)
+        self.tree_target = self.findChild(MyTreeView, "tree_target")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
-        self.__setup_tree_view(self.tree_target, last_dir)
-
-    def __setup_tree_view(self, tree_view: MyTreeView, last_dir) -> None:
-        """Sets up the tree view. Returns: None"""
-
-        model = FileSystemModel()
-        model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
-        self.set_root_path_for_tree_view(model, last_dir, tree_view)
-        tree_view.setRootIndex(model.index(last_dir))
-        tree_view.clicked.connect(lambda index: self.on_tree_clicked(index, tree_view))
-        tree_view.doubleClicked.connect(lambda index: self.on_tree_double_clicked(index, tree_view))
-        tree_view.expanded.connect(lambda: self.resize_first_column(tree_view))
-        tree_view.setSortingEnabled(True)
-
-        tree_view.setDragEnabled(True)
-        tree_view.setAcceptDrops(True)
-        tree_view.setDragDropMode(QAbstractItemView.InternalMove)
-        tree_view.setDefaultDropAction(Qt.MoveAction)
-
-        # Enable custom context menu
-        tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
-        tree_view.customContextMenuRequested.connect(lambda position: self.onContextMenuRequested(tree_view, position))
+        self.__set_tree_actions(self.tree_target, last_dir, self.path_target)
+        
+    def __set_tree_actions(self,tree_view: MyTreeView, last_dir:str, path_bar: QLineEdit  ) -> None:
+        tree_view.setup_tree_view(last_dir)
+        tree_view.set_single_click_handler(self.on_tree_clicked)
+        tree_view.set_double_click_handler(lambda index, tree_view, _: self.on_tree_double_clicked(index, tree_view, path_bar))
+        tree_view.set_custom_context_menu(self.onContextMenuRequested)
 
     def __setup_exit(self) -> None:
         """Sets up the exit button. Returns: None"""
@@ -436,9 +370,16 @@ class MainWindow(QMainWindow):
 
         RestoreDialog().exec_()
 
-    def resize_first_column(self, tree_view: QTreeView) -> None:
-        """Resize the first column of the tree view to fit the longest filename. Returns: None"""
-        tree_view.resizeColumnToContents(0)
+    def on_tree_clicked(self, item: QModelIndex, tree_view: MyTreeView) -> None:
+        """Handles the tree view click event. Returns: None"""
+        self.display_id3_tags_when_an_item_is_selected(item, tree_view)
+    
+    def on_tree_double_clicked(self, index: QModelIndex, tree_view: MyTreeView, info_bar: QLineEdit) -> None:
+        """ Handles the tree view double click event. Returns: None"""
+        tree_view.on_tree_double_clicked(index)
+        # workout if treeview is source or target
+
+        info_bar.setText(tree_view.model().rootPath())
 
     def on_path_return_pressed(self, tree_view: QTreeView) -> None:
         if tree_view == self.tree_source:
@@ -465,78 +406,11 @@ class MainWindow(QMainWindow):
         else:
             self.open_directory(tree_view, path_line, path_line.text())
 
-    def on_tree_clicked(self, item: QModelIndex, tree_view) -> None:
-        """Handles the tree view click event. Returns: None"""
-        self.display_id3_tags_when_an_item_is_selected(item, tree_view)
 
-    def on_tree_double_clicked(self, index: QModelIndex, tree_view: QTreeView) -> None:
-        """Handles the tree view double click event. Returns: None"""
-        model = tree_view.model()
-        path = model.filePath(index)
-
-        if model.isDir(index):
-            self.handle_tree_double_click_dir(path, tree_view)
-
-        # check if paths is a file and an image like jpg, png etc
-        elif os.path.isfile(path) and path.lower().endswith((".jpg", ".png", ".jpeg")):
-            # load image to a pixmap
-            pixmap = QPixmap(path)
-            # pop image in a new dialog
-            pop_up_image_dialogue(path, pixmap)
-
-    def handle_tree_double_click_dir(self, path: str, tree_view: QTreeView) -> None:
-        """Handles the tree view double click event for directories. Returns: None"""
-        model = tree_view.model()
-        self.set_root_index_of_tree_view(path, tree_view)
-        self.set_root_path_for_tree_view(model, path, tree_view)
-
-        #  tree_view.expand(index)
-        model.directoryLoaded.connect(lambda: self.set_root_index_of_tree_view(path, tree_view))
-        #  tree_view.expand(index)
-
-        if tree_view == self.tree_source:
-            self.path_source.setText(path)
-            self.directory_updated(path, ChangeType.SOURCE)
-        else:
-            self.path_target.setText(path)
-            self.directory_updated(path, ChangeType.TARGET)
-
-    def set_root_index_of_tree_view(self, directory, tree_view: QTreeView = None) -> None:
-        """Sets the root index of the tree view."""
-        model = tree_view.model()
-        tree_view.setRootIndex(model.index(directory))
-        for column in range(model.columnCount()):
-            tree_view.resizeColumnToContents(column)
-
-        with contextlib.suppress(TypeError):
-            model.directoryLoaded.disconnect()
-
-    def go_up_dir_level(self, tree_view: QTreeView, path: QLineEdit) -> None:
-        """Goes up one directory level."""
-        model = tree_view.model()
-        current_root_path = model.filePath(tree_view.rootIndex())
-        directory = QDir(current_root_path)
-        if directory.cdUp():
-            self._change_dir_up(directory, tree_view, path)
-
-    # TODO Rename this here and in `go_up_dir_level`
-    def _change_dir_up(self, directory: QDir, tree_view: QTreeView, path: QLineEdit) -> None:
-        """Changes the directory up one level."""
-        parent_path = directory.absolutePath()
-
-        model = FileSystemModel()
-
-        self.set_root_path_for_tree_view(model, parent_path, tree_view)
-        self.set_root_index_of_tree_view(parent_path, tree_view)
-        model.directoryLoaded.connect(lambda: self.resize_first_column(tree_view))
-
-        self._set_absolute_path(path, parent_path, tree_view)
-
-    def set_root_path_for_tree_view(self, model: QFileSystemModel, absolute_path: str, tree_view: QTreeView):
-        """Sets the root path for the given tree view."""
-        model.setRootPath(absolute_path)
-        tree_view.setModel(model)
-        tree_view.sortByColumn(0, Qt.AscendingOrder)
+    def go_up_dir_level(self, tree_view: MyTreeView, path_bar: QLineEdit) -> None:
+        
+        tree_view.go_up_one_dir_level()
+        path_bar.setText(tree_view.model().rootPath())
 
     def reset_target(self) -> None:
         """Resets the target directory tree structure to before any changes were made. Returns: None"""
@@ -617,21 +491,21 @@ class MainWindow(QMainWindow):
             self._display_and_log_error(e)
 
     # TODO Rename this here and in `go_up_dir_level` and `open_directory`
-    def _set_absolute_path(self, path: QLineEdit, absolute_path: str, tree_view: QTreeView):
-        """Sets the absolute path for the given path and tree view."""
-        path.setText(absolute_path)
-        changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
-        self.directory_updated(absolute_path, changeType)
+#    def _set_absolute_path(self, path: QLineEdit, absolute_path: str, tree_view: QTreeView):
+#        """Sets the absolute path for the given path and tree view."""
+#        path.setText(absolute_path)
+#        changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
+#        self.directory_updated(absolute_path, changeType)
 
-    def directory_updated(self, directory, changeType: ChangeType) -> None:
-        """Update the source or target directory config settings, and the base reference based on the given directory."""
-
-        if changeType.isSource():
-            self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, directory)
-            self.directory_source = directory
-        else:
-            self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, directory)
-            self.directory_target = directory
+#    def directory_updated(self, directory, changeType: ChangeType) -> None:
+#        """Update the source or target directory config settings, and the base reference based on the given directory."""
+#
+#        if changeType.isSource():
+#            self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, directory)
+#            self.directory_source = directory
+#        else:
+#            self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, directory)
+#            self.directory_target = directory
 
     def _display_and_log_error(self, e) -> None:
         """Displays the error message and logs the error to the log file. Returns: None"""

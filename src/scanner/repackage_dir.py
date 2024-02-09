@@ -1,6 +1,6 @@
 import os
 import shutil
-import scanner.audio_tags as AudioTags
+
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from ui.custom_dialog import CustomDialog
 

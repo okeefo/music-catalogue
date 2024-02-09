@@ -2,15 +2,9 @@ from pathlib import Path
 import logging
 import taglib
 from mutagen.wave import WAVE
-from mutagen.id3 import ID3, PictureType, APIC
-from tinytag import TinyTag
-from PIL import Image
-import io
-
-from tinytag import TinyTagException
+from mutagen.id3 import ID3,  APIC
 
 AUDIO_EXTENSIONS = [".mp3", ".wav"]
-
 
 # The AudioTags class is used to manage and manipulate audio tags.
 class AudioTags:
