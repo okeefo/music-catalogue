@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (
     QFileSystemModel,
     QLineEdit,
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QFileInfo, QFile, QPoint
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QPoint
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer
 
@@ -82,8 +82,6 @@ class MainWindow(QMainWindow):
         # Set up instance variables
         self.config = configparser.ConfigParser()
         self.id3_tags = []
-        self.directory_source = "c:\\"
-        self.directory_target = "c:\\"
         self.audio_tags = AudioTags()
         self.player = QMediaPlayer()
 
@@ -107,9 +105,9 @@ class MainWindow(QMainWindow):
         self.__setup_context_menus()
         self.__setup_window_size()
         self.__setup_exit()
-        self.__setup_scan_source()
-        self.__setup_scan_target()
-        self.__setup_copy_source_button()
+        self.__setup_open_dir_browsers()
+        self.__setup_copy_dir_view()
+        self.__setup_path_info_bar()
         self.__setup_tree_widgets()
         self.__setup_refresh_button()
         self.__setup_id3_tags()
@@ -118,7 +116,7 @@ class MainWindow(QMainWindow):
         self.__clear_labels()
         self.__setup_action_buttons()
         self.__setup_menu_buttons()
-        self.__setup_path_labels()
+
         self.__setup_dir_up_buttons()
 
     #  self.__setup_mp3tag_path()
@@ -150,7 +148,7 @@ class MainWindow(QMainWindow):
         if CONFIG_SECTION_WINDOW not in self.config:
             self.config.add_section(CONFIG_SECTION_WINDOW)
 
-    def __setup_path_labels(self) -> None:
+    def __setup_path_info_bar(self) -> None:
         """Set up the path labels. Returns: None"""
         # Create a file system model
         model = QFileSystemModel()
@@ -161,15 +159,16 @@ class MainWindow(QMainWindow):
         completer.setModel(model)
 
         # Set the completer for the QLineEdit
-        self.path_source = self.findChild(QLineEdit, "path_source")
-        self.path_source.setCompleter(completer)
-        self.path_target = self.findChild(QLineEdit, "path_target")
-        self.path_target.setCompleter(completer)
+        self.path_info_bar_source = self.findChild(QLineEdit, "path_source")
+        self.path_info_bar_source.setCompleter(completer)
 
-        self.path_source.returnPressed.connect(lambda: self.on_path_return_pressed(self.tree_source))
-        self.path_target.returnPressed.connect(lambda: self.on_path_return_pressed(self.tree_target))
-        self.path_source.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY])
-        self.path_target.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY])
+        self.path_info_bar_target = self.findChild(QLineEdit, "path_target")
+        self.path_info_bar_target.setCompleter(completer)
+
+        self.path_info_bar_source.returnPressed.connect(lambda: self.on_path_info_bar_return_pressed(self.tree_source, self.path_info_bar_source))
+        self.path_info_bar_target.returnPressed.connect(lambda: self.on_path_info_bar_return_pressed(self.tree_target, self.path_info_bar_target))
+        self.path_info_bar_source.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY])
+        self.path_info_bar_target.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY])
 
     def __setup_icons(self) -> None:
         """Set up the icons. Returns: None"""
@@ -308,12 +307,12 @@ class MainWindow(QMainWindow):
 
         self.tree_source = self.findChild(MyTreeView, "tree_source")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY]
-        self.__set_tree_actions(self.tree_source, last_dir, self.path_source)
+        self.__set_tree_actions(self.tree_source, last_dir, self.path_info_bar_source)
         self.tree_target = self.findChild(MyTreeView, "tree_target")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
-        self.__set_tree_actions(self.tree_target, last_dir, self.path_target)
-        
-    def __set_tree_actions(self,tree_view: MyTreeView, last_dir:str, path_bar: QLineEdit  ) -> None:
+        self.__set_tree_actions(self.tree_target, last_dir, self.path_info_bar_target)
+
+    def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: QLineEdit) -> None:
         tree_view.setup_tree_view(last_dir)
         tree_view.set_single_click_handler(self.on_tree_clicked)
         tree_view.set_double_click_handler(lambda index, tree_view, _: self.on_tree_double_clicked(index, tree_view, path_bar))
@@ -334,10 +333,12 @@ class MainWindow(QMainWindow):
         self.but_exit.setIcon(icon)
         mf_exit.setShortcut("Ctrl+Q")
 
-    def __setup_copy_source_button(self) -> None:
-        """Sets up the functionality of the copy source button. Returns: None"""
+    def __setup_copy_dir_view(self) -> None:
+        """Sets up the functionality of the copy dir buttons. Returns: None"""
         but_copy_source = self.findChild(QPushButton, "but_copy_source")
-        but_copy_source.clicked.connect(self.copy_source_to_target)
+        but_copy_source.clicked.connect(lambda: self.copy_dir_tree_view(self.tree_target, self.path_info_bar_target, self.tree_source.model().rootPath()))
+        but_copy_target = self.findChild(QPushButton, "but_copy_target")
+        but_copy_target.clicked.connect(lambda: self.copy_dir_tree_view(self.tree_source, self.path_info_bar_source, self.tree_target.model().rootPath()))
 
     def __setup_refresh_button(self) -> None:
         """Sets up the functionality of the refresh button. Returns: None"""
@@ -346,8 +347,8 @@ class MainWindow(QMainWindow):
 
     def __setup_dir_up_buttons(self) -> None:
         """Sets up the functionality of the path up buttons. Returns: None"""
-        self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_source))
-        self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_target))
+        self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_info_bar_source))
+        self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_info_bar_target))
 
     def onContextMenuRequested(self, tree_view: MyTreeView, position: QPoint):
         index = tree_view.indexAt(position)
@@ -373,42 +374,23 @@ class MainWindow(QMainWindow):
     def on_tree_clicked(self, item: QModelIndex, tree_view: MyTreeView) -> None:
         """Handles the tree view click event. Returns: None"""
         self.display_id3_tags_when_an_item_is_selected(item, tree_view)
-    
-    def on_tree_double_clicked(self, index: QModelIndex, tree_view: MyTreeView, info_bar: QLineEdit) -> None:
-        """ Handles the tree view double click event. Returns: None"""
-        tree_view.on_tree_double_clicked(index)
-        # workout if treeview is source or target
 
+    def on_tree_double_clicked(self, index: QModelIndex, tree_view: MyTreeView, info_bar: QLineEdit) -> None:
+        """Handles the tree view double click event. Returns: None"""
+        tree_view.on_tree_double_clicked(index)
         info_bar.setText(tree_view.model().rootPath())
 
-    def on_path_return_pressed(self, tree_view: QTreeView) -> None:
-        if tree_view == self.tree_source:
-            self.handle_directory(
-                "Source directory not found",
-                self.path_source,
-                self.directory_source,
-                tree_view,
-            )
-        else:
-            self.handle_directory(
-                "Target directory not found",
-                self.path_target,
-                self.directory_target,
-                tree_view,
-            )
-
-    def handle_directory(self, error_message, path_line: QLineEdit, original_path, tree_view: QTreeView) -> None:
+    def on_path_info_bar_return_pressed(self, tree_view: MyTreeView, path_info_bar: QLineEdit) -> None:
         """Handles the directory when the return key is pressed. Returns: None"""
 
-        if not os.path.isdir(path_line.text()):
-            QMessageBox.critical(self, "Error", error_message)
-            path_line.setText(original_path)
+        if not os.path.isdir(path_info_bar.text()):
+            QMessageBox.critical(self, "Error", "Directory doesn't exist")
+            path_info_bar.setText(tree_view.model().rootPath())
         else:
-            self.open_directory(tree_view, path_line, path_line.text())
-
+            tree_view.change_dir(path_info_bar.text())
 
     def go_up_dir_level(self, tree_view: MyTreeView, path_bar: QLineEdit) -> None:
-        
+
         tree_view.go_up_one_dir_level()
         path_bar.setText(tree_view.model().rootPath())
 
@@ -418,9 +400,10 @@ class MainWindow(QMainWindow):
         tree_structure_target = self.tree_structure_target_original
         self._populate_target_tree(tree_structure_target)
 
-    def copy_source_to_target(self) -> None:
+    def copy_dir_tree_view(self, tree_view: MyTreeView, path_info_bar: QLineEdit, directory: str) -> None:
         """Copies the source directory to the target directory. Returns: None"""
-        self.open_directory(self.tree_target, self.path_target, self.path_source.text())
+        tree_view.change_dir(directory)
+        path_info_bar.setText(self.tree_target.model().rootPath())
 
     def confirm_exit(self) -> None:
         """Confirms the exit of the application. Returns: None"""
@@ -438,74 +421,31 @@ class MainWindow(QMainWindow):
         # Write the window size to the config file
         self.config.set(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, f"{self.size().height()}")
         self.config.set(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, f"{self.size().width()}")
+        self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, self.path_info_bar_source.text())
+        self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, self.path_info_bar_target.text())
 
         # Save the config file
         with open("config.ini", "w") as config_file:
             self.config.write(config_file)
 
-    def __setup_scan_source(self) -> None:
-        """Set up the source scan button and menu item. Returns: None"""
-        action_scan = self.findChild(QAction, "mf_scan")
-        action_scan.triggered.connect(lambda: self.open_directory(self.tree_source, self.path_source))
-
+    def __setup_open_dir_browsers(self) -> None:
+        """Set up the open dir browsers. Returns: None"""
         but_select_source = self.findChild(QPushButton, "but_select_source")
-        but_select_source.clicked.connect(lambda: self.open_directory(self.tree_source, self.path_source))
+        but_select_source.clicked.connect(lambda: self.open_directory_browser(self.tree_source, self.path_info_bar_source))
 
-    def __setup_scan_target(self) -> None:
-        """Set up the target scan button. Returns: None"""
         but_select_target = self.findChild(QPushButton, "but_select_target")
-        but_select_target.clicked.connect(lambda: self.open_directory(self.tree_target, self.path_target))
+        but_select_target.clicked.connect(lambda: self.open_directory_browser(self.tree_target, self.path_info_bar_target))
+
+    def open_directory_browser(self, tree_view: MyTreeView, path: QLineEdit) -> None:
+        """Open directory browser. Returns: None"""
+
+        if directory := QFileDialog.getExistingDirectory(self, "Select Directory", tree_view.model().rootPath(), QFileDialog.ShowDirsOnly):
+            tree_view.change_dir(directory)
+            path.setText(directory)
 
     def on_repackage_button_clicked(self) -> None:
         """Set up the repackage button. Returns: None"""
         self.repackage()
-
-    def open_directory(self, tree_view: QTreeView, path: QLineEdit, directory=None) -> None:
-        """Scan the source directory. Returns: None"""
-
-        if not directory:
-            if tree_view == self.tree_source:
-                last_directory = self.config.get(
-                    CONFIG_SECTION_DIRECTORIES,
-                    CONFIG_LAST_SOURCE_DIRECTORY,
-                    fallback="",
-                )
-            else:
-                last_directory = self.config.get(
-                    CONFIG_SECTION_DIRECTORIES,
-                    CONFIG_LAST_TARGET_DIRECTORY,
-                    fallback="",
-                )
-
-            directory = QFileDialog.getExistingDirectory(self, "Select Directory", last_directory)
-
-        if not directory:
-            return
-
-        try:
-            tree_view.setRootIndex(tree_view.model().index(directory))
-            self.set_root_index_of_tree_view(directory, tree_view)
-            self.set_root_path_for_tree_view(tree_view.model(), directory, tree_view)
-            self._set_absolute_path(path, directory, tree_view)
-        except Exception as e:
-            self._display_and_log_error(e)
-
-    # TODO Rename this here and in `go_up_dir_level` and `open_directory`
-#    def _set_absolute_path(self, path: QLineEdit, absolute_path: str, tree_view: QTreeView):
-#        """Sets the absolute path for the given path and tree view."""
-#        path.setText(absolute_path)
-#        changeType = ChangeType.SOURCE if tree_view == self.tree_source else ChangeType.TARGET
-#        self.directory_updated(absolute_path, changeType)
-
-#    def directory_updated(self, directory, changeType: ChangeType) -> None:
-#        """Update the source or target directory config settings, and the base reference based on the given directory."""
-#
-#        if changeType.isSource():
-#            self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, directory)
-#            self.directory_source = directory
-#        else:
-#            self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, directory)
-#            self.directory_target = directory
 
     def _display_and_log_error(self, e) -> None:
         """Displays the error message and logs the error to the log file. Returns: None"""
