@@ -1435,7 +1435,7 @@ QPushButton::pressed
                   </widget>
                  </item>
                  <item>
-                  <widget class="QTreeView" name="tree_target">
+                  <widget class="MyTreeView" name="tree_target">
                    <property name="frameShape">
                     <enum>QFrame::WinPanel</enum>
                    </property>

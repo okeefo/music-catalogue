@@ -9,12 +9,10 @@ from PyQt5.QtCore import QDir, QModelIndex, QAbstractItemModel, Qt, QFileInfo
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QIcon
 from PIL import Image
+from log_config import get_logger
 
-
-# create logger and set the logging level to info
-logging.basicConfig(format="%(asctime)s - %(name)s - %(funcName)s - %(levelname)s -  %(message)s", level=logging.INFO)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# create logger
+logger = get_logger(__name__)
 
 
 class RestoreDialog(QDialog):
