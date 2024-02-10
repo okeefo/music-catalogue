@@ -365,7 +365,7 @@ class MainWindow(QMainWindow):
     def on_move_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Move files from the source directory to the target directory. Returns: None"""
         logger.info("Moving files from %s to %s", from_tree.model().rootPath(), to_tree.model().rootPath())
-        move_files(from_tree.get_list_of_selected_files(), from_tree.model().rootPath(), to_tree.model().rootPath())
+        move_files(from_tree.get_list_of_selected_files(), to_tree.model().rootPath())
 
     
     def on_restore_button_clicked(self) -> None:
