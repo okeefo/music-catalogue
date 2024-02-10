@@ -176,3 +176,8 @@ class MyTreeView(QTreeView):
         self.setCurrentIndex(self.model().index(directory))
         self.selectionModel().select(self.model().index(directory), QItemSelectionModel.Select)
         self.selectionModel().setCurrentIndex(self.model().index(directory), QItemSelectionModel.Select)
+        
+    def get_list_of_selected_files(self) -> dict[str]:
+        """Returns a list of the selected files (inc) in the tree view."""
+        selected_indexes = self.selectionModel().selectedRows()
+        return [self.model().filePath(i) for i in selected_indexes]

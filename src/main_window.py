@@ -29,13 +29,13 @@ from mutagen.id3 import PictureType
 from typing import Dict
 from typing import Union
 
-from scanner.audio_tags import AudioTags
-from scanner.audio_tags import PictureTypeDescription
-from scanner.repackage_dir import repackage_by_label
-
+from file_system_utils.audio_tags import AudioTags
+from file_system_utils.audio_tags import PictureTypeDescription
+from file_system_utils.repackage_dir import repackage_by_label
+from file_system_utils.copy_and_move import move_files
 from ui.recycle import RestoreDialog
 from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
-from ui.custom_image_label import ImageLabel, pop_up_image_dialogue
+from ui.custom_image_label import ImageLabel
 from ui.custom_tree_view import MyTreeView
 
 # Set logging instance
@@ -109,7 +109,6 @@ class MainWindow(QMainWindow):
         self.__setup_copy_dir_view()
         self.__setup_path_info_bar()
         self.__setup_tree_widgets()
-        self.__setup_refresh_button()
         self.__setup_id3_tags()
         self.__setup_label_cache()
         self.__setup_label_style_sheet()
@@ -207,11 +206,17 @@ class MainWindow(QMainWindow):
         self.but_restore.setToolTipDuration(1000)
         self.but_restore.setShortcut("Ctrl+T")
 
-        self.but_move = self.findChild(QPushButton, "but_move")
-        self.but_move.clicked.connect(lambda: self.on_move_button_clicked())
-        self.but_move.setToolTip("[Ctrl+M] Move the select items in the source directory -> target directory")
-        self.but_move.setToolTipDuration(1000)
-        self.but_move.setShortcut("Ctrl+M")
+        self.but_move_to_target = self.findChild(QPushButton, "but_move_to_target")
+        self.but_move_to_target.clicked.connect(lambda: self.on_move_button_clicked(self.tree_source, self.tree_target))
+        self.but_move_to_target.setToolTip("[Ctrl+M] Move the select items in the source directory -> target directory")
+        self.but_move_to_target.setToolTipDuration(1000)
+        self.but_move_to_target.setShortcut("Ctrl+M")
+
+        self.but_move_to_source = self.findChild(QPushButton, "but_move_to_source")
+        self.but_move_to_source.clicked.connect(lambda: self.on_move_button_clicked(self.tree_target, self.tree_source))
+        self.but_move_to_source.setToolTip("[Ctrl+shift+M] Move the select items in the target directory -> source directory")
+        self.but_move_to_source.setToolTipDuration(1000)
+        self.but_move_to_source.setShortcut("Ctrl+shift+M")
 
     def __setup_window_size(self) -> None:
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
@@ -340,11 +345,6 @@ class MainWindow(QMainWindow):
         but_copy_target = self.findChild(QPushButton, "but_copy_target")
         but_copy_target.clicked.connect(lambda: self.copy_dir_tree_view(self.tree_source, self.path_info_bar_source, self.tree_target.model().rootPath()))
 
-    def __setup_refresh_button(self) -> None:
-        """Sets up the functionality of the refresh button. Returns: None"""
-        but_refresh = self.findChild(QPushButton, "but_refresh_target_2")
-        but_refresh.clicked.connect(self.reset_target)
-
     def __setup_dir_up_buttons(self) -> None:
         """Sets up the functionality of the path up buttons. Returns: None"""
         self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_info_bar_source))
@@ -354,15 +354,20 @@ class MainWindow(QMainWindow):
         index = tree_view.indexAt(position)
         if not index.isValid():
             return
-        self.tree_view_cm_handler.handler(tree_view, index, position)
+        
+        if tree_view == self.tree_source:
+            other_tree = self.tree_target
+        else:
+            other_tree = self.tree_source
+            
+        self.tree_view_cm_handler.handler(tree_view, index, position, other_tree)
 
-    def on_move_button_clicked(self) -> None:
+    def on_move_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Move files from the source directory to the target directory. Returns: None"""
-        # logger.info("Moving files from source to target")
-        source_dir = self.tree_source.model().rootPath()
-        target_dir = self.tree_target.model().rootPath()
-        logger.info("source_dir: {0}, target_dir: {1}".format(source_dir, target_dir))
+        logger.info("Moving files from %s to %s", from_tree.model().rootPath(), to_tree.model().rootPath())
+        move_files(from_tree.get_list_of_selected_files(), from_tree.model().rootPath(), to_tree.model().rootPath())
 
+    
     def on_restore_button_clicked(self) -> None:
         """Restore files from the recycle bin. Returns: None"""
 
@@ -393,12 +398,6 @@ class MainWindow(QMainWindow):
 
         tree_view.go_up_one_dir_level()
         path_bar.setText(tree_view.model().rootPath())
-
-    def reset_target(self) -> None:
-        """Resets the target directory tree structure to before any changes were made. Returns: None"""
-
-        tree_structure_target = self.tree_structure_target_original
-        self._populate_target_tree(tree_structure_target)
 
     def copy_dir_tree_view(self, tree_view: MyTreeView, path_info_bar: QLineEdit, directory: str) -> None:
         """Copies the source directory to the target directory. Returns: None"""
