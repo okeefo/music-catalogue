@@ -942,7 +942,7 @@ QPushButton::pressed
                        </spacer>
                       </item>
                       <item>
-                       <widget class="QPushButton" name="but_move">
+                       <widget class="QPushButton" name="but_move_to_target">
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1000,20 +1000,7 @@ QPushButton::pressed
                        </widget>
                       </item>
                       <item>
-                       <spacer name="verticalSpacer_5">
-                        <property name="orientation">
-                         <enum>Qt::Vertical</enum>
-                        </property>
-                        <property name="sizeHint" stdset="0">
-                         <size>
-                          <width>20</width>
-                          <height>40</height>
-                         </size>
-                        </property>
-                       </spacer>
-                      </item>
-                      <item>
-                       <widget class="QPushButton" name="but_refresh_target_2">
+                       <widget class="QPushButton" name="but_move_to_source">
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1062,13 +1049,26 @@ QPushButton::pressed
 }</string>
                         </property>
                         <property name="text">
-                         <string>Reset Target</string>
+                         <string>Move</string>
                         </property>
                         <property name="icon">
                          <iconset resource="resources.qrc">
-                          <normaloff>:/icons/icons/skip-back.svg</normaloff>:/icons/icons/skip-back.svg</iconset>
+                          <normaloff>:/icons/icons/arrow-left.svg</normaloff>:/icons/icons/arrow-left.svg</iconset>
                         </property>
                        </widget>
+                      </item>
+                      <item>
+                       <spacer name="verticalSpacer_5">
+                        <property name="orientation">
+                         <enum>Qt::Vertical</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>20</width>
+                          <height>40</height>
+                         </size>
+                        </property>
+                       </spacer>
                       </item>
                       <item>
                        <spacer name="verticalSpacer_3">

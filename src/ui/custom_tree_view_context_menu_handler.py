@@ -12,8 +12,10 @@ from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtCore import QUrl, QPoint, QModelIndex
 from ui.custom_dialog import CustomDialog
 from log_config import get_logger
+from ui.custom_tree_view import MyTreeView
+from file_system_utils.copy_and_move import move_files
 
-# create logger 
+# create logger
 logger = get_logger(__name__)
 
 
@@ -45,6 +47,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.stop_action = QAction(self.icon_stop, "Stop", self)
         self.pause_action = QAction(self.icon_pause, "Pause", self)
         self.delete_action = QAction(self.icon_delete, "Delete", self)
+        self.move_action = QAction("Move", self)
 
         # menu 1 - MP3 tag only
         menu = QMenu()
@@ -52,6 +55,8 @@ class TreeViewContextMenuHandler(QWidget):
         menu.addAction(self.open_in_vlc_action)
         menu.addSeparator()
         menu.addAction(self.delete_action)
+        menu.addSeparator()
+        menu.addAction(self.move_action)
         self.cm_no_media_controls = menu
 
         # menu 2 - MP3 tag and media
@@ -64,6 +69,8 @@ class TreeViewContextMenuHandler(QWidget):
         menu.addAction(self.pause_action)
         menu.addSeparator()
         menu.addAction(self.delete_action)
+        menu.addSeparator()
+        menu.addAction(self.move_action)
 
         self.cm_with_media_controls = menu
 
@@ -95,11 +102,11 @@ class TreeViewContextMenuHandler(QWidget):
             self.vlc_path = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
             logger.warning(f"VLC path not found in registry. Using default path: {self.vlc_path}")
 
-    def handler(self, tree_view: QTreeView, index: QModelIndex, position: QPoint) -> None:
+    def handler(self, tree_view: QTreeView, index: QModelIndex, position: QPoint, other_tree_view: MyTreeView) -> None:
         """Displays a context menu when right clicking on a tree view. Returns: None"""
 
         file_path = tree_view.model().filePath(index)
-        
+
         menu = self.get_menu_to_display(file_path, tree_view)
         if menu is None:
             return
@@ -109,14 +116,13 @@ class TreeViewContextMenuHandler(QWidget):
         selected_indexes = tree_view.selectionModel().selectedRows()
         selected_file_paths = [tree_view.model().filePath(i) for i in selected_indexes]
         selected_file_paths = [os.path.normpath(i) for i in selected_file_paths]
-   
-        #logger.info(f"Selected indexes: {selected_file_paths}")
-        
-        self.handle_action(action, selected_file_paths)
+
+        # logger.info(f"Selected indexes: {selected_file_paths}")
+
+        self.handle_action(action, selected_file_paths, tree_view.model().rootPath(), other_tree_view.model().rootPath())
 
     def get_menu_to_display(self, file_path: str, tree_view: QTreeView) -> QMenu:
-        
-        """Selects menu based on file type"""       
+        """Selects menu based on file type"""
         if os.path.isdir(file_path) or len(tree_view.selectionModel().selectedRows()) > 1:
             return self.cm_no_media_controls
 
@@ -126,9 +132,9 @@ class TreeViewContextMenuHandler(QWidget):
         else:
             return self.cm_with_media_controls
 
-    def handle_action(self, action: QAction, selected_file_paths: list) -> None:
+    def handle_action(self, action: QAction, selected_file_paths: list, this_path: str, that_path: str) -> None:
         """Handles the action selected in the context menu"""
- 
+
         if action == self.delete_action:
             self.delete_files(selected_file_paths)
 
@@ -137,12 +143,16 @@ class TreeViewContextMenuHandler(QWidget):
 
         elif action == self.open_in_vlc_action:
             self.open_in_vlc(selected_file_paths)
-        
+
+        elif action == self.move_action:
+            logger.info(f"action - move: {selected_file_paths} - from:{this_path} - to:{that_path}")
+            move_files(selected_file_paths, this_path, that_path)
+
         elif action == self.play_action:
             logger.info(f"action - playing: {selected_file_paths[0]}")
             self.play_file(selected_file_paths[0])
             logger.info(f"media status: {self.player.mediaStatus()}")
-            
+
         elif action == self.stop_action:
             logger.info(f"action - stop:Stopping: {selected_file_paths[0]}")
             self.player.stop()
@@ -154,7 +164,7 @@ class TreeViewContextMenuHandler(QWidget):
             self.player.pause()
             self.update_status(f"Paused: {selected_file_paths[0]}")
             logger.info(f"media status: {self.player.mediaStatus()}")
-            
+
     def play_file(self, file_path: str) -> None:
         """Plays a file. Returns: None"""
         if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
@@ -185,10 +195,10 @@ class TreeViewContextMenuHandler(QWidget):
                     option = f"/add {option}"
 
                 command = f'{command} {option}"{file_path[i]}"'
-                
+
             logger.info(f"Opening file/s in MP3Tag: {command}")
             subprocess.Popen(command, shell=False)
-            logger.info(f"opening file/s in MP3Tag: done")
+            logger.info("opening file/s in MP3Tag: done")
 
         except Exception as e:
             logger.error(f"Failed to open file/dir in MP3Tag: {e}")
@@ -202,7 +212,7 @@ class TreeViewContextMenuHandler(QWidget):
                 selected_dirs += 1
             else:
                 selected_files += 1
-                
+
         logger.info("prompting user to delete files")
 
         message = f"Are you sure you want to delete {selected_files} files"
@@ -210,7 +220,7 @@ class TreeViewContextMenuHandler(QWidget):
         message += f"\n\nNote: files will be moved to the recycle bin."
 
         response, choice = CustomDialog(message, hide_remember=True).show_dialog()
-        
+
         logger.info(f"User chose: {choice}")
 
         if response == QMessageBox.Yes:

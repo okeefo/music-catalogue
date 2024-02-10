@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QLabel, QVBoxLayout, QDialog
 from PyQt5.QtCore import  Qt
 from PyQt5.QtGui import QPixmap, QIcon
 from mutagen.id3 import APIC
-from scanner.audio_tags import PictureTypeDescription
+from file_system_utils.audio_tags import PictureTypeDescription
 
 
 class ImageLabel(QLabel):
