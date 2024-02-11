@@ -840,7 +840,7 @@ QPushButton::pressed
 }</string>
                         </property>
                         <property name="text">
-                         <string>Repackage</string>
+                         <string>Repackage &gt;</string>
                         </property>
                         <property name="icon">
                          <iconset resource="resources.qrc">
@@ -871,7 +871,7 @@ QPushButton::pressed
                        </spacer>
                       </item>
                       <item>
-                       <widget class="QPushButton" name="but_copy">
+                       <widget class="QPushButton" name="but_copy_to_target">
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -924,7 +924,64 @@ QPushButton::pressed
                         </property>
                         <property name="icon">
                          <iconset resource="resources.qrc">
-                          <normaloff>:/icons/icons/copy.svg</normaloff>:/icons/icons/copy.svg</iconset>
+                          <normaloff>:/icons/icons/arrow-right.svg</normaloff>:/icons/icons/arrow-right.svg</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="but_copy_to_source">
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}a
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
+                        <property name="text">
+                         <string>Copy</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="resources.qrc">
+                          <normaloff>:/icons/icons/arrow-left.svg</normaloff>:/icons/icons/arrow-left.svg</iconset>
                         </property>
                        </widget>
                       </item>
@@ -955,8 +1012,7 @@ QPushButton
 	border-radius: 3px;
 	border-color: #051a39;
 	padding: 5px;
-}
-
+}a
 QPushButton::disabled
 {
 	background-color: #404040;
@@ -3076,7 +3132,7 @@ QPushButton::pressed
      <x>0</x>
      <y>0</y>
      <width>2112</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">

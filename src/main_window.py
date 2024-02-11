@@ -31,7 +31,7 @@ from typing import Union
 
 from file_system_utils.audio_tags import AudioTags
 from file_system_utils.audio_tags import PictureTypeDescription
-from file_system_utils.repackage_dir import repackage_by_label
+from file_system_utils.repackage_dir import repackage_dir_by_label
 from file_system_utils.copy_and_move import move_files
 from ui.recycle import RestoreDialog
 from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
@@ -351,16 +351,15 @@ class MainWindow(QMainWindow):
         self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_info_bar_target))
 
     def onContextMenuRequested(self, tree_view: MyTreeView, position: QPoint):
+        
         index = tree_view.indexAt(position)
-        if not index.isValid():
-            return
         
         if tree_view == self.tree_source:
             other_tree = self.tree_target
         else:
             other_tree = self.tree_source
             
-        self.tree_view_cm_handler.handler(tree_view, index, position, other_tree)
+        self.tree_view_cm_handler.show_menu(tree_view, index, position, other_tree)
 
     def on_move_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Move files from the source directory to the target directory. Returns: None"""
@@ -597,7 +596,7 @@ class MainWindow(QMainWindow):
 
         self.update_status("Repackaging started...")
         logger.info("Repackaging started...%s -> %s", source_dir, target_dir)
-        repackage_by_label(source_dir, target_dir, self.audio_tags)
+        repackage_dir_by_label(source_dir, target_dir)
 
     def toggleMenu(self) -> None:
         """Toggles the left menu. Returns: None"""
