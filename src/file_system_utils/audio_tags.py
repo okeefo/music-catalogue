@@ -1,14 +1,15 @@
 from pathlib import Path
-import logging
+from log_config import get_logger
 import taglib
 from mutagen.wave import WAVE
 from mutagen.id3 import ID3,  APIC
 
 AUDIO_EXTENSIONS = [".mp3", ".wav"]
+logger = get_logger(__name__)
 
 # The AudioTags class is used to manage and manipulate audio tags.
 class AudioTags:
-    logger = logging.getLogger(__name__)
+
 
     def get_tags(self, absolute_path_filename: str) -> dict:
         if not self.isSupported(absolute_path_filename):
@@ -18,18 +19,18 @@ class AudioTags:
             tags = taglib.File(Path(absolute_path_filename)).tags
 
         except FileNotFoundError:
-            self.logger.exception("File %s not found", absolute_path_filename)
+            logger.exception(f"File not found: '{absolute_path_filename}'")
             return {}
 
         except TagLibError:
-            self.logger.exception("Could not read tags from %s", absolute_path_filename)
+            logger.exception(f"Could not read tags from: '{absolute_path_filename}'")
             return {}
 
         if not tags:
-            self.logger.warning("No tags found in file %s", absolute_path_filename)
+            logger.warning(f"No tags found in file: '{absolute_path_filename}'")
             return {}
 
-        self.logger.info("Found tags in file %s: %s", absolute_path_filename, tags)
+        logger.info(f"Found tags in file: '{absolute_path_filename}' tags:'{tags}'")
         return tags
 
     def isSupported(self, absolute_path_filename: str) -> bool:

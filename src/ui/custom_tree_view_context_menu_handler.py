@@ -1,4 +1,3 @@
-import logging
 import winreg
 import os
 import subprocess
@@ -12,7 +11,7 @@ from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtCore import QUrl, QPoint, QModelIndex
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
 from ui.custom_tree_view import MyTreeView
-from file_system_utils.copy_and_move import move_files
+from file_system_utils.copy_and_move import move_files, ask_and_move_files
 from file_system_utils.repackage_dir import repackage_dir_by_label
 import qt.resources_rcc
 
@@ -25,14 +24,14 @@ logger = get_logger(__name__)
 class TreeViewContextMenuHandler(QWidget):
 
     def __init__(self, player: QMediaPlayer, update_status: callable):
-        logging.info("TreeViewContextMenuHandler initialising...")
+        logger.info("TreeViewContextMenuHandler initialising...")
         super().__init__()
         self.player = player
         self.update_status = update_status
         self.__setup_mp3tag_path()
         self.__setup_menus()
         self.__setup_vlc_path()
-        logging.info("TreeViewContextMenuHandler initialised...")
+        logger.info("TreeViewContextMenuHandler initialised...")
 
     def __setup_menus(self):
 
@@ -65,11 +64,11 @@ class TreeViewContextMenuHandler(QWidget):
                 self.mp3tag_path = winreg.QueryValueEx(key, "")[0]
 
         except Exception as e:
-            logger.error(f"Failed to get Mp3tag path from registry: {e}")
+            logger.error(f"Failed to get Mp3tag path from registry: '{e}'")
 
         if self.mp3tag_path is None:
             self.mp3tag_path = "C:\\Program Files\\Mp3tag\\Mp3tag.exe"
-            logger.warning(f"Mp3tag path not found in registry. Using default path: {self.mp3tag_path}")
+            logger.warning(f"Mp3tag path not found in registry. Using default path: '{self.mp3tag_path}'")
 
     def __setup_vlc_path(self) -> None:
 
@@ -79,11 +78,11 @@ class TreeViewContextMenuHandler(QWidget):
                 self.vlc_path = winreg.QueryValueEx(key, "")[0]
 
         except Exception as e:
-            logger.error(f"Failed to get VLC path from registry: {e}")
+            logger.error(f"Failed to get VLC path from registry: '{e}'")
 
         if self.vlc_path is None:
             self.vlc_path = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
-            logger.warning(f"VLC path not found in registry. Using default path: {self.vlc_path}")
+            logger.warning(f"VLC path not found in registry. Using default path: '{self.vlc_path}'")
 
     def get_menu_to_display(self, file_path: str, tree_view: QTreeView) -> QMenu:
         """Selects menu based on file type"""
@@ -124,6 +123,7 @@ class TreeViewContextMenuHandler(QWidget):
 
             menu.addSeparator()
             menu.addAction(self.move_selected_action)
+            menu.addAction(self.move_all_action)
             menu.addAction(self.delete_action)
 
         return menu
@@ -138,9 +138,6 @@ class TreeViewContextMenuHandler(QWidget):
             return
 
         action = menu.exec_(tree_view.mapToGlobal(position))
-
-        # logger.info(f"Selected indexes: {selected_file_paths}")
-
         self.handle_action(action, tree_view, other_tree_view.model().rootPath())
 
     def handle_action(self, action: QAction, tree_view: MyTreeView, dest_path: str) -> None:
@@ -155,36 +152,37 @@ class TreeViewContextMenuHandler(QWidget):
         elif action == self.open_in_vlc_action:
             self.open_in_vlc(self.get_selected_file_paths(tree_view))
 
+        elif action == self.repackage_dir_action:
+            logger.info(f"action - repackage dir: '{tree_view.model().rootPath()}'")
+            self.repackage_dir(tree_view.model().rootPath())
+             
         elif action == self.move_selected_action:
             move_files(self.get_selected_file_paths(tree_view), dest_path)
 
-        elif action == self.repackage_dir_action:
-            logger.info(f"action - repackage dir: {tree_view.model().rootPath()}")
-            self.repackage_dir(tree_view.model().rootPath())
-
         elif action == self.move_all_action:
-            logger.info(f"action - move all from : {tree_view.model().rootPath()} - to:{dest_path}")
-            # move_files(selected_file_paths, dest_path)
+            from_path = tree_view.model().rootPath()
+            logger.info(f"action - move all from : '{from_path}' - to: '{dest_path}'")
+            ask_and_move_files(from_path, dest_path)
 
         elif action == self.play_action:
             selected_file = self.get_selected_file_paths(tree_view)[0]
-            logger.info(f"action - playing: {selected_file}")
+            logger.info(f"action - playing: '{selected_file}'")
             self.play_file(selected_file)
-            logger.info(f"media status: {self.player.mediaStatus()}")
+            logger.info(f"media status: '{self.player.mediaStatus()}'")
 
         elif action == self.stop_action:
             selected_file = self.get_selected_file_paths(tree_view)[0]
-            logger.info(f"action - stop:Stopping: {selected_file}")
+            logger.info(f"action - stop:Stopping: '{selected_file}'")
             self.player.stop()
-            self.update_status(f"Stopped: {selected_file}")
-            logger.info(f"media status: {self.player.mediaStatus()}")
+            self.update_status(f"Stopped: '{selected_file}'")
+            logger.info(f"media status: '{self.player.mediaStatus()}'")
 
         elif action == self.pause_action:
             selected_file = self.get_selected_file_paths(tree_view)[0]
-            logger.info(f"Pausing: {selected_file}")
+            logger.info(f"Pausing: '{selected_file}'")
             self.player.pause()
-            self.update_status(f"Paused: {selected_file}")
-            logger.info(f"media status: {self.player.mediaStatus()}")
+            self.update_status(f"Paused: '{selected_file}'")
+            logger.info(f"media status: '{self.player.mediaStatus()}'")
 
     def get_selected_file_paths(self, tree_view: QTreeView) -> list:
         """Returns a list of selected file paths from the tree view"""
@@ -197,7 +195,7 @@ class TreeViewContextMenuHandler(QWidget):
         """Plays an audio file. Returns: None"""
         if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
             if self.player.mediaStatus() == QMediaPlayer.PlayingState:
-                logger.info(f"Already playing: {file_path} - no action")
+                logger.info(f"Already playing: '{file_path}' - no action")
                 return
         else:
             self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
@@ -206,7 +204,7 @@ class TreeViewContextMenuHandler(QWidget):
 
     def open_in_vlc(self, file_paths: dict) -> None:
         """Opens a file/directory in VLC. Returns: None"""
-        logger.info(f"Opening file/s in VLC: {self.vlc_path,file_paths}")
+        logger.info(f"Opening file/s in VLC: '{self.vlc_path,file_paths}'")
         command = [self.vlc_path] + file_paths
         subprocess.Popen(command, shell=False)
         logger.info(f"opening file/s in VLC: done")
@@ -224,12 +222,12 @@ class TreeViewContextMenuHandler(QWidget):
 
                 command = f'{command} {option}"{file_path[i]}"'
 
-            logger.info(f"Opening file/s in MP3Tag: {command}")
+            logger.info(f"Opening file/s in MP3Tag: '{command}'")
             subprocess.Popen(command, shell=False)
             logger.info("opening file/s in MP3Tag: done")
 
         except Exception as e:
-            logger.error(f"Failed to open file/dir in MP3Tag: {e}")
+            logger.error(f"Failed to open file/dir in MP3Tag: '{e}'")
 
     def delete_files(self, file_path: dict) -> None:
         """Deletes a file/directory. Returns: None"""
@@ -253,17 +251,17 @@ class TreeViewContextMenuHandler(QWidget):
 
         response = show_message_box(message, ButtonType.YesNoCancel,"Are You Sure ?", "warning")
 
-        logger.info(f"User chose: {convert_response_to_string(response)}")
+        logger.info(f"User chose: '{convert_response_to_string(response)}'")
 
         if response == QMessageBox.Yes:
             for item in file_path:
                 send2trash.send2trash(item)
                 logger.info(f"Deleted: {item}")
-            self.update_status(f"Deleted: {selected_files} files and {selected_dirs} directories")
+            self.update_status(f"Deleted: '{selected_files}' files and '{selected_dirs}' directories")
         else:
             logger.info("Delete files cancelled")
 
     def repackage_dir(self, dir_path: str) -> None:
         """Repackages a directory. Returns: None"""
-        logger.info(f"Repackaging dir: {dir_path}")
+        logger.info(f"Repackaging dir: '{dir_path}'")
         repackage_dir_by_label(dir_path, dir_path)

@@ -1,5 +1,4 @@
 import sys, winshell
-import logging
 import os
 import win32com.client
 import shutil
@@ -59,7 +58,7 @@ class RestoreDialog(QDialog):
         self.treeView.reset()
 
     def restore_dir(self, origin_file_loc, recycle_bin_filename):
-        logger.info("Dir already exists, will restore to temp dir then move items : %s", origin_file_loc)
+        logger.info(f"Dir already exists, will restore to temp dir then move items: '{origin_file_loc}'")
         temp_dir_name = os.path.normpath(recycle_bin_filename)
         temp_dir_name = os.path.basename(temp_dir_name)
 
@@ -72,20 +71,20 @@ class RestoreDialog(QDialog):
         for item in os.listdir(temp_dir_path):
             s = os.path.join(temp_dir_path, item)
             d = os.path.join(origin_file_loc, item)
-            logger.info("Moving %s to %s", s, d)
+            logger.info(f"Moving '{s}' to '{d}'")
             shutil.move(s, d)
 
         # delete temp_dir_path but check there are no files before deleting
         if os.listdir(temp_dir_path):
             logger.warning("Temp dir not empty, not deleting")
         else:
-            logger.info("Deleting temp dir: %s", temp_dir_path)
+            logger.info(f"Deleting temp dir: '{temp_dir_path}'")
             shutil.rmtree(temp_dir_path)
 
     def restore_file(self, origin_file_loc, recyc_file):
-        logger.info("Restoring file: %s to %s", recyc_file, origin_file_loc)
+        logger.info(f"Restoring file: '{recyc_file}' to '{origin_file_loc}")
         winshell.undelete(origin_file_loc)
-        logger.info("Restored file: %s to %s", recyc_file, origin_file_loc)
+        logger.info(f"Restored file: '{recyc_file}' to '{origin_file_loc}'")
 
     def closeEvent(self, event):
         logger.info("Window is being closed")
