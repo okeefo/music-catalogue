@@ -49,17 +49,17 @@ class FileSystemModel(QFileSystemModel):
         file_name = QFileInfo(file_path).fileName()
         destination_path = self.filePath(parent) + QDir.separator() + file_name
 
-        logger.info(f"Moving file from {file_path} to {destination_path}")
+        logger.info(f"Moving file from '{file_path}' to '{destination_path}'")
 
         if QFile.exists(destination_path):
-            logger.info(f"File already exists at {destination_path}")
+            logger.info(f"File already exists at '{destination_path}'")
             return False
 
         if QFile.rename(file_path, destination_path):  # Move the file
-            logger.info(f"Successfully moved file to {destination_path}")
+            logger.info(f"Successfully moved file to '{destination_path}'")
             return True
         else:
-            logger.info(f"Failed to move file to {destination_path}")
+            logger.info(f"Failed to move file to '{destination_path}'")
             return False
 
 

@@ -1,9 +1,9 @@
 import traceback
 import configparser
-import logging
 import os
 import winshell
 import qt.resources_rcc
+from path_helper import get_absolute_path_config
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import (
@@ -38,10 +38,9 @@ from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
 from ui.custom_image_label import ImageLabel
 from ui.custom_tree_view import MyTreeView
 
-# Set logging instance
+# Set logger instance
 from log_config import get_logger
-
-logger = get_logger(__name__)
+logger = get_logger('mc.main_window')
 
 
 # Create an instance of QApplication
@@ -58,17 +57,6 @@ CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
 INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to install the K-Lite Codec Pack. You can download it from the official website:<br><a href="https://www.codecguide.com/download_kl.htm">https://www.codecguide.com/download_kl.htm</a>'
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
-
-
-class ChangeType(Enum):
-    SOURCE = 0
-    TARGET = 1
-
-    def isSource(self):
-        return self == ChangeType.SOURCE
-
-    def isTarget(self):
-        return self == ChangeType.TARGET
 
 
 class MainWindow(QMainWindow):
@@ -131,7 +119,7 @@ class MainWindow(QMainWindow):
     def __setup_config(self) -> None:
         """Sets up the configuration by reading the config.ini file and adding missing sections if necessary. Returns: None"""
 
-        self.config.read("config.ini")
+        self.config.read(get_absolute_path_config())
         if CONFIG_SECTION_DIRECTORIES not in self.config:
             self.config.add_section(CONFIG_SECTION_DIRECTORIES)
             self.config.set(
@@ -363,7 +351,7 @@ class MainWindow(QMainWindow):
 
     def on_move_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Move files from the source directory to the target directory. Returns: None"""
-        logger.info("Moving files from %s to %s", from_tree.model().rootPath(), to_tree.model().rootPath())
+        logger.info(f"Moving files from '{from_tree.model().rootPath()}' to '{to_tree.model().rootPath()}'")
         move_files(from_tree.get_list_of_selected_files(), to_tree.model().rootPath())
 
     
@@ -371,7 +359,7 @@ class MainWindow(QMainWindow):
         """Restore files from the recycle bin. Returns: None"""
 
         r = list(winshell.recycle_bin())  # this lists the original path of all the all items in the recycling bin
-        logger.info(f"Recycle bin: {r}")
+        logger.info(f"Recycle bin: '{r}'")
 
         RestoreDialog().exec_()
 
@@ -423,7 +411,7 @@ class MainWindow(QMainWindow):
         self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, self.path_info_bar_target.text())
 
         # Save the config file
-        with open("config.ini", "w") as config_file:
+        with open(get_absolute_path_config(), "w") as config_file:
             self.config.write(config_file)
 
     def __setup_open_dir_browsers(self) -> None:
@@ -447,7 +435,7 @@ class MainWindow(QMainWindow):
 
     def _display_and_log_error(self, e) -> None:
         """Displays the error message and logs the error to the log file. Returns: None"""
-        logging.error(traceback.format_exc())
+        logger.error(traceback.format_exc())
         QMessageBox.critical(self, "Error", str(e))
 
     def update_status(self, text) -> None:
@@ -595,7 +583,7 @@ class MainWindow(QMainWindow):
             return
 
         self.update_status("Repackaging started...")
-        logger.info("Repackaging started...%s -> %s", source_dir, target_dir)
+        logger.info(f"Repackaging started... '{source_dir}' -> '{target_dir}'")
         repackage_dir_by_label(source_dir, target_dir)
 
     def toggleMenu(self) -> None:
