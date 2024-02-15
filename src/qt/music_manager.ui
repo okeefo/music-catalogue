@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>2112</width>
-    <height>1136</height>
+    <width>2877</width>
+    <height>1049</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -844,7 +844,7 @@ QPushButton::pressed
                         </property>
                         <property name="icon">
                          <iconset resource="resources.qrc">
-                          <normaloff>:/icons/icons/package.svg</normaloff>:/icons/icons/package.svg</iconset>
+                          <normaloff>:/icons/icons/briefcase.svg</normaloff>:/icons/icons/briefcase.svg</iconset>
                         </property>
                         <property name="iconSize">
                          <size>
@@ -3131,8 +3131,8 @@ QPushButton::pressed
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>2112</width>
-     <height>21</height>
+     <width>2877</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">

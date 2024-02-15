@@ -11,18 +11,21 @@ logger = get_logger(__name__)
 audio_tags = AudioTags()
 
 
-def ask_user_to_overwrite(file, label):
+def ___ask_user_to_overwrite(file, label):
     """Ask user to overwrite file"""
     message = f"The file:\n'{file}'\nalready exists in the target directory\n'{label}'. \n\nDo you want to overwrite it?"
     return show_message_box(message, ButtonType.YesNoToAllCancel, "Overwrite File?")
 
 
-def repackage_dir_by_label(source_dir: str, target_dir: str):
+def repackage_dir_by_label(source_dir: str, target_dir: str) -> None:
     """Repackages a directory by label"""
     logger.info(f"Repackaging '{source_dir}' to '{target_dir}'")
+    repackage_files_by_label(os.listdir(source_dir), source_dir, target_dir)
+    
+def repackage_files_by_label(files:dict[str], source_dir: str, target_dir: str) -> None:
+    
     user_choice = None
-    for file in os.listdir(source_dir):
-
+    for file in files:
         user_choice = repackage_file_by_label(file, source_dir, target_dir, user_choice)
         if user_choice == QMessageBox.Cancel:
             break
@@ -42,6 +45,7 @@ def repackage_file_by_label(file: str, source_dir: str, target_dir: str, user_ch
     source_file = os.path.normpath(source_file)
 
     # if file is a dir then skip
+
     if os.path.isdir(source_file):
         logger.info(f"Skipping - file is a directory: '{source_file}'")
         return user_choice
@@ -71,28 +75,28 @@ def repackage_file_by_label(file: str, source_dir: str, target_dir: str, user_ch
         __repack(source_file, target_file)
 
     elif user_choice == QMessageBox.NoToAll:
-        log_skip (target_file, user_choice)
+        __log_skip (target_file, user_choice)
     
     elif user_choice == QMessageBox.YesToAll:
-        log_overwrite (target_file, user_choice)
+        __log_overwrite (target_file, user_choice)
         __repack(source_file, target_file)
 
     else:
-        user_choice = ask_user_to_overwrite(file, label)
+        user_choice = ___ask_user_to_overwrite(file, label)
 
         if user_choice in [QMessageBox.Yes, QMessageBox.YesToAll]:
-            log_overwrite(target_file, user_choice)   
+            __log_overwrite(target_file, user_choice)   
             __repack(source_file, target_file)
 
         else:
-            log_skip (target_file, user_choice)
+            __log_skip (target_file, user_choice)
 
     return user_choice
 
-def log_skip (target_file:str, user_choice:int )   -> None:
+def __log_skip (target_file:str, user_choice:int )   -> None:
         logger.info(f"Skipping - target file already exists '{target_file}' - User choice: {convert_response_to_string(user_choice)}")
 
-def log_overwrite (target_file:str, user_choice:int )   -> None:
+def __log_overwrite (target_file:str, user_choice:int )   -> None:
         logger.info(f"Overwriting - target file already exists '{target_file}' - User choice: {convert_response_to_string(user_choice)}")
 
     

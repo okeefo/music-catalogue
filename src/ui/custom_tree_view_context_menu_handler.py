@@ -1,7 +1,6 @@
 import winreg
 import os
 import subprocess
-import send2trash
 
 from PyQt5.QtWidgets import QAction, QMenu, QTreeView, QWidget, QMessageBox
 from PyQt5 import QtGui
@@ -9,10 +8,9 @@ from PyQt5 import QtGui
 # from main_window import MyTreeView
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtCore import QUrl, QPoint, QModelIndex
-from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
 from ui.custom_tree_view import MyTreeView
-from file_system_utils.copy_and_move import move_files, ask_and_move_files
-from file_system_utils.repackage_dir import repackage_dir_by_label
+from file_system_utils.copy_and_move import move_files, ask_and_move_files, delete_files
+from file_system_utils.repackage_dir import repackage_dir_by_label, repackage_files_by_label
 import qt.resources_rcc
 
 # create logger
@@ -35,24 +33,17 @@ class TreeViewContextMenuHandler(QWidget):
 
     def __setup_menus(self):
 
-        self.icon_play = QtGui.QIcon(":/icons/icons/play.svg")
-        self.icon_pause = QtGui.QIcon(":/icons/icons/pause.svg")
-        self.icon_stop = QtGui.QIcon(":/icons/icons/stop-circle.svg")
-        self.icon_delete = QtGui.QIcon(":/icons/icons/delete.svg")
-        self.icon_mp3tag = QtGui.QIcon(os.path.abspath("src/qt/icons/mp3tag_icon.png"))
-        self.icon_vlc = QtGui.QIcon(os.path.abspath("src/qt/icons/vlc.ico"))
-
         # define actions
-        self.open_in_mp3tag_action = QAction(self.icon_mp3tag, "Open in MP3Tag", self)
-        self.open_in_vlc_action = QAction(self.icon_vlc, "Open in VLC", self)
-        self.play_action = QAction(self.icon_play, "Play", self)
-        self.stop_action = QAction(self.icon_stop, "Stop", self)
-        self.pause_action = QAction(self.icon_pause, "Pause", self)
-        self.delete_action = QAction(self.icon_delete, "Delete", self)
-        self.move_selected_action = QAction("Move", self)
-        self.move_all_action = QAction("Move All", self)
-        self.repackage_dir_action = QAction("Repackage this Dir", self)
-        self.repackage_select_action = QAction("Repackage Selection", self)
+        self.open_in_mp3tag_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/mp3tag_icon.png")), "Open in MP3Tag", self)
+        self.open_in_vlc_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/vlc.ico")), "Open in VLC", self)
+        self.play_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Play", self)
+        self.stop_action = QAction(QtGui.QIcon(":/icons/icons/stop-circle.svg"), "Stop", self)
+        self.pause_action = QAction(QtGui.QIcon(":/icons/icons/pause.svg"), "Pause", self)
+        self.delete_action = QAction(QtGui.QIcon(":/icons/icons/delete.svg"), "Delete", self)
+        self.move_selected_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Move", self)
+        self.move_all_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Move All", self)
+        self.repackage_dir_action = QAction(QtGui.QIcon(":/icons/icons/package.svg"), "Repackage this Dir", self)
+        self.repackage_select_action = QAction(QtGui.QIcon(":/icons/icons/package.svg"), "Repackage Selection", self)
 
         # menu 1 - MP3 tag only
 
@@ -95,8 +86,8 @@ class TreeViewContextMenuHandler(QWidget):
             menu.addAction(self.repackage_dir_action)
             return menu
 
-        # multiple items selected
-        elif os.path.isdir(file_path) or len(tree_view.selectionModel().selectedRows()) > 1:
+        # single item selected and its dir
+        if os.path.isdir(file_path) and len(tree_view.selectionModel().selectedRows()) == 1:
             menu.addAction(self.open_in_mp3tag_action)
             menu.addAction(self.open_in_vlc_action)
             menu.addSeparator()
@@ -105,31 +96,31 @@ class TreeViewContextMenuHandler(QWidget):
             menu.addAction(self.move_selected_action)
             return menu
 
-        # single item selected
-        else:
+        # multiple items selected  or single item selected and its not a dir
+        menu.addAction(self.open_in_mp3tag_action)
+        menu.addAction(self.open_in_vlc_action)
 
-            menu.addAction(self.open_in_mp3tag_action)
-            menu.addAction(self.open_in_vlc_action)
-
-            # add media player actions if supported audio file
-            if file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
-
-                menu.addSeparator()
-                menu.addAction(self.play_action)
-                menu.addAction(self.stop_action)
-                menu.addAction(self.pause_action)
-                menu.addSeparator()
-                menu.addAction(self.repackage_select_action)
-
+        if len(tree_view.selectionModel().selectedRows()) == 1 and file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
             menu.addSeparator()
-            menu.addAction(self.move_selected_action)
-            menu.addAction(self.move_all_action)
-            menu.addAction(self.delete_action)
+            menu.addAction(self.play_action)
+            menu.addAction(self.stop_action)
+            menu.addAction(self.pause_action)
+            menu.addSeparator()
+            menu.addAction(self.repackage_select_action)
+
+        menu.addAction(self.repackage_dir_action)
+        menu.addSeparator()
+        menu.addAction(self.move_selected_action)
+        menu.addAction(self.move_all_action)
+
+        menu.addSeparator()
+        menu.addAction(self.delete_action)
 
         return menu
 
     def show_menu(self, tree_view: QTreeView, index: QModelIndex, position: QPoint, other_tree_view: MyTreeView) -> None:
         """Displays a context menu when right clicking on a tree view. Returns: None"""
+        logger.info("Showing context menu...")
 
         file_path = tree_view.model().filePath(index)
 
@@ -144,73 +135,46 @@ class TreeViewContextMenuHandler(QWidget):
         """Handles the action selected in the context menu"""
 
         if action == self.delete_action:
-            self.delete_files(self.get_selected_file_paths(tree_view))
+            self.__do_delete(tree_view)
 
         elif action == self.open_in_mp3tag_action:
-            self.open_in_mp3tag(self.get_selected_file_paths(tree_view))
+            self.__do_open_in_mp3tag(tree_view.get_selected_file_paths())
 
         elif action == self.open_in_vlc_action:
-            self.open_in_vlc(self.get_selected_file_paths(tree_view))
+            self.__do_open_in_vlc(tree_view.get_selected_file_paths())
 
         elif action == self.repackage_dir_action:
-            logger.info(f"action - repackage dir: '{tree_view.model().rootPath()}'")
-            self.repackage_dir(tree_view.model().rootPath())
-             
+            self.__do_repackage_dir_by_label(tree_view)
+
+        elif action == self.repackage_select_action:
+            #TODO: not working correctly.
+            self.__do_repackage_selected_items_by_label(tree_view)
+            
         elif action == self.move_selected_action:
-            move_files(self.get_selected_file_paths(tree_view), dest_path)
+            self.__do_move_selected_items(tree_view, dest_path)
 
         elif action == self.move_all_action:
-            from_path = tree_view.model().rootPath()
-            logger.info(f"action - move all from : '{from_path}' - to: '{dest_path}'")
-            ask_and_move_files(from_path, dest_path)
+            self.__do_move_all_items(tree_view, dest_path)
 
         elif action == self.play_action:
-            selected_file = self.get_selected_file_paths(tree_view)[0]
-            logger.info(f"action - playing: '{selected_file}'")
-            self.play_file(selected_file)
-            logger.info(f"media status: '{self.player.mediaStatus()}'")
+            self.__do_play_media(tree_view)
 
         elif action == self.stop_action:
-            selected_file = self.get_selected_file_paths(tree_view)[0]
-            logger.info(f"action - stop:Stopping: '{selected_file}'")
-            self.player.stop()
-            self.update_status(f"Stopped: '{selected_file}'")
-            logger.info(f"media status: '{self.player.mediaStatus()}'")
+            self.__do_stop_media()
 
         elif action == self.pause_action:
-            selected_file = self.get_selected_file_paths(tree_view)[0]
-            logger.info(f"Pausing: '{selected_file}'")
-            self.player.pause()
-            self.update_status(f"Paused: '{selected_file}'")
-            logger.info(f"media status: '{self.player.mediaStatus()}'")
+            self.__do_pause_media()
 
-    def get_selected_file_paths(self, tree_view: QTreeView) -> list:
-        """Returns a list of selected file paths from the tree view"""
-        selected_indexes = tree_view.selectionModel().selectedRows()
-        selected_file_paths = [tree_view.model().filePath(i) for i in selected_indexes]
-        selected_file_paths = [os.path.normpath(i) for i in selected_file_paths]
-        return selected_file_paths
+            
+    def __do_delete(self, tree_view: MyTreeView) -> None:
+        """Deletes selected files. Returns: None"""
+        logger.info("Menu action - delete")
+        self.update_status(delete_files(tree_view.get_selected_file_paths()))
+        logger.info("Menu action - delete : done")
 
-    def play_file(self, file_path: str) -> None:
-        """Plays an audio file. Returns: None"""
-        if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
-            if self.player.mediaStatus() == QMediaPlayer.PlayingState:
-                logger.info(f"Already playing: '{file_path}' - no action")
-                return
-        else:
-            self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
-
-        self.player.play()
-
-    def open_in_vlc(self, file_paths: dict) -> None:
-        """Opens a file/directory in VLC. Returns: None"""
-        logger.info(f"Opening file/s in VLC: '{self.vlc_path,file_paths}'")
-        command = [self.vlc_path] + file_paths
-        subprocess.Popen(command, shell=False)
-        logger.info(f"opening file/s in VLC: done")
-
-    def open_in_mp3tag(self, file_path: dict) -> None:
+    def __do_open_in_mp3tag(self, file_path: dict) -> None:
         """Opens a file/directory in MP3Tag. Returns: None"""
+        logger.info(f"Menu Action -> Opening file/s in MP3Tag: '{file_path}'")
 
         try:
             command = f'"{self.mp3tag_path}"'
@@ -224,44 +188,81 @@ class TreeViewContextMenuHandler(QWidget):
 
             logger.info(f"Opening file/s in MP3Tag: '{command}'")
             subprocess.Popen(command, shell=False)
-            logger.info("opening file/s in MP3Tag: done")
+            logger.info("Menu Action -> opening file/s in MP3Tag: done")
 
         except Exception as e:
             logger.error(f"Failed to open file/dir in MP3Tag: '{e}'")
-
-    def delete_files(self, file_path: dict) -> None:
-        """Deletes a file/directory. Returns: None"""
-        selected_files = 0
-        selected_dirs = 0
-        for i in range(len(file_path)):
-            if os.path.isdir(file_path[i]):
-                selected_dirs += 1
-            else:
-                selected_files += 1
-        if selected_files == 0 and selected_dirs == 0:
-            logger.info("no files to delete - doing nothing...")
-            self.update_status("No files selected to delete")
-            return
-
-        logger.info("prompting user to delete files")
-
-        message = f"Are you sure you want to delete {selected_files} files"
-        message += f" and {selected_dirs} directories?" if selected_dirs > 0 else "?"
-        message += f"\n\nNote: files will be moved to the recycle bin."
-
-        response = show_message_box(message, ButtonType.YesNoCancel,"Are You Sure ?", "warning")
-
-        logger.info(f"User chose: '{convert_response_to_string(response)}'")
-
-        if response == QMessageBox.Yes:
-            for item in file_path:
-                send2trash.send2trash(item)
-                logger.info(f"Deleted: {item}")
-            self.update_status(f"Deleted: '{selected_files}' files and '{selected_dirs}' directories")
-        else:
-            logger.info("Delete files cancelled")
-
-    def repackage_dir(self, dir_path: str) -> None:
+    
+    def __do_open_in_vlc(self, file_paths: dict) -> None:
+        """Opens a file/directory in VLC. Returns: None"""
+        logger.info(f"Menu Action -> Opening file/s in VLC: '{self.vlc_path,file_paths}'")
+        command = [self.vlc_path] + file_paths
+        subprocess.Popen(command, shell=False)
+        logger.info(f"Menu Action -> opening file/s in VLC: done")
+        
+    def __do_repackage_dir_by_label(self, tree_view: MyTreeView) -> None:
         """Repackages a directory. Returns: None"""
-        logger.info(f"Repackaging dir: '{dir_path}'")
-        repackage_dir_by_label(dir_path, dir_path)
+        directory = tree_view.model().rootPath()
+        logger.info(f"Menu Action -> repackage dir by label : '{directory}'")
+        repackage_dir_by_label(directory, directory)
+        logger.info("Menu Action -> repackage dir by label : done")
+        self.update_status(f"Repackaged directory by label : '{directory}'")
+        
+    def __do_repackage_selected_items_by_label(self, tree_view: MyTreeView) -> None:
+        """Repackages selected items by label. Returns: None"""
+        logger.info("Menu Action -> repackage selected items by label")
+        repackage_files_by_label(tree_view.get_list_of_selected_files(), tree_view.model().rootPath(), tree_view.model().rootPath())
+        logger.info("Menu Action -> repackage selected items by label : done")
+        self.update_status("Repackaged selected items by label")
+        
+    def __do_move_selected_items(self, tree_view: MyTreeView, dest_path: str) -> None:
+        """Moves selected items to a destination path. Returns: None"""
+        logger.info(f"Menu Action -> move selected items : '{dest_path}'")
+        ask_and_move_files(tree_view.get_list_of_selected_files(), dest_path)
+        logger.info("Menu Action -> move selected items : done")
+        self.update_status(f"Moved selected items to '{dest_path}'")
+        
+    def __do_move_all_items(self, tree_view: MyTreeView, dest_path: str) -> None:
+        """Moves all items to a destination path. Returns: None"""
+        logger.info(f"Menu Action -> move all items : from '{tree_view.model().rootPath()}' to '{dest_path}'")
+        ask_and_move_files(tree_view.model.rootPath(), dest_path)
+        logger.info("Menu Action -> move all items : done")
+        self.update_status(f"Moved all items to '{dest_path}'")
+        
+    def __do_play_media(self, tree_view: MyTreeView) -> None:
+        """Plays a file. Returns: None"""
+        selected_file = tree_view.get_selected_file_paths()[0]
+        logger.info(f"Menu action -> play file :Playing: '{selected_file}'")
+        self.play_file(selected_file)
+        self.update_status(f"Playing: '{selected_file}'")
+        logger.info(f"media status: '{self.player.mediaStatus()}'")
+        logger.info("Menu action -> play file : done")
+        
+        
+    def __do_stop_media(self) -> None:
+        logger.info(f"Menu action -> stop: Stopping media player: {self.player.mediaStatus()}")
+        self.player.stop()
+        self.__log_media_update("Stopped","stop")
+        
+    def __do_pause_media(self) -> None:
+        logger.info(f"Menu action -> pause: Pausing media player: {self.player.mediaStatus()}")
+        self.player.pause()
+        self.__log_media_update("Paused"," done")
+
+    def __log_media_update(self, status_action, menu_action):
+        self.update_status(f"{status_action} media player")
+        logger.info(f"Media status: '{self.player.mediaStatus()}'")
+        logger.info(f"Menu action -> {menu_action}: done")
+        
+    def play_file(self, file_path: str) -> None:
+        """Plays an audio file. Returns: None"""
+        if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
+            if self.player.mediaStatus() == QMediaPlayer.PlayingState:
+                logger.info(f"Already playing: '{file_path}' - no action")
+                return
+        else:
+            self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
+
+        self.player.play()
+
+            
