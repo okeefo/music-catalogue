@@ -25,6 +25,7 @@ def convert_response_to_string(response: int) -> str:
 class ButtonType(enumerate):
     YesNoCancel = 1
     YesNoToAllCancel = 2
+    Ok = 3
 
 
 def show_message_box(message: str, buttonType: ButtonType, title: str = "Message", icon: Literal["warning", "information"] = "warning", parent=None) -> int:
@@ -33,10 +34,14 @@ def show_message_box(message: str, buttonType: ButtonType, title: str = "Message
     msg_box.setWindowTitle(title)
     headphones = QIcon(":/icons/icons/headphones.svg")
     msg_box.setWindowIcon(headphones)
+    
     if buttonType == ButtonType.YesNoCancel:
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-    else:
+    elif buttonType == ButtonType.YesNoToAllCancel:
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.YesToAll | QMessageBox.NoToAll | QMessageBox.Cancel)
+    else:
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        
     if icon == "warning":
         msg_box.setIcon(QMessageBox.Warning)
     else:
