@@ -29,10 +29,10 @@ from mutagen.id3 import PictureType
 from typing import Dict
 from typing import Union
 
-from file_system_utils.audio_tags import AudioTags
-from file_system_utils.audio_tags import PictureTypeDescription
-from file_system_utils.repackage_dir import repackage_dir_by_label
-from file_system_utils.copy_and_move import move_files
+from file_operations.audio_tags import AudioTags
+from file_operations.audio_tags import PictureTypeDescription
+from file_operations.repackage_dir import repackage_dir_by_label
+from file_operations.file_utils import move_files
 from ui.recycle import RestoreDialog
 from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
 from ui.custom_image_label import ImageLabel
@@ -57,6 +57,10 @@ CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
 INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to install the K-Lite Codec Pack. You can download it from the official website:<br><a href="https://www.codecguide.com/download_kl.htm">https://www.codecguide.com/download_kl.htm</a>'
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
+
+
+# TODO: copy functions 
+# TODO: auto tagging files from discogs and renaming files to me format.
 
 
 class MainWindow(QMainWindow):
@@ -352,7 +356,7 @@ class MainWindow(QMainWindow):
     def on_move_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Move files from the source directory to the target directory. Returns: None"""
         logger.info(f"Moving files from '{from_tree.model().rootPath()}' to '{to_tree.model().rootPath()}'")
-        move_files(from_tree.get_list_of_selected_files(), to_tree.model().rootPath())
+        move_files(from_tree.get_selected_files(), to_tree.model().rootPath())
 
     
     def on_restore_button_clicked(self) -> None:
@@ -618,11 +622,18 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    # Create an instance of MainWindow
-    main_window = MainWindow(app)
+    
+    try:
+        # Create an instance of MainWindow
+        main_window = MainWindow(app)
 
-    # Display the main window
-    main_window.show()
+        # Display the main window
+        main_window.show()
 
-    # Start the application event loop
-    app.exec_()
+        # Start the application event loop
+        app.exec_()
+        
+    except Exception as e:
+        logger.exception("Unhandled exception: %s", e)
+        logger.error(traceback.format_exc())
+        raise

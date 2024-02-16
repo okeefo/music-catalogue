@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView, QLineEdit
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
 from PyQt5.QtGui import QPixmap
+from typing import List
 from ui.custom_image_label import  pop_up_image_dialogue
 from log_config import get_logger
 
@@ -177,12 +178,12 @@ class MyTreeView(QTreeView):
         self.selectionModel().select(self.model().index(directory), QItemSelectionModel.Select)
         self.selectionModel().setCurrentIndex(self.model().index(directory), QItemSelectionModel.Select)
         
-    def get_list_of_selected_files(self) -> dict[str]:
+    def get_selected_file_names(self) -> List[str]:
         """Returns a list of the selected files (inc) in the tree view."""
         selected_indexes = self.selectionModel().selectedRows()
-        return [self.model().filePath(i) for i in selected_indexes]
+        return [self.model().data(i) for i in selected_indexes]
     
-    def get_selected_file_paths(self) -> dict[str]:
+    def get_selected_files(self) -> List[str]:
         """Returns a list of selected file paths from the tree view"""
         selected_indexes = self.selectionModel().selectedRows()
         selected_file_paths = [self.model().filePath(i) for i in selected_indexes]

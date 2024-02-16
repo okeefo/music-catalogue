@@ -3,7 +3,7 @@ import shutil
 
 from PyQt5.QtWidgets import QMessageBox
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
-from file_system_utils.audio_tags import AudioTags
+from file_operations.audio_tags import AudioTags
 from log_config import get_logger
 from typing import Tuple
 
@@ -26,6 +26,10 @@ def repackage_files_by_label(files:dict[str], source_dir: str, target_dir: str) 
     
     user_choice = None
     for file in files:
+        ##if file is a dir then skip
+        if os.path.isdir(os.path.join(source_dir, file)):
+            logger.info(f"Skipping - file is a directory: '{file}'")
+            continue
         user_choice = repackage_file_by_label(file, source_dir, target_dir, user_choice)
         if user_choice == QMessageBox.Cancel:
             break

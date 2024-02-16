@@ -38,8 +38,6 @@ def __get_config():
 
     return config
 
-
-# TODO Rename this here and in `get_config`
 def __create_config_entry(config):
     config.add_section("main_logger")
     config.set("main_logger", "log_dir", get_absolute_path_log_dir())
