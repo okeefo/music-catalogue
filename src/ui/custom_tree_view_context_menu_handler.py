@@ -115,12 +115,12 @@ class TreeViewContextMenuHandler(QWidget):
             menu.addAction(self.play_action)
             menu.addAction(self.stop_action)
             menu.addAction(self.pause_action)
-            
+
         menu.addSeparator()
         menu.addAction(self.repackage_select_action)
         menu.addAction(self.repackage_dir_action)
         menu.addSeparator()
-        
+
         menu.addAction(self.move_selected_action)
         menu.addAction(self.move_all_action)
 
@@ -153,13 +153,13 @@ class TreeViewContextMenuHandler(QWidget):
 
         elif action == self.open_in_vlc_action:
             self.__do_open_in_vlc(tree_view.get_selected_files())
-      
+
         elif action == self.repackage_dir_action:
             self.__do_repackage_dir_by_label(tree_view)
 
         elif action == self.repackage_select_action:
             self.__do_repackage_selected_items_by_label(tree_view)
-        
+
         elif action == self.move_selected_action:
             self.__do_move_selected_items(tree_view, dest_path)
 
@@ -174,14 +174,13 @@ class TreeViewContextMenuHandler(QWidget):
 
         elif action == self.pause_action:
             self.__do_pause_media()
-            
+
         elif action == self.info_dir_action:
             self.__do_show_info_dir(tree_view)
-            
+
         elif action == self.info_selected_action:
-            #TODO: fix info selected
-            self.__do_show_info_selected(tree_view)
-            
+            self.__do_show_info_selected_items(tree_view)
+
     def __do_delete(self, tree_view: MyTreeView) -> None:
         """Deletes selected files. Returns: None"""
         logger.info("Menu action - delete")
@@ -208,14 +207,14 @@ class TreeViewContextMenuHandler(QWidget):
 
         except Exception as e:
             logger.error(f"Failed to open file/dir in MP3Tag: '{e}'")
-    
+
     def __do_open_in_vlc(self, file_paths: dict) -> None:
         """Opens a file/directory in VLC. Returns: None"""
         logger.info(f"Menu Action -> Opening file/s in VLC: '{self.vlc_path,file_paths}'")
         command = [self.vlc_path] + file_paths
         subprocess.Popen(command, shell=False)
         logger.info(f"Menu Action -> opening file/s in VLC: done")
-        
+
     def __do_repackage_dir_by_label(self, tree_view: MyTreeView) -> None:
         """Repackages a directory. Returns: None"""
         directory = tree_view.model().rootPath()
@@ -223,21 +222,21 @@ class TreeViewContextMenuHandler(QWidget):
         repackage_dir_by_label(directory, directory)
         logger.info("Menu Action -> repackage dir by label : done")
         self.update_status(f"Repackaged directory by label : '{directory}'")
-        
+
     def __do_repackage_selected_items_by_label(self, tree_view: MyTreeView) -> None:
         """Repackages selected items by label. Returns: None"""
         logger.info("Menu Action -> repackage selected items by label")
         repackage_files_by_label(tree_view.get_selected_file_names(), tree_view.model().rootPath(), tree_view.model().rootPath())
         logger.info("Menu Action -> repackage selected items by label : done")
         self.update_status("Repackaged selected items by label")
-        
+
     def __do_move_selected_items(self, tree_view: MyTreeView, dest_path: str) -> None:
         """Moves selected items to a destination path. Returns: None"""
         logger.info(f"Menu Action -> move selected items : '{dest_path}'")
         ask_and_move_files(tree_view.get_selected_files(), dest_path)
         logger.info("Menu Action -> move selected items : done")
         self.update_status(f"Moved selected items to '{dest_path}'")
-        
+
     def __do_move_all(self, tree_view: MyTreeView, dest_path: str) -> None:
         """Moves all items to a destination path. Returns: None"""
         from_dir = tree_view.model().rootPath()
@@ -245,7 +244,7 @@ class TreeViewContextMenuHandler(QWidget):
         move_contents_of_dir(from_dir, dest_path)
         logger.info("Menu Action -> move all items : done")
         self.update_status(f"Moved all items to '{dest_path}'")
-        
+
     def __do_play_media(self, tree_view: MyTreeView) -> None:
         """Plays a file. Returns: None"""
         selected_file = tree_view.get_selected_files()[0]
@@ -254,23 +253,22 @@ class TreeViewContextMenuHandler(QWidget):
         self.update_status(f"Playing: '{selected_file}'")
         logger.info(f"media status: '{self.player.mediaStatus()}'")
         logger.info("Menu action -> play file : done")
-        
-        
+
     def __do_stop_media(self) -> None:
         logger.info(f"Menu action -> stop: Stopping media player: {self.player.mediaStatus()}")
         self.player.stop()
-        self.__log_media_update("Stopped","stop")
-        
+        self.__log_media_update("Stopped", "stop")
+
     def __do_pause_media(self) -> None:
         logger.info(f"Menu action -> pause: Pausing media player: {self.player.mediaStatus()}")
         self.player.pause()
-        self.__log_media_update("Paused"," done")
+        self.__log_media_update("Paused", " done")
 
     def __log_media_update(self, status_action, menu_action):
         self.update_status(f"{status_action} media player")
         logger.info(f"Media status: '{self.player.mediaStatus()}'")
         logger.info(f"Menu action -> {menu_action}: done")
-        
+
     def play_file(self, file_path: str) -> None:
         """Plays an audio file. Returns: None"""
         if self.player.currentMedia().canonicalUrl() == QUrl.fromLocalFile(file_path):
@@ -281,13 +279,18 @@ class TreeViewContextMenuHandler(QWidget):
             self.player.setMedia(QMediaContent(QUrl.fromLocalFile(file_path)))
 
         self.player.play()
-        
+
     def __do_show_info_dir(self, tree_view: MyTreeView) -> None:
         """Shows info for all items in a directory. Returns: None"""
         logger.info("Menu action -> info dir")
         root_dir = tree_view.model().rootPath()
         self.update_status(f"Showing info for all items in directory {root_dir}")
-        display_results(root_dir)    
+        display_results([root_dir], True)
         logger.info("Menu action -> info dir : done")
 
-            
+    def __do_show_info_selected_items(self, tree_view: MyTreeView) -> None:
+        """Shows info for selected items. Returns: None"""
+        logger.info("Menu action -> info selected items")
+        self.update_status("Showing info for selected items")
+        display_results(tree_view.get_selected_files())
+        logger.info("Menu action -> info selected items : done")
