@@ -59,7 +59,7 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
-# TODO: add a progress bar when copying and moving files
+# TODO: add a progress bar when moving files
 # TODO: auto tagging files from discogs and renaming files to me format.
 
 
@@ -373,7 +373,11 @@ class MainWindow(QMainWindow):
     def on_copy_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Copy files from the source directory to the target directory. Returns: None"""
         logger.info(f"Copying files from '{from_tree.get_root_dir()}' to '{to_tree.get_root_dir()}'")
-        ask_and_copy_files(from_tree.get_selected_files(), to_tree.get_root_dir())
+        selected_files = from_tree.get_selected_files()
+        if len(selected_files) == 0:
+            from_tree.selectAll()
+            selected_files = from_tree.get_selected_files()
+        ask_and_copy_files(selected_files, to_tree.get_root_dir())
 
     def on_restore_button_clicked(self) -> None:
         """Restore files from the recycle bin. Returns: None"""

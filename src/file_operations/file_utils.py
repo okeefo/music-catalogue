@@ -1,12 +1,18 @@
 import shutil
+import time
 import send2trash
 import os
 from typing import List
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
-from PyQt5.QtWidgets import QMessageBox
-
+from ui.custom_progress_dialog import ProgressDialog
+from PyQt5.QtWidgets import QMessageBox, QProgressDialog
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
+import qt.resources_rcc
 
 import log_config
+from PyQt5.QtWidgets import QApplication
+
 
 logger = log_config.get_logger(__name__)
 
@@ -23,7 +29,6 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None
         fq_source_file = os.path.normpath(os.path.join(source_dir, source_file))
         source_file = os.path.basename(fq_source_file)
         fq_target_file = os.path.normpath(os.path.join(target_dir, source_file))
-        
 
         logger.info(f'Moving "{fq_source_file}" to "{target_dir}"')
         # Check if the file already exists in the target directory
@@ -84,7 +89,7 @@ def __get_user_response_for_moving_an_existing_item(fq_source_file, source_file,
             )
 
     logger.info(f"User chose: {convert_response_to_string(userResponse)}")
-    
+
     return userResponse
 
 
@@ -109,7 +114,7 @@ def __clean_up(files_to_delete: List[str]) -> None:
 
 def ask_and_move_files(file_list: List[str], source_dir, target_dir: str) -> None:
     """prompt user adn ask before moving files between dirs"""
-    
+
     file_list, source_dir, target_dir = __normalise_paths(file_list, source_dir, target_dir)
 
     if not file_list:
@@ -124,27 +129,35 @@ def ask_and_move_files(file_list: List[str], source_dir, target_dir: str) -> Non
     response = show_message_box(message, ButtonType.YesNoCancel, "Move Files", "warning")
     logger.info(f"User chose: {convert_response_to_string(response)}")
     __move_files(file_list, source_dir, target_dir) if response == QMessageBox.Yes else logger.info("Move files cancelled by user")
-    
+
 
 def __normalise_paths(file_list: List[str], source_dir: str, target_dir: str) -> tuple[List[str], str, str]:
     """Normalise the paths for the source and target dirs"""
-    
+
     if source_dir:
         source_dir = os.path.normpath(source_dir)
-    
+
     if target_dir:
         target_dir = os.path.normpath(target_dir)
-    
+
     if file_list:
         file_list = [os.path.normpath(os.path.join(source_dir, file)) for file in file_list]
-    
+
     return file_list, source_dir, target_dir
+
 
 def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None) -> None:
     """Copy files/dirs form source to target"""
 
+    total_files = len(file_list)
+    copied_files = 0
+    progress = __get_progress_bar(total_files)
+
     # loop over the file list and move the files
-    for source_file in file_list:
+    for i, source_file in enumerate(file_list):
+
+        # update progress
+        progress.setLabelText(f"Copying {source_file}...")
 
         already_exists = False
         if os.path.isfile(source_file):
@@ -176,12 +189,41 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
             logger.info(f'Copying file "{source_file}" to "{target_dir}"')
             shutil.copy(source_file, target_dir)
 
+
         elif os.path.isdir(source_file):
             logger.info(f'Copying directory "{source_file}" to "{target_dir}"')
             shutil.copytree(source_file, os.path.join(target_dir, os.path.basename(source_file)))
 
         else:
             logger.error(f"Source path does not exist: {source_file}")
+
+        copied_files += 1
+        progress.setValue(copied_files)
+        if progress.wasCanceled():
+            break
+
+    progress.setValue(total_files)
+    progress.setLabelText("Copy complete. Click 'Cancel' to close this dialog.")
+    while not progress.wasCanceled():
+        QApplication.processEvents()
+        time.sleep(0.1)  # sleep for a short time to reduce CPU usage
+
+
+
+def __get_progress_bar(total_files: int) -> QProgressDialog:
+    """Get a progress bar"""
+    
+    progress = QProgressDialog("Copying files...", "Cancel", 0, total_files)
+    progress.setWindowIcon(QIcon(":/icons/icons/headphones.svg"))
+    progress.setWindowTitle("Copying Files")
+    progress.setLabelText("Copying Files...")
+    progress.setCancelButtonText("Cancel")
+    progress.setWindowModality(Qt.ApplicationModal)
+    progress.setWindowFlags(progress.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+    progress.setAutoClose(False)
+    progress.setAutoReset(False)
+    progress.show()
+    return progress
 
 
 def ask_and_copy_files(file_list: List[str], target_dir: str) -> None:
