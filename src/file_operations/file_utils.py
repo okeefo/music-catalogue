@@ -46,7 +46,7 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None
                 if os.path.isdir(fq_source_file):
                     logger.info(f'Merging directory "{fq_source_file}" into "{fq_target_file}"')
                     # create fully qualified file names for the contents of the fq_source_dir
-                    __move_files(os.listdir(fq_source_file), fq_source_file, fq_target_file)
+                    __move_files(os.listdir(fq_source_file), fq_source_file, fq_target_file, progress_bar)
 
                     # add fq_source_file to teh list files to delete later
                     files_to_delete.append(fq_source_file)
@@ -70,10 +70,11 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None
                 continue
 
         shutil.move(fq_source_file, target_dir)
+              
 
     logger.info("Move files done, cleaning up any empty directories and source files")
     __clean_up(files_to_delete)
-
+    logger.info("Clean up done")
 
 def __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, fq_target_file, target_dir, userResponse) -> int:
     logger.info(f"File/Dir '{source_file}' already exists in target directory: {target_dir}")
@@ -151,13 +152,17 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
 
     total_files = len(file_list)
     copied_files = 0
-    progress = __get_progress_bar(total_files)
+    if(total_files >= 10):
+        progress = __get_progress_bar(total_files,"Copying")
+    else:
+        progress = None
 
     # loop over the file list and move the files
     for i, source_file in enumerate(file_list):
 
         # update progress
-        progress.setLabelText(f"Copying {source_file}...")
+        if progress is not None:
+            progress.setLabelText(f"Copying {source_file}...")
 
         already_exists = False
         if os.path.isfile(source_file):
@@ -197,26 +202,31 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
         else:
             logger.error(f"Source path does not exist: {source_file}")
 
-        copied_files += 1
-        progress.setValue(copied_files)
-        if progress.wasCanceled():
-            break
-
+        if progress is not None:
+            copied_files += 1
+            progress.setValue(copied_files)
+            if progress.wasCanceled():
+                break
+    
+    if progress is not None:
+        __get_ack_from_user_that_progress_has_completed(progress, total_files)
+    
+def __get_ack_from_user_that_progress_has_completed(progress:QProgressDialog , total_files:int) -> None: 
     progress.setValue(total_files)
-    progress.setLabelText("Copy complete. Click 'Cancel' to close this dialog.")
+    progress.setLabelText("Processing complete. Click 'Cancel' to close this dialog")
     while not progress.wasCanceled():
         QApplication.processEvents()
-        time.sleep(0.1)  # sleep for a short time to reduce CPU usage
+        time.sleep(0.5)  # sleep for a short time to reduce CPU usage
 
 
 
-def __get_progress_bar(total_files: int) -> QProgressDialog:
+def __get_progress_bar(total_files: int, type:str) -> QProgressDialog:
     """Get a progress bar"""
     
-    progress = QProgressDialog("Copying files...", "Cancel", 0, total_files)
+    progress = QProgressDialog(f"{type} files...", "Cancel", 0, total_files)
     progress.setWindowIcon(QIcon(":/icons/icons/headphones.svg"))
-    progress.setWindowTitle("Copying Files")
-    progress.setLabelText("Copying Files...")
+    progress.setWindowTitle(f"{type} Files")
+    progress.setLabelText(f"{type} Files...")
     progress.setCancelButtonText("Cancel")
     progress.setWindowModality(Qt.ApplicationModal)
     progress.setWindowFlags(progress.windowFlags() & ~Qt.WindowContextHelpButtonHint)

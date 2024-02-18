@@ -184,10 +184,13 @@ class MyTreeView(QTreeView):
         root_path = self.model().rootPath()
         return [os.path.relpath(self.model().filePath(i), root_path) for i in selected_indexes]
 
-    def get_selected_files(self) -> List[str]:
-        """Returns a list of selected file paths from the tree view"""
+    def get_selected_files(self, defaultAll=False) -> List[str]:
+        """Returns a list of selected file paths from the tree view, if there are no selected files and defaultAll=true, returns all files."""
        
-        selected_indexes = self.selectionModel().selectedRows()
+        if(len(self.selectionModel().selectedRows()) == 0 and defaultAll == True):
+            self.selectAll()
+
+        selected_indexes = self.selectionModel().selectedRows() 
         selected_file_paths = [self.model().filePath(i) for i in selected_indexes]
         return [os.path.normpath(i) for i in selected_file_paths]
 
