@@ -7,49 +7,208 @@ from PyQt5.QtWidgets import QMessageBox
 
 
 import log_config
+
 logger = log_config.get_logger(__name__)
 
-def move_files(file_list:dict[str], target_dir:str) -> None:
-    """ Move files between dirs """
+
+def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None:
+    """Move files between dirs"""
+
+    userResponse = None
+
+    files_to_delete = []
+    source_dir = os.path.normpath(source_dir)
+    target_dir = os.path.normpath(target_dir)
 
     # loop over the file list and move the files
     for source_file in file_list:
-        logger.info( f'Moving "{source_file}" to "{target_dir}"')
-        shutil.move(source_file, target_dir)
 
-def ask_and_move_files(file_list:List[str], target_dir:str) -> None:
-    """ prompt user adn ask before moving files between dirs """
-    logger.info( f"Prompt user to move files from '{file_list}' to '{target_dir}'")
+        fq_source_file = os.path.normpath(os.path.join(source_dir, source_file))
+        fq_target_file = os.path.normpath(os.path.join(target_dir, source_file))
+        
+
+        logger.info(f'Moving "{fq_source_file}" to "{target_dir}"')
+        # Check if the file already exists in the target directory
+        if os.path.exists(fq_target_file):
+
+            userResponse = __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, fq_target_file, target_dir, userResponse)
+
+            if userResponse == QMessageBox.Cancel:
+                logger.info("Move files cancelled by user")
+                return
+
+            elif userResponse in [QMessageBox.Yes, QMessageBox.YesToAll]:
+
+                # if the source is a directory we need to merge the contents of the source directory into the target directory
+                if os.path.isdir(fq_source_file):
+                    logger.info(f'Merging directory "{fq_source_file}" into "{fq_target_file}"')
+                    # create fully qualified file names for the contents of the fq_source_dir
+                    __move_files(os.listdir(fq_source_file), fq_source_file, fq_target_file)
+
+                    # add fq_source_file to teh list files to delete later
+                    files_to_delete.append(fq_source_file)
+
+                    if userResponse == QMessageBox.Yes:
+                        userResponse = None
+
+                    continue
+
+                if userResponse == QMessageBox.Yes:
+                    userResponse = None
+
+                os.remove(fq_target_file)
+
+            elif userResponse in [QMessageBox.No, QMessageBox.NoToAll]:
+                # skip the file
+                logger.info(f"Skipping file: {source_file}")
+                if userResponse == QMessageBox.No:
+                    userResponse = None
+                continue
+
+        shutil.move(fq_source_file, target_dir)
+
+    logger.info("Move files done, cleaning up any empty directories and source files")
+    __clean_up(files_to_delete)
+
+
+def __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, fq_target_file, target_dir, userResponse) -> int:
+    logger.info(f"File/Dir '{source_file}' already exists in target directory: {target_dir}")
+    # ask user if they want to overwrite the file
+    if userResponse is None:
+        if os.path.isdir(fq_source_file):
+            userResponse = show_message_box(
+                f"The directory:\n'{source_file}'\nalready exists in the target directory.\n{target_dir}\nDo you want to merge the contents?", ButtonType.YesNoToAllCancel, "Merge Directory?"
+            )
+        else:
+            userResponse = show_message_box(
+                f"The file:\n'{source_file}'\nalready exists in the target directory.\n{target_dir}\nDo you want to overwrite it?", ButtonType.YesNoToAllCancel, "Overwrite File?"
+            )
+
+    logger.info(f"User chose: {convert_response_to_string(userResponse)}")
+    
+    return userResponse
+
+
+def __clean_up(files_to_delete: List[str]) -> None:
+    if not files_to_delete:
+        logger.info("Nothing to delete")
+        return
+
+    for file in files_to_delete:
+        if os.path.isdir(file):
+            if os.listdir(file):
+                logger.info(f"Skipping - directory is not empty: {file}")
+                continue
+            else:
+                logger.info(f"Deleting directory: {file}")
+        else:
+            logger.info(f"Deleting file: {file}")
+
+        send2trash.send2trash(file)
+        logger.info(f"Deleted: {file}")
+
+
+def ask_and_move_files(file_list: List[str], source_dir, target_dir: str) -> None:
+    """prompt user adn ask before moving files between dirs"""
+
+    if not file_list:
+        logger.info("No files selected to move")
+        return
+
+    logger.info(f"Prompt user to move files from '{file_list}' in '{source_dir}' to '{target_dir}'")
     if len(file_list) > 2:
         message = f"Moving the selected files to:\n\n{target_dir}\n\nDo you want to continue?"
     else:
         message = f"Moving: \n\n {file_list} to:\n\n{target_dir}\n\nDo you want to continue?"
     response = show_message_box(message, ButtonType.YesNoCancel, "Move Files", "warning")
     logger.info(f"User chose: {convert_response_to_string(response)}")
-    move_files(file_list, target_dir) if response == QMessageBox.Yes else logger.info("Move files cancelled by user")
-    
-def move_contents_of_dir(source_dir:str, target_dir:str) -> None:
-    """ Move the contents of a directory to another directory """
-    contents  = os.listdir(source_dir)
-    #loop over the file list and prefix the target to get the fully qualified path and normalize the path
+    __move_files(file_list, source_dir, target_dir) if response == QMessageBox.Yes else logger.info("Move files cancelled by user")
+
+
+def move_contents_of_dir(source_dir: str, target_dir: str) -> None:
+    """Move the contents of a directory to another directory"""
+
+    contents = os.listdir(source_dir)
+    # loop over the file list and prefix the target to get the fully qualified path and normalize the path
     contents = [os.path.normpath(os.path.join(source_dir, file)) for file in contents]
     ask_and_move_files(contents, target_dir)
-    
-    
-def delete_files(self, file_path: dict) -> str:
+
+
+def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None) -> None:
+    """Copy files/dirs form source to target"""
+
+    # loop over the file list and move the files
+    for source_file in file_list:
+
+        already_exists = False
+        if os.path.isfile(source_file):
+            already_exists = os.path.exists(os.path.join(target_dir, os.path.basename(source_file)))
+        elif os.path.isdir(source_file):
+            already_exists = os.path.exists(os.path.join(target_dir, os.path.basename(source_file)))
+
+        if already_exists:
+
+            if userResponse is None:
+                userResponse = show_message_box(f"The file:\n'{source_file}'\nalready exists in the target directory.\n\nDo you want to overwrite it?", ButtonType.YesNoToAllCancel, "Overwrite File?")
+                logger.info(f"User chose: {convert_response_to_string(userResponse)}")
+
+            if userResponse == QMessageBox.Cancel:
+                logger.info("Copy files cancelled by user")
+                return
+
+            elif userResponse in [QMessageBox.No, QMessageBox.NoToAll]:
+                # skip the file
+                logger.info(f"Skipping file: {source_file} ")
+                if userResponse == QMessageBox.No:
+                    userResponse = None
+                continue
+
+            elif userResponse == QMessageBox.Yes:
+                userResponse = None
+
+        if os.path.isfile(source_file):
+            logger.info(f'Copying file "{source_file}" to "{target_dir}"')
+            shutil.copy(source_file, target_dir)
+
+        elif os.path.isdir(source_file):
+            logger.info(f'Copying directory "{source_file}" to "{target_dir}"')
+            shutil.copytree(source_file, os.path.join(target_dir, os.path.basename(source_file)))
+
+        else:
+            logger.error(f"Source path does not exist: {source_file}")
+
+
+def ask_and_copy_files(file_list: List[str], target_dir: str) -> None:
+    """prompt user adn ask before copying files between dirs"""
+
+    if not file_list:
+        logger.info("No files selected to copy")
+        return
+
+    logger.info(f"Prompt user to copy files from '{file_list}' to '{target_dir}'")
+    if len(file_list) > 2:
+        message = f"Copying the selected files to:\n\n{target_dir}\n\nDo you want to continue?"
+    else:
+        message = f"Copying: \n\n {file_list} to:\n\n{target_dir}\n\nDo you want to continue?"
+    response = show_message_box(message, ButtonType.YesNoCancel, "Copy Files", "warning")
+    logger.info(f"User chose: {convert_response_to_string(response)}")
+    __copy_files(file_list, target_dir) if response == QMessageBox.Yes else logger.info("Copy files cancelled by user")
+
+
+def delete_files(file_path: List[str]) -> str:
     """Deletes a file/directory. Returns: None"""
+
     selected_files = 0
     selected_dirs = 0
-    for i in range(len(file_path)):
-        if os.path.isdir(file_path[i]):
+    for item_ in file_path:
+        if os.path.isdir(item_):
             selected_dirs += 1
         else:
             selected_files += 1
-    
+
     if selected_files == 0 and selected_dirs == 0:
         logger.info("no files to delete - doing nothing...")
-        self.update_status("No files selected to delete")
-        return
+        return "No files selected to delete"
 
     logger.info("prompting user to delete files")
 
@@ -57,7 +216,7 @@ def delete_files(self, file_path: dict) -> str:
     message += f" and {selected_dirs} directories?" if selected_dirs > 0 else "?"
     message += f"\n\nNote: files will be moved to the recycle bin."
 
-    response = show_message_box(message, ButtonType.YesNoCancel,"Are You Sure ?", "warning")
+    response = show_message_box(message, ButtonType.YesNoCancel, "Are You Sure ?", "warning")
 
     logger.info(f"User chose: '{convert_response_to_string(response)}'")
 
@@ -70,5 +229,3 @@ def delete_files(self, file_path: dict) -> str:
         msg = "Delete files cancelled by user"
         logger.info(msg)
         return msg
-
-

@@ -32,7 +32,7 @@ from typing import Union
 from file_operations.audio_tags import AudioTags
 from file_operations.audio_tags import PictureTypeDescription
 from file_operations.repackage_dir import repackage_dir_by_label
-from file_operations.file_utils import move_files
+from file_operations.file_utils import ask_and_move_files, ask_and_copy_files
 from ui.recycle import RestoreDialog
 from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
 from ui.custom_image_label import ImageLabel
@@ -58,9 +58,12 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
-
-# TODO: copy functions 
+# TODO: fix/test mve functions
+# TODO: copy and Paste functions  
+# TODO: add a progress bar when copying and moving files
 # TODO: auto tagging files from discogs and renaming files to me format.
+
+
 
 
 class MainWindow(QMainWindow):
@@ -209,6 +212,19 @@ class MainWindow(QMainWindow):
         self.but_move_to_source.setToolTip("[Ctrl+shift+M] Move the select items in the target directory -> source directory")
         self.but_move_to_source.setToolTipDuration(1000)
         self.but_move_to_source.setShortcut("Ctrl+shift+M")
+        
+        self.but_copy_to_target = self.findChild(QPushButton, "but_copy_to_target")
+        self.but_copy_to_target.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_source, self.tree_target))
+        self.but_copy_to_target.setToolTip("[Ctrl+C] Copy the select items in the source directory -> target directory")
+        self.but_copy_to_target.setToolTipDuration(1000)
+        self.but_copy_to_target.setShortcut("Ctrl+C")
+        
+        self.but_copy_to_source = self.findChild(QPushButton, "but_copy_to_source")
+        self.but_copy_to_source.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_source, self.tree_target))
+        self.but_copy_to_source.setToolTip("[Ctrl+shift+C] Copy the select items in the target directory -> target directory")
+        self.but_copy_to_source.setToolTipDuration(1000)
+        self.but_copy_to_source.setShortcut("Ctrl+shift+C")
+
 
     def __setup_window_size(self) -> None:
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
@@ -333,9 +349,9 @@ class MainWindow(QMainWindow):
     def __setup_copy_dir_view(self) -> None:
         """Sets up the functionality of the copy dir buttons. Returns: None"""
         but_copy_source = self.findChild(QPushButton, "but_copy_source")
-        but_copy_source.clicked.connect(lambda: self.copy_dir_tree_view(self.tree_target, self.path_info_bar_target, self.tree_source.model().rootPath()))
+        but_copy_source.clicked.connect(lambda: self.copy_dir_tree_view(self.tree_target, self.path_info_bar_target, self.tree_source.get_root_dir()))
         but_copy_target = self.findChild(QPushButton, "but_copy_target")
-        but_copy_target.clicked.connect(lambda: self.copy_dir_tree_view(self.tree_source, self.path_info_bar_source, self.tree_target.model().rootPath()))
+        but_copy_target.clicked.connect(lambda: self.copy_dir_tree_view(self.tree_source, self.path_info_bar_source, self.tree_target.get_root_dir()))
 
     def __setup_dir_up_buttons(self) -> None:
         """Sets up the functionality of the path up buttons. Returns: None"""
@@ -355,8 +371,13 @@ class MainWindow(QMainWindow):
 
     def on_move_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Move files from the source directory to the target directory. Returns: None"""
-        logger.info(f"Moving files from '{from_tree.model().rootPath()}' to '{to_tree.model().rootPath()}'")
-        move_files(from_tree.get_selected_files(), to_tree.model().rootPath())
+        logger.info(f"Moving files from '{from_tree.get_root_dir()}' to '{to_tree.get_root_dir()}'")
+        ask_and_move_files(from_tree.get_selected_files(), os.path.normpath(to_tree.get_root_dir()))
+        
+    def on_copy_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
+        """Copy files from the source directory to the target directory. Returns: None"""
+        logger.info(f"Copying files from '{from_tree.get_root_dir()}' to '{to_tree.get_root_dir()}'")
+        ask_and_copy_files(from_tree.get_selected_files(), to_tree.get_root_dir())  
 
     
     def on_restore_button_clicked(self) -> None:
@@ -374,26 +395,26 @@ class MainWindow(QMainWindow):
     def on_tree_double_clicked(self, index: QModelIndex, tree_view: MyTreeView, info_bar: QLineEdit) -> None:
         """Handles the tree view double click event. Returns: None"""
         tree_view.on_tree_double_clicked(index)
-        info_bar.setText(tree_view.model().rootPath())
+        info_bar.setText(tree_view.get_root_dir())
 
     def on_path_info_bar_return_pressed(self, tree_view: MyTreeView, path_info_bar: QLineEdit) -> None:
         """Handles the directory when the return key is pressed. Returns: None"""
 
         if not os.path.isdir(path_info_bar.text()):
             QMessageBox.critical(self, "Error", "Directory doesn't exist")
-            path_info_bar.setText(tree_view.model().rootPath())
+            path_info_bar.setText(tree_view.get_root_dir())
         else:
             tree_view.change_dir(path_info_bar.text())
 
     def go_up_dir_level(self, tree_view: MyTreeView, path_bar: QLineEdit) -> None:
 
         tree_view.go_up_one_dir_level()
-        path_bar.setText(tree_view.model().rootPath())
+        path_bar.setText(tree_view.get_root_dir())
 
     def copy_dir_tree_view(self, tree_view: MyTreeView, path_info_bar: QLineEdit, directory: str) -> None:
         """Copies the source directory to the target directory. Returns: None"""
         tree_view.change_dir(directory)
-        path_info_bar.setText(self.tree_target.model().rootPath())
+        path_info_bar.setText(self.tree_target.get_root_dir())
 
     def confirm_exit(self) -> None:
         """Confirms the exit of the application. Returns: None"""
@@ -429,7 +450,7 @@ class MainWindow(QMainWindow):
     def open_directory_browser(self, tree_view: MyTreeView, path: QLineEdit) -> None:
         """Open directory browser. Returns: None"""
 
-        if directory := QFileDialog.getExistingDirectory(self, "Select Directory", tree_view.model().rootPath(), QFileDialog.ShowDirsOnly):
+        if directory := QFileDialog.getExistingDirectory(self, "Select Directory", tree_view.get_root_dir(), QFileDialog.ShowDirsOnly):
             tree_view.change_dir(directory)
             path.setText(directory)
 
@@ -577,8 +598,8 @@ class MainWindow(QMainWindow):
     def repackage(self) -> None:
         """moves the files from the source directory to the target directory based on the LABEL tag. Returns: None"""
 
-        source_dir = self.tree_source.model().rootPath()
-        target_dir = self.tree_target.model().rootPath()
+        source_dir = self.tree_source.get_root_dir()
+        target_dir = self.tree_target.get_root_dir()
 
         if not self.check_directory_scanned(source_dir, "Source directory not scanned"):
             return
