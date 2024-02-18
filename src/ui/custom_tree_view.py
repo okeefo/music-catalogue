@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView, QLin
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
 from PyQt5.QtGui import QPixmap
 from typing import List
-from ui.custom_image_label import  pop_up_image_dialogue
+from ui.custom_image_label import pop_up_image_dialogue
 from log_config import get_logger
 
 import contextlib
@@ -93,7 +93,7 @@ class MyTreeView(QTreeView):
         self.setAcceptDrops(True)
         self.setDragDropMode(QAbstractItemView.InternalMove)
         self.setDefaultDropAction(Qt.MoveAction)
-        
+
     def set_dir_as(self, last_dir) -> None:
         model = FileSystemModel()
         model.directoryLoaded.connect(self.resize_first_column)
@@ -102,10 +102,9 @@ class MyTreeView(QTreeView):
 
     def set_single_click_handler(self, single_click_fn) -> None:
         self.clicked.connect(lambda index: single_click_fn(index, self))
-        
+
     def set_double_click_handler(self, double_click_fn, object=None) -> None:
         self.doubleClicked.connect(lambda index: double_click_fn(index, self, object))
-
 
     def set_custom_context_menu(self, context_menu_fn) -> None:
         # Enable custom context menu
@@ -118,13 +117,12 @@ class MyTreeView(QTreeView):
 
     def __handle_tree_double_click_dir(self, path: str) -> None:
         """Handles the tree view double click event for directories. Returns: None"""
-       
+
         model = self.model()
         self.__set_root_index_of_tree_view(path)
         self.__set_root_path_for_tree_view(model, path)
 
         model.directoryLoaded.connect(lambda: self.__set_root_index_of_tree_view(path))
-
 
     def on_tree_double_clicked(self, index: QModelIndex) -> None:
         """Handles the tree view double click event. Returns: None"""
@@ -141,14 +139,14 @@ class MyTreeView(QTreeView):
 
     def __set_root_path_for_tree_view(self, model: QFileSystemModel, absolute_path: str):
         """Sets the root path for the given tree view."""
-      
+
         model.setRootPath(absolute_path)
         self.setModel(model)
         self.sortByColumn(0, Qt.AscendingOrder)
 
     def __set_root_index_of_tree_view(self, directory) -> None:
         """Sets the root index of the tree view."""
-       
+
         model = self.model()
         self.setRootIndex(model.index(directory))
         for column in range(model.columnCount()):
@@ -159,32 +157,41 @@ class MyTreeView(QTreeView):
 
     def go_up_one_dir_level(self) -> None:
         """Goes up one directory level."""
-       
+
         model = self.model()
         current_root_path = model.filePath(self.rootIndex())
         directory = QDir(current_root_path)
         if directory.cdUp():
             self.set_dir_as(directory.absolutePath())
-            
+
     def change_dir(self, directory) -> None:
         """Changes the directory of the tree view."""
-       
+
         logger.info(f"Tree View {self.objectName()} Changing directory to {directory}")
-       
+
         self.set_dir_as(directory)
         self.resize_first_column()
         self.clearSelection()
         self.setCurrentIndex(self.model().index(directory))
         self.selectionModel().select(self.model().index(directory), QItemSelectionModel.Select)
         self.selectionModel().setCurrentIndex(self.model().index(directory), QItemSelectionModel.Select)
-        
-    def get_selected_file_names(self) -> List[str]:
+
+    def get_selected_file_names_relative_to_the_root(self) -> List[str]:
         """Returns a list of the selected files (inc) in the tree view."""
+       
         selected_indexes = self.selectionModel().selectedRows()
-        return [self.model().data(i) for i in selected_indexes]
-    
+        #return [self.model().data(i) for i in selected_indexes]
+        root_path = self.model().rootPath()
+        return [os.path.relpath(self.model().filePath(i), root_path) for i in selected_indexes]
+
     def get_selected_files(self) -> List[str]:
         """Returns a list of selected file paths from the tree view"""
+       
         selected_indexes = self.selectionModel().selectedRows()
         selected_file_paths = [self.model().filePath(i) for i in selected_indexes]
         return [os.path.normpath(i) for i in selected_file_paths]
+
+    def get_root_dir(self) -> str:
+        """Returns the root directory of the tree view."""
+       
+        return self.model().rootPath()
