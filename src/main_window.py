@@ -59,7 +59,6 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
-# TODO: copy and Paste functions
 # TODO: add a progress bar when copying and moving files
 # TODO: auto tagging files from discogs and renaming files to me format.
 

@@ -52,11 +52,12 @@ class TreeViewContextMenuHandler(QWidget):
         self.move_all_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Move All", self)
         self.repackage_dir_action = QAction(QtGui.QIcon(":/icons/icons/package.svg"), "Repackage this Dir", self)
         self.repackage_select_action = QAction(QtGui.QIcon(":/icons/icons/package.svg"), "Repackage Selection", self)
-        self.info_dir_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info all....", self)
-        self.info_selected_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info selected....", self)
+        self.info_dir_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info all items", self)
+        self.info_selected_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info selected items", self)
         self.copy_selected_across_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy across.", self)
         self.copy_selected_to_clipboard_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy items to clipboard", self)
-        self.paste_items_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste here", self)
+        self.paste_items_to_root_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste here", self)
+        self.paste_items_to_selected_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste in selected dir", self)
 
         # menu 1 - MP3 tag only
 
@@ -105,7 +106,7 @@ class TreeViewContextMenuHandler(QWidget):
             menu.addAction(self.repackage_dir_action)
             if len(self.clipboard) > 0:
                 menu.addSeparator()
-                menu.addAction(self.paste_items_action)
+                menu.addAction(self.paste_items_to_root_action)
                 menu.addSeparator()
 
             return menu
@@ -123,7 +124,8 @@ class TreeViewContextMenuHandler(QWidget):
             menu.addAction(self.copy_selected_to_clipboard_action)
             if len(self.clipboard) > 0:
                 menu.addSeparator()
-                menu.addAction(self.paste_items_action)
+                menu.addAction(self.paste_items_to_root_action)
+                menu.addAction(self.paste_items_to_selected_action)
             menu.addSeparator()
             menu.addAction(self.delete_action)
             return menu
@@ -155,7 +157,7 @@ class TreeViewContextMenuHandler(QWidget):
 
         if len(self.clipboard) > 0:
             menu.addSeparator()
-            menu.addAction(self.paste_items_action)
+            menu.addAction(self.paste_items_to_root_action)
 
         menu.addSeparator()
         menu.addAction(self.delete_action)
@@ -220,8 +222,11 @@ class TreeViewContextMenuHandler(QWidget):
         elif action == self.copy_selected_to_clipboard_action:
             self.__do_copy_selected_items_to_clipboard(tree_view)
 
-        elif action == self.paste_items_action:
+        elif action == self.paste_items_to_root_action:
             self.__do_paste_items_from_clipboard(tree_view)
+        
+        elif action == self.paste_items_to_selected_action:
+            self.__do_paste_items_from_clipboard(tree_view, True)
 
     def __do_delete(self, tree_view: MyTreeView) -> None:
         """Deletes selected files. Returns: None"""
@@ -361,11 +366,14 @@ class TreeViewContextMenuHandler(QWidget):
         self.clipboard = tree_view.get_selected_files()
         logger.info("Menu action -> copy selected items to clipboard : done")
 
-    def __do_paste_items_from_clipboard(self, tree_view: MyTreeView) -> None:
+    def __do_paste_items_from_clipboard(self, tree_view: MyTreeView, toSelectedDir: bool=False) -> None:
         """Pastes items from clipboard. Returns: None"""
 
         logger.info("Menu action -> paste items from clipboard")
-        ask_and_copy_files(self.clipboard, tree_view.get_root_dir())
+        if toSelectedDir:
+           ask_and_copy_files(self.clipboard, tree_view.get_selected_files()[0])
+        else:
+            ask_and_copy_files(self.clipboard, tree_view.get_root_dir())
         self.clipboard = []
         logger.info("Menu action -> paste items from clipboard : done")
 
