@@ -15,15 +15,13 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None
     """Move files between dirs"""
 
     userResponse = None
-
     files_to_delete = []
-    source_dir = os.path.normpath(source_dir)
-    target_dir = os.path.normpath(target_dir)
 
     # loop over the file list and move the files
     for source_file in file_list:
 
         fq_source_file = os.path.normpath(os.path.join(source_dir, source_file))
+        source_file = os.path.basename(fq_source_file)
         fq_target_file = os.path.normpath(os.path.join(target_dir, source_file))
         
 
@@ -53,10 +51,11 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None
 
                     continue
 
-                if userResponse == QMessageBox.Yes:
-                    userResponse = None
+                else:
+                    if userResponse == QMessageBox.Yes:
+                        userResponse = None
 
-                os.remove(fq_target_file)
+                    send2trash.send2trash(fq_target_file)
 
             elif userResponse in [QMessageBox.No, QMessageBox.NoToAll]:
                 # skip the file
@@ -110,29 +109,36 @@ def __clean_up(files_to_delete: List[str]) -> None:
 
 def ask_and_move_files(file_list: List[str], source_dir, target_dir: str) -> None:
     """prompt user adn ask before moving files between dirs"""
+    
+    file_list, source_dir, target_dir = __normalise_paths(file_list, source_dir, target_dir)
 
     if not file_list:
         logger.info("No files selected to move")
         return
 
     logger.info(f"Prompt user to move files from '{file_list}' in '{source_dir}' to '{target_dir}'")
-    if len(file_list) > 2:
+    if len(file_list) > 1:
         message = f"Moving the selected files to:\n\n{target_dir}\n\nDo you want to continue?"
     else:
-        message = f"Moving: \n\n {file_list} to:\n\n{target_dir}\n\nDo you want to continue?"
+        message = f"Moving: \n\n {file_list[0]}\n to:\n{target_dir}\n\nDo you want to continue?"
     response = show_message_box(message, ButtonType.YesNoCancel, "Move Files", "warning")
     logger.info(f"User chose: {convert_response_to_string(response)}")
     __move_files(file_list, source_dir, target_dir) if response == QMessageBox.Yes else logger.info("Move files cancelled by user")
+    
 
-
-def move_contents_of_dir(source_dir: str, target_dir: str) -> None:
-    """Move the contents of a directory to another directory"""
-
-    contents = os.listdir(source_dir)
-    # loop over the file list and prefix the target to get the fully qualified path and normalize the path
-    contents = [os.path.normpath(os.path.join(source_dir, file)) for file in contents]
-    ask_and_move_files(contents, target_dir)
-
+def __normalise_paths(file_list: List[str], source_dir: str, target_dir: str) -> tuple[List[str], str, str]:
+    """Normalise the paths for the source and target dirs"""
+    
+    if source_dir:
+        source_dir = os.path.normpath(source_dir)
+    
+    if target_dir:
+        target_dir = os.path.normpath(target_dir)
+    
+    if file_list:
+        file_list = [os.path.normpath(os.path.join(source_dir, file)) for file in file_list]
+    
+    return file_list, source_dir, target_dir
 
 def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None) -> None:
     """Copy files/dirs form source to target"""

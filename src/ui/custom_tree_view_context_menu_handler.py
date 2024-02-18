@@ -10,7 +10,7 @@ from PyQt5.QtCore import QUrl, QPoint, QModelIndex
 from typing import List
 
 from ui.custom_tree_view import MyTreeView
-from file_operations.file_utils import move_contents_of_dir, ask_and_move_files, delete_files, ask_and_copy_files
+from file_operations.file_utils import ask_and_move_files, delete_files, ask_and_copy_files
 from file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
 from file_operations.files_system_info import display_results
 
@@ -290,7 +290,7 @@ class TreeViewContextMenuHandler(QWidget):
 
         from_dir = tree_view.get_root_dir()
         logger.info(f"Menu Action -> move all items : from '{from_dir}' to '{dest_path}'")
-        move_contents_of_dir(from_dir, dest_path)
+        ask_and_move_files(os.listdir(from_dir), from_dir, dest_path)
         logger.info("Menu Action -> move all items : done")
         self.update_status(f"Moved all items to '{dest_path}'")
 

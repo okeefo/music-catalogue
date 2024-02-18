@@ -40,7 +40,8 @@ from ui.custom_tree_view import MyTreeView
 
 # Set logger instance
 from log_config import get_logger
-logger = get_logger('mc.main_window')
+
+logger = get_logger("mc.main_window")
 
 
 # Create an instance of QApplication
@@ -58,12 +59,9 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
-# TODO: fix/test mve functions
-# TODO: copy and Paste functions  
+# TODO: copy and Paste functions
 # TODO: add a progress bar when copying and moving files
 # TODO: auto tagging files from discogs and renaming files to me format.
-
-
 
 
 class MainWindow(QMainWindow):
@@ -212,19 +210,18 @@ class MainWindow(QMainWindow):
         self.but_move_to_source.setToolTip("[Ctrl+shift+M] Move the select items in the target directory -> source directory")
         self.but_move_to_source.setToolTipDuration(1000)
         self.but_move_to_source.setShortcut("Ctrl+shift+M")
-        
+
         self.but_copy_to_target = self.findChild(QPushButton, "but_copy_to_target")
         self.but_copy_to_target.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_source, self.tree_target))
         self.but_copy_to_target.setToolTip("[Ctrl+C] Copy the select items in the source directory -> target directory")
         self.but_copy_to_target.setToolTipDuration(1000)
         self.but_copy_to_target.setShortcut("Ctrl+C")
-        
+
         self.but_copy_to_source = self.findChild(QPushButton, "but_copy_to_source")
-        self.but_copy_to_source.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_source, self.tree_target))
+        self.but_copy_to_source.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_target, self.tree_source))
         self.but_copy_to_source.setToolTip("[Ctrl+shift+C] Copy the select items in the target directory -> target directory")
         self.but_copy_to_source.setToolTipDuration(1000)
         self.but_copy_to_source.setShortcut("Ctrl+shift+C")
-
 
     def __setup_window_size(self) -> None:
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
@@ -359,27 +356,26 @@ class MainWindow(QMainWindow):
         self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_info_bar_target))
 
     def onContextMenuRequested(self, tree_view: MyTreeView, position: QPoint):
-        
+
         index = tree_view.indexAt(position)
-        
+
         if tree_view == self.tree_source:
             other_tree = self.tree_target
         else:
             other_tree = self.tree_source
-            
+
         self.tree_view_cm_handler.show_menu(tree_view, index, position, other_tree)
 
     def on_move_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Move files from the source directory to the target directory. Returns: None"""
         logger.info(f"Moving files from '{from_tree.get_root_dir()}' to '{to_tree.get_root_dir()}'")
-        ask_and_move_files(from_tree.get_selected_files(), os.path.normpath(to_tree.get_root_dir()))
-        
+        ask_and_move_files(from_tree.get_selected_files(), from_tree.get_root_dir(), to_tree.get_root_dir())
+
     def on_copy_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Copy files from the source directory to the target directory. Returns: None"""
         logger.info(f"Copying files from '{from_tree.get_root_dir()}' to '{to_tree.get_root_dir()}'")
-        ask_and_copy_files(from_tree.get_selected_files(), to_tree.get_root_dir())  
+        ask_and_copy_files(from_tree.get_selected_files(), to_tree.get_root_dir())
 
-    
     def on_restore_button_clicked(self) -> None:
         """Restore files from the recycle bin. Returns: None"""
 
@@ -643,7 +639,7 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    
+
     try:
         # Create an instance of MainWindow
         main_window = MainWindow(app)
@@ -653,7 +649,7 @@ if __name__ == "__main__":
 
         # Start the application event loop
         app.exec_()
-        
+
     except Exception as e:
         logger.exception("Unhandled exception: %s", e)
         logger.error(traceback.format_exc())
