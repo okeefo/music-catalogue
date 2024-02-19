@@ -46,7 +46,7 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None
                 if os.path.isdir(fq_source_file):
                     logger.info(f'Merging directory "{fq_source_file}" into "{fq_target_file}"')
                     # create fully qualified file names for the contents of the fq_source_dir
-                    __move_files(os.listdir(fq_source_file), fq_source_file, fq_target_file, progress_bar)
+                    __move_files(os.listdir(fq_source_file), fq_source_file, fq_target_file)
 
                     # add fq_source_file to teh list files to delete later
                     files_to_delete.append(fq_source_file)

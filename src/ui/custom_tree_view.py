@@ -83,6 +83,21 @@ class FileSystemModel(QFileSystemModel):
             return True
 
         return False
+    
+    def data(self, index, role=Qt.DisplayRole):
+        if index.column() == 1 and role == Qt.DisplayRole:
+            if size_str := super().data(index, role):
+                # Remove unit from the string and convert to float
+                size = float(size_str.split()[0])
+                # Convert size from MiB to KB
+                size *= 1024
+                if size < 1024:
+                    return f'{size:.2f} KB'
+                elif size < 1024**2:
+                    return f'{size / 1024:.2f} MB'
+                else:
+                    return f'{size / 1024**2:.2f} GB'
+        return super().data(index, role)
 
 
 class MyTreeView(QTreeView):
