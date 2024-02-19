@@ -62,7 +62,7 @@ QTreeView::item {
         border: 1px solid black;
         padding: 5px;
 }
-*/
+
 QLineEdit{
 		color: black;
 		border: 1px solid black;
@@ -71,6 +71,19 @@ QLineEdit{
         selection-background-color: green;
         selection-color: white;
 }
+*/
+QLineEdit {
+
+        min-height: 20px;
+		font-size: 14px;
+		color: black;
+		border: 1px solid black;
+        border-radius: 5px;
+        padding: 5px;
+        selection-background-color: lightgrey;
+        selection-color: black;	   
+ }
+
 
 QGroupBox {
         border: 1px solid black;
@@ -492,11 +505,11 @@ QGroupBox::title {
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QLineEdit" name="path_source">
+                     <widget class="MyLineEdit" name="path_source">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
-                        <height>30</height>
+                        <height>32</height>
                        </size>
                       </property>
                       <property name="alignment">
@@ -692,20 +705,39 @@ QPushButton::pressed
                  </item>
                  <item>
                   <widget class="MyTreeView" name="tree_source">
+                   <property name="styleSheet">
+                    <string notr="true">QLineEdit {
+
+        padding: 3px;
+ }
+</string>
+                   </property>
                    <property name="frameShape">
                     <enum>QFrame::WinPanel</enum>
                    </property>
                    <property name="frameShadow">
                     <enum>QFrame::Sunken</enum>
                    </property>
+                   <property name="editTriggers">
+                    <set>QAbstractItemView::EditKeyPressed</set>
+                   </property>
                    <property name="tabKeyNavigation">
                     <bool>true</bool>
+                   </property>
+                   <property name="dragEnabled">
+                    <bool>true</bool>
+                   </property>
+                   <property name="dragDropMode">
+                    <enum>QAbstractItemView::DragDrop</enum>
                    </property>
                    <property name="alternatingRowColors">
                     <bool>true</bool>
                    </property>
                    <property name="selectionMode">
                     <enum>QAbstractItemView::ContiguousSelection</enum>
+                   </property>
+                   <property name="uniformRowHeights">
+                    <bool>true</bool>
                    </property>
                    <property name="sortingEnabled">
                     <bool>true</bool>
@@ -1353,11 +1385,11 @@ QPushButton::pressed
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QLineEdit" name="path_target">
+                     <widget class="MyLineEdit" name="path_target">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
-                        <height>30</height>
+                        <height>32</height>
                        </size>
                       </property>
                       <property name="toolTip">
@@ -1550,20 +1582,44 @@ QPushButton::pressed
                  </item>
                  <item>
                   <widget class="MyTreeView" name="tree_target">
+                   <property name="styleSheet">
+                    <string notr="true">QLineEdit {
+
+        padding: 3px;
+ }
+
+
+</string>
+                   </property>
                    <property name="frameShape">
                     <enum>QFrame::WinPanel</enum>
                    </property>
                    <property name="frameShadow">
                     <enum>QFrame::Sunken</enum>
                    </property>
+                   <property name="editTriggers">
+                    <set>QAbstractItemView::EditKeyPressed</set>
+                   </property>
                    <property name="tabKeyNavigation">
                     <bool>true</bool>
+                   </property>
+                   <property name="dragEnabled">
+                    <bool>true</bool>
+                   </property>
+                   <property name="dragDropMode">
+                    <enum>QAbstractItemView::DragDrop</enum>
                    </property>
                    <property name="alternatingRowColors">
                     <bool>true</bool>
                    </property>
                    <property name="selectionMode">
                     <enum>QAbstractItemView::ContiguousSelection</enum>
+                   </property>
+                   <property name="textElideMode">
+                    <enum>Qt::ElideLeft</enum>
+                   </property>
+                   <property name="uniformRowHeights">
+                    <bool>true</bool>
                    </property>
                    <property name="sortingEnabled">
                     <bool>true</bool>
@@ -3183,6 +3239,11 @@ QPushButton::pressed
    <class>MyTreeView</class>
    <extends>QTreeView</extends>
    <header>main_window</header>
+  </customwidget>
+  <customwidget>
+   <class>MyLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>ui.custom_line_edit</header>
   </customwidget>
  </customwidgets>
  <resources>

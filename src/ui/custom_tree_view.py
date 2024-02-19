@@ -18,7 +18,7 @@ class FileSystemModel(QFileSystemModel):
     def flags(self, index):
         default_flags = super().flags(index)
         if index.isValid():
-            return default_flags | Qt.ItemFlag.ItemIsDragEnabled | Qt.ItemFlag.ItemIsDropEnabled
+            return default_flags | Qt.ItemFlag.ItemIsDragEnabled | Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable
         else:
             return default_flags | Qt.ItemFlag.ItemIsDropEnabled
 
@@ -62,6 +62,27 @@ class FileSystemModel(QFileSystemModel):
         else:
             logger.info(f"Failed to move file to '{destination_path}'")
             return False
+
+    def setData(self, index, value, role=Qt.EditRole):
+        if index.isValid() and role == Qt.EditRole:
+            # Get the file path at the index
+            file_path = self.filePath(index)
+
+            # Get the directory of the file
+            dir_path = os.path.dirname(file_path)
+
+            # Create the new file path
+            new_file_path = os.path.join(dir_path, value)
+
+            # Rename the file or directory
+            os.rename(file_path, new_file_path)
+
+            # Emit the dataChanged signal
+            self.dataChanged.emit(index, index)
+
+            return True
+
+        return False
 
 
 class MyTreeView(QTreeView):
@@ -178,23 +199,23 @@ class MyTreeView(QTreeView):
 
     def get_selected_file_names_relative_to_the_root(self) -> List[str]:
         """Returns a list of the selected files (inc) in the tree view."""
-       
+
         selected_indexes = self.selectionModel().selectedRows()
-        #return [self.model().data(i) for i in selected_indexes]
+        # return [self.model().data(i) for i in selected_indexes]
         root_path = self.model().rootPath()
         return [os.path.relpath(self.model().filePath(i), root_path) for i in selected_indexes]
 
     def get_selected_files(self, defaultAll=False) -> List[str]:
         """Returns a list of selected file paths from the tree view, if there are no selected files and defaultAll=true, returns all files."""
-       
-        if(len(self.selectionModel().selectedRows()) == 0 and defaultAll == True):
+
+        if len(self.selectionModel().selectedRows()) == 0 and defaultAll == True:
             self.selectAll()
 
-        selected_indexes = self.selectionModel().selectedRows() 
+        selected_indexes = self.selectionModel().selectedRows()
         selected_file_paths = [self.model().filePath(i) for i in selected_indexes]
         return [os.path.normpath(i) for i in selected_file_paths]
 
     def get_root_dir(self) -> str:
         """Returns the root directory of the tree view."""
-       
-        return self.model().rootPath()
+
+        return os.path.normpath(self.model().rootPath())

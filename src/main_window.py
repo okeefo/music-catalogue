@@ -18,7 +18,6 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QCompleter,
     QFileSystemModel,
-    QLineEdit,
 )
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QPoint
 from PyQt5.QtGui import QFont, QPixmap
@@ -37,6 +36,7 @@ from ui.recycle import RestoreDialog
 from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
 from ui.custom_image_label import ImageLabel
 from ui.custom_tree_view import MyTreeView
+from ui.custom_line_edit import MyLineEdit
 
 # Set logger instance
 from log_config import get_logger
@@ -148,11 +148,11 @@ class MainWindow(QMainWindow):
         completer = QCompleter()
         completer.setModel(model)
 
-        # Set the completer for the QLineEdit
-        self.path_info_bar_source = self.findChild(QLineEdit, "path_source")
+        # Set the completer for the MyLineEdit
+        self.path_info_bar_source = self.findChild(MyLineEdit, "path_source")
         self.path_info_bar_source.setCompleter(completer)
 
-        self.path_info_bar_target = self.findChild(QLineEdit, "path_target")
+        self.path_info_bar_target = self.findChild(MyLineEdit, "path_target")
         self.path_info_bar_target.setCompleter(completer)
 
         self.path_info_bar_source.returnPressed.connect(lambda: self.on_path_info_bar_return_pressed(self.tree_source, self.path_info_bar_source))
@@ -320,7 +320,7 @@ class MainWindow(QMainWindow):
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
         self.__set_tree_actions(self.tree_target, last_dir, self.path_info_bar_target)
 
-    def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: QLineEdit) -> None:
+    def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit) -> None:
         tree_view.setup_tree_view(last_dir)
         tree_view.set_single_click_handler(self.on_tree_clicked)
         tree_view.set_double_click_handler(lambda index, tree_view, _: self.on_tree_double_clicked(index, tree_view, path_bar))
@@ -388,26 +388,26 @@ class MainWindow(QMainWindow):
         """Handles the tree view click event. Returns: None"""
         self.display_id3_tags_when_an_item_is_selected(item, tree_view)
 
-    def on_tree_double_clicked(self, index: QModelIndex, tree_view: MyTreeView, info_bar: QLineEdit) -> None:
+    def on_tree_double_clicked(self, index: QModelIndex, tree_view: MyTreeView, info_bar: MyLineEdit) -> None:
         """Handles the tree view double click event. Returns: None"""
         tree_view.on_tree_double_clicked(index)
         info_bar.setText(tree_view.get_root_dir())
 
-    def on_path_info_bar_return_pressed(self, tree_view: MyTreeView, path_info_bar: QLineEdit) -> None:
+    def on_path_info_bar_return_pressed(self, tree_view: MyTreeView, path_info_bar: MyLineEdit) -> None:
         """Handles the directory when the return key is pressed. Returns: None"""
 
         if not os.path.isdir(path_info_bar.text()):
             QMessageBox.critical(self, "Error", "Directory doesn't exist")
             path_info_bar.setText(tree_view.get_root_dir())
         else:
-            tree_view.change_dir(path_info_bar.text())
+            tree_view.change_dir(os.path.normpath(path_info_bar.text()))
 
-    def go_up_dir_level(self, tree_view: MyTreeView, path_bar: QLineEdit) -> None:
+    def go_up_dir_level(self, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
 
         tree_view.go_up_one_dir_level()
         path_bar.setText(tree_view.get_root_dir())
 
-    def copy_dir_tree_view(self, tree_view: MyTreeView, path_info_bar: QLineEdit, directory: str) -> None:
+    def copy_dir_tree_view(self, tree_view: MyTreeView, path_info_bar: MyLineEdit, directory: str) -> None:
         """Copies the source directory to the target directory. Returns: None"""
         tree_view.change_dir(directory)
         path_info_bar.setText(self.tree_target.get_root_dir())
@@ -443,7 +443,7 @@ class MainWindow(QMainWindow):
         but_select_target = self.findChild(QPushButton, "but_select_target")
         but_select_target.clicked.connect(lambda: self.open_directory_browser(self.tree_target, self.path_info_bar_target))
 
-    def open_directory_browser(self, tree_view: MyTreeView, path: QLineEdit) -> None:
+    def open_directory_browser(self, tree_view: MyTreeView, path: MyLineEdit) -> None:
         """Open directory browser. Returns: None"""
 
         if directory := QFileDialog.getExistingDirectory(self, "Select Directory", tree_view.get_root_dir(), QFileDialog.ShowDirsOnly):
