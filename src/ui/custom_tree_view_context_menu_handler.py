@@ -48,16 +48,18 @@ class TreeViewContextMenuHandler(QWidget):
         self.stop_action = QAction(QtGui.QIcon(":/icons/icons/stop-circle.svg"), "Stop", self)
         self.pause_action = QAction(QtGui.QIcon(":/icons/icons/pause.svg"), "Pause", self)
         self.delete_action = QAction(QtGui.QIcon(":/icons/icons/delete.svg"), "Delete", self)
-        self.move_selected_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Move", self)
-        self.move_all_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Move All", self)
-        self.repackage_dir_action = QAction(QtGui.QIcon(":/icons/icons/package.svg"), "Repackage this Dir", self)
-        self.repackage_select_action = QAction(QtGui.QIcon(":/icons/icons/package.svg"), "Repackage Selection", self)
+        self.move_selected_action = QAction(QtGui.QIcon(":/icons/icons/send.svg"), "Move", self)
+        self.move_all_action = QAction(QtGui.QIcon(":/icons/icons/send.svg"), "Move All", self)
+        self.repackage_dir_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Repackage this Dir", self)
+        self.repackage_select_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Repackage Selection", self)
         self.info_dir_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info all items", self)
         self.info_selected_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info selected items", self)
         self.copy_selected_across_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy across.", self)
         self.copy_selected_to_clipboard_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy items to clipboard", self)
         self.paste_items_to_root_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste here", self)
         self.paste_items_to_selected_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste in selected dir", self)
+        self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename", self)
+
 
         # menu 1 - MP3 tag only
 
@@ -110,10 +112,15 @@ class TreeViewContextMenuHandler(QWidget):
                 menu.addSeparator()
 
             return menu
+        
+        # multi items selected:
+        single_item_selected = len(tree_view.selectionModel().selectedRows()) == 1
 
         # single item selected and its dir
-        if os.path.isdir(file_path) and len(tree_view.selectionModel().selectedRows()) == 1:
+        if os.path.isdir(file_path) and single_item_selected:
             menu.addAction(self.info_selected_action)
+            menu.addSeparator()
+            menu.addAction(self.rename_file_action)
             menu.addSeparator()
             menu.addAction(self.open_in_mp3tag_action)
             menu.addAction(self.open_in_vlc_action)
@@ -134,6 +141,9 @@ class TreeViewContextMenuHandler(QWidget):
         menu.addAction(self.info_dir_action)
         menu.addAction(self.info_selected_action)
         menu.addSeparator()
+        if single_item_selected:
+            menu.addAction(self.rename_file_action)
+            menu.addSeparator()
         menu.addAction(self.open_in_mp3tag_action)
         menu.addAction(self.open_in_vlc_action)
 
@@ -227,6 +237,9 @@ class TreeViewContextMenuHandler(QWidget):
         
         elif action == self.paste_items_to_selected_action:
             self.__do_paste_items_from_clipboard(tree_view, True)
+            
+        elif action == self.rename_file_action:
+            self.__do_rename_file(tree_view)
 
     def __do_delete(self, tree_view: MyTreeView) -> None:
         """Deletes selected files. Returns: None"""
@@ -384,3 +397,15 @@ class TreeViewContextMenuHandler(QWidget):
         ask_and_copy_files(tree_view.get_selected_files(), dest_path)
         logger.info("Menu action -> copy selected items to destination : done")
         self.update_status(f"Copied selected items to '{dest_path}'")
+
+    def __do_rename_file(self, tree_view: MyTreeView) -> None:
+        """Renames a file. Returns: None"""
+
+        logger.info("Menu action -> rename file")
+        ## rename the file/dir at the current index
+        logger.info(f"Old filename {tree_view.currentIndex().data()}")
+               
+        tree_view.edit(tree_view.currentIndex())
+        logger.info(f"New filename {tree_view.currentIndex().data()}")        
+        logger.info("Menu action -> rename file : done")
+        
