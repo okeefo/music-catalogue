@@ -580,28 +580,11 @@ class MainWindow(QMainWindow):
         source, target = self.label_cache.get(label_type, (None, None))
         return source if tree_view == self.tree_source else target
 
-    def resizeColumns(self) -> None:
-        """Resize the columns of the tree widget. Returns: None"""
-        for i in range(self.sender().columnCount()):
-            self.sender().resizeColumnToContents(i)
-
-    def check_directory_scanned(self, directory, error_message):
-        if directory is None:
-            QMessageBox.critical(self, "Error", error_message)
-            return False
-        return True
-
     def repackage(self) -> None:
         """moves the files from the source directory to the target directory based on the LABEL tag. Returns: None"""
 
         source_dir = self.tree_source.get_root_dir()
         target_dir = self.tree_target.get_root_dir()
-
-        if not self.check_directory_scanned(source_dir, "Source directory not scanned"):
-            return
-
-        if not self.check_directory_scanned(target_dir, "Target directory not scanned"):
-            return
 
         self.update_status("Repackaging started...")
         logger.info(f"Repackaging started... '{source_dir}' -> '{target_dir}'")
