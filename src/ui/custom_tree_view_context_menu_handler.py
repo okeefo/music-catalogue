@@ -58,7 +58,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.copy_selected_to_clipboard_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy items to clipboard", self)
         self.paste_items_to_root_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste here", self)
         self.paste_items_to_selected_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste in selected dir", self)
-        self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename", self)
+        self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename (F2 or Ctrl+7)", self)
 
 
         # menu 1 - MP3 tag only

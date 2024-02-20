@@ -2021,6 +2021,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- album</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="2" column="3">
@@ -2072,6 +2075,9 @@ QPushButton::pressed
                      <property name="openExternalLinks">
                       <bool>true</bool>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="3" column="3">
@@ -2113,6 +2119,9 @@ QPushButton::pressed
                      </property>
                      <property name="text">
                       <string>-- catalog</string>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
                      </property>
                     </widget>
                    </item>
@@ -2181,6 +2190,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- title</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="1" column="3">
@@ -2225,6 +2237,9 @@ QPushButton::pressed
                      </property>
                      <property name="text">
                       <string>-- artist</string>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
                      </property>
                     </widget>
                    </item>
@@ -2349,6 +2364,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- aside</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="3" column="4">
@@ -2363,6 +2381,9 @@ QPushButton::pressed
                      </property>
                      <property name="text">
                       <string>-- label</string>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
                      </property>
                     </widget>
                    </item>
@@ -2385,6 +2406,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- discogs</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="1" column="6">
@@ -2399,6 +2423,9 @@ QPushButton::pressed
                      </property>
                      <property name="text">
                       <string>-- trak</string>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
                      </property>
                     </widget>
                    </item>
@@ -2785,6 +2812,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- title</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="1" column="4">
@@ -2881,6 +2911,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- artist</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="3" column="6">
@@ -2923,6 +2956,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- label</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="3" column="7">
@@ -2943,6 +2979,9 @@ QPushButton::pressed
                      </property>
                      <property name="text">
                       <string>-- discogs</string>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
                      </property>
                     </widget>
                    </item>
@@ -2986,6 +3025,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- album</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="2" column="7">
@@ -3000,6 +3042,9 @@ QPushButton::pressed
                      </property>
                      <property name="text">
                       <string>-- catalog</string>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
                      </property>
                     </widget>
                    </item>
@@ -3052,6 +3097,9 @@ QPushButton::pressed
                      <property name="openExternalLinks">
                       <bool>true</bool>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="1" column="7">
@@ -3067,6 +3115,9 @@ QPushButton::pressed
                      <property name="text">
                       <string>-- trak</string>
                      </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+                     </property>
                     </widget>
                    </item>
                    <item row="0" column="7">
@@ -3081,6 +3132,9 @@ QPushButton::pressed
                      </property>
                      <property name="text">
                       <string>-- aside</string>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
                      </property>
                     </widget>
                    </item>
