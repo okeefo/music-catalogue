@@ -824,6 +824,11 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="butt_repackage">
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -872,7 +877,7 @@ QPushButton::pressed
 }</string>
                         </property>
                         <property name="text">
-                         <string>Repackage &gt;</string>
+                         <string>RePack &gt;</string>
                         </property>
                         <property name="icon">
                          <iconset resource="resources.qrc">
@@ -904,6 +909,11 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_copy_to_target">
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -962,6 +972,11 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_copy_to_source">
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1032,6 +1047,11 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_move_to_target">
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1089,6 +1109,11 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_move_to_source">
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1159,6 +1184,69 @@ QPushButton::pressed
                        </spacer>
                       </item>
                       <item>
+                       <widget class="QPushButton" name="but_auto_tag">
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
+                        <property name="text">
+                         <string>Autotag</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="resources.qrc">
+                          <normaloff>:/icons/icons/globe.svg</normaloff>:/icons/icons/globe.svg</iconset>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
                        <spacer name="verticalSpacer_3">
                         <property name="orientation">
                          <enum>Qt::Vertical</enum>
@@ -1173,6 +1261,11 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_restore">
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1250,6 +1343,11 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_exit_2">
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
                         <property name="styleSheet">
                          <string notr="true">/*-----QPushButton-----*/
 QPushButton
