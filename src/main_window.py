@@ -211,9 +211,9 @@ class MainWindow(QMainWindow):
 
         self.but_copy_to_target = self.findChild(QPushButton, "but_copy_to_target")
         self.but_copy_to_target.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_source, self.tree_target))
-        self.but_copy_to_target.setToolTip("[Ctrl+C] Copy the select items in the source directory -> target directory")
+        self.but_copy_to_target.setToolTip("[Ctrl+P] Copy the select items in the source directory -> target directory")
         self.but_copy_to_target.setToolTipDuration(1000)
-        self.but_copy_to_target.setShortcut("Ctrl+C")
+        self.but_copy_to_target.setShortcut("Ctrl+P")
 
         self.but_copy_to_source = self.findChild(QPushButton, "but_copy_to_source")
         self.but_copy_to_source.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_target, self.tree_source))

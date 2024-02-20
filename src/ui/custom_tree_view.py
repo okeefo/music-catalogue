@@ -1,8 +1,8 @@
 import os
 
-from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView, QLineEdit
+from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QKeySequence
 from typing import List
 from ui.custom_image_label import pop_up_image_dialogue
 from log_config import get_logger
@@ -122,7 +122,7 @@ class MyTreeView(QTreeView):
         """Sets up the tree view. Returns: None"""
 
         self.set_dir_as(last_dir)
-        self.expanded.connect(self.resize_first_column)
+        self.expanded.connect(self.resize_columns)
         self.setSortingEnabled(True)
 
         self.setDragEnabled(True)
@@ -132,7 +132,7 @@ class MyTreeView(QTreeView):
 
     def set_dir_as(self, last_dir) -> None:
         model = FileSystemModel()
-        model.directoryLoaded.connect(self.resize_first_column)
+        model.directoryLoaded.connect(self.resize_columns)
         self.__set_root_path_for_tree_view(model, last_dir)
         self.setRootIndex(model.index(last_dir))
 
@@ -147,9 +147,10 @@ class MyTreeView(QTreeView):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(lambda position: context_menu_fn(self, position))
 
-    def resize_first_column(self) -> None:
+    def resize_columns(self) -> None:
         """Resize the first column of the tree view to fit the longest filename. Returns: None"""
-        self.resizeColumnToContents(0)
+        for column in range(self.model().columnCount()):
+            self.resizeColumnToContents(column)
 
     def __handle_tree_double_click_dir(self, path: str) -> None:
         """Handles the tree view double click event for directories. Returns: None"""
@@ -185,9 +186,7 @@ class MyTreeView(QTreeView):
 
         model = self.model()
         self.setRootIndex(model.index(directory))
-        for column in range(model.columnCount()):
-            self.resizeColumnToContents(column)
-
+        self.resize_columns()
         with contextlib.suppress(TypeError):
             model.directoryLoaded.disconnect()
 
@@ -206,7 +205,7 @@ class MyTreeView(QTreeView):
         logger.info(f"Tree View {self.objectName()} Changing directory to {directory}")
 
         self.set_dir_as(directory)
-        self.resize_first_column()
+        self.resize_columns()
         self.clearSelection()
         self.setCurrentIndex(self.model().index(directory))
         self.selectionModel().select(self.model().index(directory), QItemSelectionModel.Select)
@@ -234,3 +233,13 @@ class MyTreeView(QTreeView):
         """Returns the root directory of the tree view."""
 
         return os.path.normpath(self.model().rootPath())
+
+    def keyPressEvent(self, event):
+        super().keyPressEvent(event)
+
+        if event.key() == Qt.Key_7 and event.modifiers() & Qt.ControlModifier:
+            index = self.currentIndex()
+            if index.isValid():
+                # Create a new index that points to the first column of the current row
+                first_column_index = self.model().index(index.row(), 0, index.parent())
+                self.edit(first_column_index)
