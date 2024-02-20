@@ -13,7 +13,7 @@ from ui.custom_tree_view import MyTreeView
 from file_operations.file_utils import ask_and_move_files, delete_files, ask_and_copy_files
 from file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
 from file_operations.files_system_info import display_results
-
+from file_operations.auto_tag import auto_tag_files
 
 import qt.resources_rcc
 
@@ -59,7 +59,8 @@ class TreeViewContextMenuHandler(QWidget):
         self.paste_items_to_root_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste here", self)
         self.paste_items_to_selected_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste in selected dir", self)
         self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename (F2 or Ctrl+7)", self)
-
+        self.auto_tag_dir_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag dir", self)
+        self.auto_tag_selected_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag selected", self)  
 
         # menu 1 - MP3 tag only
 
@@ -106,6 +107,8 @@ class TreeViewContextMenuHandler(QWidget):
             menu.addSeparator()
             menu.addAction(self.move_all_action)
             menu.addAction(self.repackage_dir_action)
+            menu.addSeparator()
+            menu.addAction(self.auto_tag_dir_action)
             if len(self.clipboard) > 0:
                 menu.addSeparator()
                 menu.addAction(self.paste_items_to_root_action)
@@ -113,7 +116,6 @@ class TreeViewContextMenuHandler(QWidget):
 
             return menu
         
-        # multi items selected:
         single_item_selected = len(tree_view.selectionModel().selectedRows()) == 1
 
         # single item selected and its dir
@@ -146,8 +148,11 @@ class TreeViewContextMenuHandler(QWidget):
             menu.addSeparator()
         menu.addAction(self.open_in_mp3tag_action)
         menu.addAction(self.open_in_vlc_action)
+        menu.addSeparator()
+        menu.addAction(self.auto_tag_dir_action)
 
         if len(tree_view.selectionModel().selectedRows()) == 1 and file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
+            menu.addAction(self.auto_tag_selected_action)
             menu.addSeparator()
             menu.addAction(self.play_action)
             menu.addAction(self.stop_action)
@@ -240,6 +245,12 @@ class TreeViewContextMenuHandler(QWidget):
             
         elif action == self.rename_file_action:
             self.__do_rename_file(tree_view)
+            
+        elif action == self.auto_tag_dir_action:
+            self.__do_auto_tag_dir(tree_view)
+            
+        elif action == self.auto_tag_selected_action:
+            self.__do_auto_tag_selected_items(tree_view)
 
     def __do_delete(self, tree_view: MyTreeView) -> None:
         """Deletes selected files. Returns: None"""
@@ -409,3 +420,18 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"New filename {tree_view.currentIndex().data()}")        
         logger.info("Menu action -> rename file : done")
         
+    def __do_auto_tag_dir(self, tree_view: MyTreeView) -> None: 
+        """Auto tags all files in a directory. Returns: None"""
+        
+        logger.info("Menu action -> auto tag dir")
+        self.update_status("Auto tagging directory")
+        auto_tag_files(os.listdir(tree_view.get_root_dir()),tree_view.get_root_dir())
+        logger.info("Menu action -> auto tag dir : done")
+        
+    def __do_auto_tag_selected_items(self, tree_view: MyTreeView) -> None:
+        """Auto tags selected items. Returns: None"""
+        
+        logger.info("Menu action -> auto tag selected items")
+        self.update_status("Auto tagging selected items")
+       
+        logger.info("Menu action -> auto tag selected items : done")
