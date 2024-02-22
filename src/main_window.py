@@ -59,7 +59,7 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
-# TODO: implement auto tag a directory. group files by discogs relase id and auto tag them.
+# TODO: autotag, import images, select items to test.
 # TODO: implement renaming of tagged files to my format.
 # TODO: implement auto tagging selected files.
 
@@ -236,15 +236,21 @@ class MainWindow(QMainWindow):
         """Populates the id3_tags list with the names of the supported ID3 tags. Returns: None"""
 
         self.id3_tags = [
-            "TITLE",
-            "ARTIST",
-            "ALBUM",
-            "LABEL",
-            "DISCNUMBER",
-            "TRACKNUMBER",
-            "CATALOGNUMBER",
-            "DISCOGS_RELEASE_ID",
-            "URL",
+            AudioTags.TITLE,
+            AudioTags.ARTIST,
+            AudioTags.ALBUM,
+            AudioTags.LABEL,
+            AudioTags.DISC_NUMBER,
+            AudioTags.TRACK_NUMBER,
+            AudioTags.CATALOG_NUMBER,
+            AudioTags.DISCOGS_RELEASE_ID,
+            AudioTags.URL,
+            AudioTags.ALBUM_ARTIST,
+            AudioTags.YEAR,
+            AudioTags.GENRE,
+            AudioTags.MEDIA,
+            AudioTags.STYLE,
+            AudioTags.COUNTRY
         ]
 
     def __setup_label_cache(self) -> None:
@@ -258,6 +264,12 @@ class MainWindow(QMainWindow):
             self.lbl_src_catalog,
             self.lbl_src_discogs_id,
             self.lbl_src_website,
+            self.lbl_src_album_artist,
+            self.lbl_src_date,
+            self.lbl_src_genre,
+            self.lbl_src_media,
+            self.lbl_src_style,
+            self.lbl_src_country,
         ]
 
         id3_labels_target = [
@@ -270,6 +282,13 @@ class MainWindow(QMainWindow):
             self.lbl_tar_catalog,
             self.lbl_tar_discogs_id,
             self.lbl_tar_website,
+            self.lbl_tar_album_artist,
+            self.lbl_tar_date,
+            self.lbl_tar_genre,
+            self.lbl_tar_media,
+            self.lbl_tar_style,
+            self.lbl_tar_country,
+            
         ]
         source_artwork_labels = {
             "art": self.label_source_art_type,

@@ -2,14 +2,14 @@ from pathlib import Path
 from log_config import get_logger
 import taglib
 from mutagen.wave import WAVE
-from mutagen.id3 import ID3,  APIC
+from mutagen.id3 import ID3, APIC
 
 AUDIO_EXTENSIONS = [".mp3", ".wav"]
 logger = get_logger(__name__)
 
+
 # The AudioTags class is used to manage and manipulate audio tags.
 class AudioTags:
-
 
     def get_tags(self, absolute_path_filename: str) -> dict:
         if not self.isSupported(absolute_path_filename):
@@ -57,6 +57,22 @@ class AudioTags:
         else:
             filedata = ID3(absolute_path_filename)
             return filedata.getall("APIC")
+
+    TITLE = "TITLE"
+    ARTIST = "ARTIST"
+    ALBUM = "ALBUM"
+    LABEL = "LABEL"
+    DISC_NUMBER = "DISCNUMBER"
+    TRACK_NUMBER = "TRACKNUMBER"
+    CATALOG_NUMBER = "CATALOGNUMBER"
+    DISCOGS_RELEASE_ID = "DISCOGS_RELEASE_ID"
+    URL = "URL"
+    ALBUM_ARTIST = "ALBUMARTIST"
+    YEAR = "DATE"
+    GENRE = "GENRE"
+    MEDIA = "MEDIA"
+    STYLE = "STYLE"
+    COUNTRY = "COUNTRY"
 
 
 class PictureTypeDescription:
