@@ -3,6 +3,7 @@ from log_config import get_logger
 import taglib
 from mutagen.wave import WAVE
 from mutagen.id3 import ID3, APIC
+from mutagen import File
 
 AUDIO_EXTENSIONS = [".mp3", ".wav"]
 logger = get_logger(__name__)
@@ -16,13 +17,13 @@ class AudioTags:
             return {}
 
         try:
-            tags = taglib.File(Path(absolute_path_filename)).tags
+            tags = File(Path(absolute_path_filename)).tags
 
         except FileNotFoundError:
             logger.exception(f"File not found: '{absolute_path_filename}'")
             return {}
 
-        except TagLibError:
+        except Exception:
             logger.exception(f"Could not read tags from: '{absolute_path_filename}'")
             return {}
 
@@ -53,7 +54,7 @@ class AudioTags:
 
         if path.suffix == ".wav":
             filedata = WAVE(absolute_path_filename)
-            return filedata.tags.getall("APIC")
+            return [] if filedata.tags is None else filedata.tags.getall("APIC")
         else:
             filedata = ID3(absolute_path_filename)
             return filedata.getall("APIC")
@@ -73,7 +74,17 @@ class AudioTags:
     MEDIA = "MEDIA"
     STYLE = "STYLE"
     COUNTRY = "COUNTRY"
-
+    
+    def log_tag_key_values(self, file_path:str) ->None:
+            
+        audio = File(file_path)
+        for key, value in audio.items():
+            logger.info(f'{key}: {value}')
+            
+    def log_tags(self, file_path:str) ->None:
+            
+        audio = File(file_path)
+        logger.info(f'{audio.tags} ')
 
 class PictureTypeDescription:
     descriptions = {
