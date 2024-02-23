@@ -1,29 +1,42 @@
-import re, os, sys
-from pathlib import Path
+import re, os, sys, configparser, discogs_client
 
+from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import discogs_client
-import configparser
-import requests
-from discogs_client.models import Release, Master
-import taglib
-
-
+from discogs_client.models import Release
 from typing import List
+from mutagen import File
+from mutagen.wave import WAVE
+from mutagen.id3 import ID3, WXXX, ID3, TIT2, APIC, TALB, TPE1, TPE2, TXXX, TDRC, TPOS, TCON, TPUB, TMED, TRCK, COMM
+
 from file_operations.audio_tags import AudioTags
 
 from log_config import get_logger
-import mutagen
-from discogs_client.models import Release
-
 logger = get_logger("f_o.auto_tag")
 
+class TrackInfo:
+    title: str = None
+    album_artist: str = None
+    artist: str = None
+    album_name: str = None
+    label: str = None
+    disc_number: str = None
+    track_number: str = None
+    catalog_number: str = None
+    discogs_id: str = None
+    genres: str = None
+    year: str = None
+    media: str = None
+    styles: str = None
+    url: str = None
+    country: str = None
+    
 
 def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
     """Auto tag files"""
     logger.info(f"Auto tagging {len(file_name_list)} files")
     release_ids = __group_files_by_release_id(file_name_list)
+    audio_tags =AudioTags()
 
     # Initialize Discogs client
     d = __get_discogs_client()
@@ -37,31 +50,53 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
 
         # Update tags for each file
         for i, file in enumerate(files):
-            full_path = os.path.join(root_dir, file)
-            song = taglib.File(Path(full_path))
+            full_path = Path(os.path.join(root_dir, file))
 
             track_info = release.get_track_info(i)
             logger.info(f"Updating tags for file: {file}")
             logger.info(f"tags: {track_info.get_desc_csv()}")
+            
+            song = __open_file(full_path)
 
-            song.tags[AudioTags.TITLE] = [track_info.title]
-            song.tags[AudioTags.ALBUM_ARTIST] = [track_info.album_artist]
-            song.tags[AudioTags.ARTIST] = [track_info.artist]
-            song.tags[AudioTags.ALBUM] = [track_info.album_name]
-            song.tags[AudioTags.LABEL] = [track_info.label]
-            song.tags[AudioTags.DISC_NUMBER] = [track_info.disc_number]
-            song.tags[AudioTags.TRACK_NUMBER] = [track_info.track_number]
-            song.tags[AudioTags.CATALOG_NUMBER] = [track_info.catalog_number]
-            song.tags[AudioTags.DISCOGS_RELEASE_ID] = [track_info.discogs_id]
-            song.tags[AudioTags.GENRE] = [track_info.genres]
-            song.tags[AudioTags.URL] = [track_info.url]
-            song.tags[AudioTags.YEAR] = [track_info.year]
-            song.tags[AudioTags.MEDIA] = [track_info.media]
-            song.tags[AudioTags.STYLE] = [track_info.styles]
-            song.tags[AudioTags.COUNTRY] = [track_info.country]
+            if song.tags is None:
+                song.add_tags()
+          
+            song.tags.clear()
 
+            # song.tags.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=release_raw.data["images"][0]["uri"]))
+            song = __add_tags(song, track_info)
             song.save()
+            #logger.info(f" tags:{song.tags}")
+            
+            audio_tags.log_tag_key_values(str(full_path))
+            #audio_tags.log_tags(str(full_path))
+            #audio_tags.get_tags(str(full_path))
 
+def __open_file(full_path: str) -> File:
+    """Open file"""
+    return WAVE(full_path) if full_path.suffix == ".wav" else ID3(full_path)
+
+def __add_tags(song: File, track_info: TrackInfo) -> File:
+        
+        song.tags.add(WXXX(encoding=3, url=track_info.url))
+        song.tags.add(TIT2(encoding=3, text=track_info.title))
+        song.tags.add(TALB(encoding=3, text=track_info.album_name))
+        song.tags.add(TPE1(encoding=3, text=track_info.artist))
+        song.tags.add(TPE2(encoding=3, text=track_info.album_artist))
+        song.tags.add(TXXX(encoding=3, desc=AudioTags.CATALOG_NUMBER, text=track_info.catalog_number))
+        song.tags.add(TXXX(encoding=3, desc=AudioTags.DISCOGS_RELEASE_ID, text=track_info.discogs_id))
+        song.tags.add(TXXX(encoding=3, desc=AudioTags.COUNTRY, text=track_info.country))
+        song.tags.add(TXXX(encoding=3, desc=AudioTags.STYLE, text=track_info.styles))
+        song.tags.add(TDRC(encoding=3, text=track_info.year))
+        song.tags.add(TPOS(encoding=3, text=track_info.disc_number))
+        song.tags.add(TRCK(encoding=3, text=track_info.track_number))
+        song.tags.add(TCON(encoding=3, text=track_info.genres))
+        song.tags.add(TPUB(encoding=3, text=track_info.label))
+        song.tags.add(TMED(encoding=3, text=track_info.media))
+        song.tags.add(COMM(encoding=3, text="Tagged by oO-KeeF-Oo"))
+        return song
+
+            
 class TrackInfo:
     title: str = None
     album_artist: str = None
@@ -142,10 +177,11 @@ class ReleaseFacade:
         return str(trackNumber + 1)
 
     def get_url(self) -> str:
-        return self.data.get("uri")
+        return str(self.data.get("uri"))
 
     def get_year(self) -> str:
-        return self.data.get("released_formatted")
+        # return self.data.get("released_formatted")
+        return self.data.get("released")
 
     def get_media(self) -> str:
 
@@ -164,7 +200,7 @@ class ReleaseFacade:
         return media
 
     def get_track_info(self, trackNumber: int) -> TrackInfo:
-        """ Returns a TrackInfo object for the given track number """
+        """Returns a TrackInfo object for the given track number"""
 
         track_info = TrackInfo()
         track_info.title = self.get_track_title(trackNumber)
@@ -181,7 +217,7 @@ class ReleaseFacade:
         track_info.year = self.get_year()
         track_info.media = self.get_media()
         track_info.styles = self.get_styles()
-        track_info.country = self.get_country() 
+        track_info.country = self.get_country()
         return track_info
 
 
@@ -220,11 +256,10 @@ def __group_files_by_release_id(files: List[str]) -> dict:
 if __name__ == "__main__":
     # Add the root directory of your project to the Python path
 
-    file_list = ["a8_jam and spoon-r21478021-01.wav", "a8_jam and spoon-r21478021-02.wav"]
-    #   file_list = [
-    #       "MiTM - NASTY'ER EP - A1-r15174933-01.wav",
-    #       "MiTM - NASTY'ER EP - A2-r15174933-02.wav"
-    #   ]
+    # file_list = ["a8_jam and spoon-r21478021-01.wav", "a8_jam and spoon-r21478021-02.wav"]
+    file_list = ["a8_jam and spoon-r21478021-02.wav"]
+    # file_list = ["MiTM - NASTY'ER EP - A1-r15174933-01.wav", "MiTM - NASTY'ER EP - A2-r15174933-02.wav"]
 
     #   file_list = ["TheRave--A1--r28675504-01.wav"]
+
     auto_tag_files(file_list, os.path.normpath("E:\\tmp_cop_A"))
