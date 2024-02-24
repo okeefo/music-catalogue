@@ -17,7 +17,7 @@ class AudioTags:
             return {}
 
         try:
-            tags = File(Path(absolute_path_filename)).tags
+            tags = taglib.File(Path(absolute_path_filename)).tags
 
         except FileNotFoundError:
             logger.exception(f"File not found: '{absolute_path_filename}'")
@@ -79,7 +79,11 @@ class AudioTags:
             
         audio = File(file_path)
         for key, value in audio.items():
-            logger.info(f'{key}: {value}')
+            # if th ekey starts with APIC
+            if key.startswith("APIC"):
+                logger.info(f'{key} - {value.pprint()} type={value.type} des={value.desc} mime={value.mime} enc={value.encoding}')
+            else:    
+                logger.info(f'{key}  - {value} ')
             
     def log_tags(self, file_path:str) ->None:
             
