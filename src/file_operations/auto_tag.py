@@ -11,132 +11,12 @@ from mutagen.wave import WAVE
 from mutagen.id3 import ID3, WXXX, ID3, TIT2, APIC, TALB, TPE1, TPE2, TXXX, TDRC, TPOS, TCON, TPUB, TMED, TRCK, COMM
 import taglib
 from file_operations.audio_tags import AudioTags
-
+from ui.progress_bar_helper import ProgressBarHelper
+from PyQt5.QtWidgets import QApplication
 from log_config import get_logger
+from typing import Union
 
 logger = get_logger("f_o.auto_tag")
-
-
-class TrackInfo:
-    title: str = None
-    album_artist: str = None
-    artist: str = None
-    album_name: str = None
-    label: str = None
-    disc_number: str = None
-    track_number: str = None
-    catalog_number: str = None
-    discogs_id: str = None
-    genres: str = None
-    year: str = None
-    media: str = None
-    styles: str = None
-    url: str = None
-    country: str = None
-
-
-def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
-    """Auto tag files"""
-    logger.info(f"Auto tagging {len(file_name_list)} files")
-    release_ids = __group_files_by_release_id(file_name_list)
-    audio_tags = AudioTags()
-
-    # Initialize Discogs client
-    d = __get_discogs_client()
-
-    for release_id, files in release_ids.items():
-        # Sort the files
-        files = sorted(files)
-
-        release_raw = d.release(int(release_id[1:]))  # Remove the 'r' prefix from the release ID
-        release = ReleaseFacade(release_raw)
-        artwork_data =  __get_cover_art_from_discogs(release_raw)
-        
-        # Update tags for each file
-        for i, file in enumerate(files):
-                
-            full_path = Path(os.path.join(root_dir, file))
-
-            track_info = release.get_track_info(i)
-            logger.info(f"Updating tags for file: {file}")
-            logger.info(f"tags: {track_info.get_desc_csv()}")
-
-            song = __open_file(full_path)
-
-            if song.tags is None:
-                song.add_tags()
-
-            song.tags.clear()
-
-            song = __add_tags(song, track_info)
-            song = __add_cover_art(song, artwork_data, full_path)
-            song.save()
-
-            audio_tags.log_tag_key_values(str(full_path))
-
-
-def __open_file(full_path: str) -> File:
-    """Open file"""
-    return WAVE(full_path) if full_path.suffix == ".wav" else ID3(full_path)
-
-def __add_tags(song: File, track_info: TrackInfo) -> File:
-
-    song.tags.add(WXXX(encoding=3, url=track_info.url))
-    song.tags.add(TIT2(encoding=3, text=track_info.title))
-    song.tags.add(TALB(encoding=3, text=track_info.album_name))
-    song.tags.add(TPE1(encoding=3, text=track_info.artist))
-    song.tags.add(TPE2(encoding=3, text=track_info.album_artist))
-    song.tags.add(TXXX(encoding=3, desc=AudioTags.CATALOG_NUMBER, text=track_info.catalog_number))
-    song.tags.add(TXXX(encoding=3, desc=AudioTags.DISCOGS_RELEASE_ID, text=track_info.discogs_id))
-    song.tags.add(TXXX(encoding=3, desc=AudioTags.COUNTRY, text=track_info.country))
-    song.tags.add(TXXX(encoding=3, desc=AudioTags.STYLE, text=track_info.styles))
-    song.tags.add(TDRC(encoding=3, text=track_info.year))
-    song.tags.add(TPOS(encoding=3, text=track_info.disc_number))
-    song.tags.add(TRCK(encoding=3, text=track_info.track_number))
-    song.tags.add(TCON(encoding=3, text=track_info.genres))
-    song.tags.add(TPUB(encoding=3, text=track_info.label))
-    song.tags.add(TMED(encoding=3, text=track_info.media))
-    song.tags.add(COMM(encoding=3, text="Tagged by oO-KeeF-Oo"))
-    return song
-
-
-def __get_cover_art_from_discogs( release_raw: Release) -> bytes:
-    
-    image_list = release_raw.images
-     
-    if len(image_list) > 0:
-        # Headers for the request
-        header_info = {
-            "User-Agent": "YourAppName/0.1 +http://yourapp.com",
-        }
-
-        image = image_list[0]
-        image_uri = image["uri"]
-        logger.info(f"getting  cover art to from: {image_uri}")
-        try:
-            response = requests.get(image_uri, headers=header_info)
-
-            if response.status_code == 200:
-                return response.content
-
-        except Exception as e:
-            logger.exception(f"Failed to get cover art from: {image_uri} : {e}")
-
-    return None
-
-
-def __add_cover_art(song: File, art_work, full_path: Path) -> None:
-    """Add cover art to the file"""
-
-    try:
-        logger.info(f"Adding cover art to file: {full_path}")
-        # artwork_data = b'\x00'
-        song.tags.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Front Cover", data=art_work))
-
-    except Exception as e:
-        logger.exception(f"Failed to add cover art to file: {full_path} : {e}")
-
-    return song
 
 
 class TrackInfo:
@@ -168,6 +48,9 @@ class ReleaseFacade:
         self.release = release
         self.data = release.data
 
+    def get_id(self) -> int:
+        return self.release.id
+
     def get_track_title(self, trackNumber: int) -> str:
         return self.release.tracklist[trackNumber].title
 
@@ -175,8 +58,10 @@ class ReleaseFacade:
         # first check if there is an artist at the track level
         if self.release.tracklist[trackNumber].artists:
             return self.release.tracklist[trackNumber].artists[0].name
+
         if self.data.get("artists_sort"):
             return self.data.get("artists_sort")
+
         return self.release.artists[0].name
 
     def get_album_artist(self) -> str:
@@ -263,7 +148,141 @@ class ReleaseFacade:
         return track_info
 
     def remove_brackets_and_numbers(self, string: str):
-        return re.sub(r'\(\d+\)', '', string).strip()
+        return re.sub(r"\(\d+\)", "", string).strip()
+
+
+def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
+    """Auto tag files"""
+
+    total_files = len(file_name_list)
+    logger.info(f"Auto tagging {total_files} files")
+    progress_bar = ProgressBarHelper.get_progress_bar(total_files, "Auto Tagging", 0)
+    release_ids = __group_files_by_release_id(file_name_list)
+    user_cancelled = False
+
+    audio_tags = AudioTags()
+
+    discogs_client = __get_discogs_client()
+    file_count = 0
+
+    art = b'\x00'
+    for release_id, files in release_ids.items():
+
+        files = sorted(files)
+        ProgressBarHelper.update_progress_bar_text(progress_bar, f"Auto Tagging - Release ID: {release_id}")
+
+        release_raw = discogs_client.release(int(release_id[1:]))  # Remove the 'r' prefix from the release ID
+        release = ReleaseFacade(release_raw)
+        artwork_data = __get_cover_art_from_discogs(release_raw)
+
+        user_cancelled, file_count = __tag_files_in_release(files, file_count, release, root_dir, artwork_data, audio_tags, progress_bar)
+    
+        if user_cancelled:
+            break
+
+    if not user_cancelled:
+        ProgressBarHelper.complete_progress_bar(progress_bar, file_count)
+
+
+def __tag_files_in_release(files: List[str], file_count: int, release: ReleaseFacade, root_dir: str, artwork_data: bytes, audio_tags: AudioTags, progress_bar: ProgressBarHelper) -> Union[bool, int]:
+
+    user_cancelled = False
+
+    for i, file in enumerate(files):
+
+        file_count += 1
+        ProgressBarHelper.update_progress_bar(progress_bar, f"Auto Tagging - Release ID: {release.get_id()} - File: {file}", file_count)
+
+        full_path = Path(os.path.join(root_dir, file))
+
+        track_info = release.get_track_info(i)
+        logger.info(f"Updating tags for file: {file}")
+        logger.info(f"tags: {track_info.get_desc_csv()}")
+
+        song = __open_file(full_path)
+
+        if song.tags is None:
+            song.add_tags()
+
+        song.tags.clear()
+
+        song = __add_tags(song, track_info)
+        song = __add_cover_art(song, artwork_data, full_path)
+        song.save()
+
+        audio_tags.log_tag_key_values(str(full_path))
+
+        user_cancelled = ProgressBarHelper.user_has_cancelled(progress_bar)
+        if user_cancelled:
+            break
+
+    return user_cancelled, file_count
+
+
+def __open_file(full_path: str) -> File:
+    """Open file"""
+    return WAVE(full_path) if full_path.suffix == ".wav" else ID3(full_path)
+
+
+def __add_tags(song: File, track_info: TrackInfo) -> File:
+
+    song.tags.add(WXXX(encoding=3, url=track_info.url))
+    song.tags.add(TIT2(encoding=3, text=track_info.title))
+    song.tags.add(TALB(encoding=3, text=track_info.album_name))
+    song.tags.add(TPE1(encoding=3, text=track_info.artist))
+    song.tags.add(TPE2(encoding=3, text=track_info.album_artist))
+    song.tags.add(TXXX(encoding=3, desc=AudioTags.CATALOG_NUMBER, text=track_info.catalog_number))
+    song.tags.add(TXXX(encoding=3, desc=AudioTags.DISCOGS_RELEASE_ID, text=track_info.discogs_id))
+    song.tags.add(TXXX(encoding=3, desc=AudioTags.COUNTRY, text=track_info.country))
+    song.tags.add(TXXX(encoding=3, desc=AudioTags.STYLE, text=track_info.styles))
+    song.tags.add(TDRC(encoding=3, text=track_info.year))
+    song.tags.add(TPOS(encoding=3, text=track_info.disc_number))
+    song.tags.add(TRCK(encoding=3, text=track_info.track_number))
+    song.tags.add(TCON(encoding=3, text=track_info.genres))
+    song.tags.add(TPUB(encoding=3, text=track_info.label))
+    song.tags.add(TMED(encoding=3, text=track_info.media))
+    song.tags.add(COMM(encoding=3, text="Tagged by oO-KeeF-Oo"))
+    return song
+
+
+def __get_cover_art_from_discogs(release_raw: Release) -> bytes:
+
+    image_list = release_raw.images
+
+    if len(image_list) > 0:
+        # Headers for the request
+        header_info = {
+            "User-Agent": "YourAppName/0.1 +http://yourapp.com",
+        }
+
+        image = image_list[0]
+        image_uri = image.get("uri")
+        logger.info(f"getting  cover art to from: {image_uri}")
+        try:
+            response = requests.get(image_uri, headers=header_info)
+
+            if response.status_code == 200:
+                return response.content
+
+        except Exception as e:
+            logger.exception(f"Failed to get cover art from: {image_uri} : {e}")
+            
+    return None
+
+
+def __add_cover_art(song: File, art_work, full_path: Path) -> None:
+    """Add cover art to the file"""
+
+    try:
+        logger.info(f"Adding cover art to file: {full_path}")
+        # artwork_data = b'\x00'
+        song.tags.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Front Cover", data=art_work))
+
+    except Exception as e:
+        logger.exception(f"Failed to add cover art to file: {full_path} : {e}")
+
+    return song
+
 
 def __get_discogs_client() -> discogs_client.Client:
     """Get Discogs client"""
