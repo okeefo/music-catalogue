@@ -246,10 +246,10 @@ class ReleaseFacade:
 
         track_info = TrackInfo()
         track_info.title = self.get_track_title(trackNumber)
-        track_info.album_artist = self.get_album_artist()
-        track_info.artist = self.get_artist(trackNumber)
+        track_info.album_artist = self.remove_brackets_and_numbers(self.get_album_artist())
+        track_info.artist = self.remove_brackets_and_numbers(self.get_artist(trackNumber))
         track_info.album_name = self.get_album()
-        track_info.label = self.get_publisher()
+        track_info.label = self.remove_brackets_and_numbers(self.get_publisher())
         track_info.disc_number = self.get_disc_number(trackNumber)
         track_info.track_number = self.get_track_number(trackNumber)
         track_info.catalog_number = self.get_catalog_number()
@@ -262,6 +262,8 @@ class ReleaseFacade:
         track_info.country = self.get_country()
         return track_info
 
+    def remove_brackets_and_numbers(self, string: str):
+        return re.sub(r'\(\d+\)', '', string).strip()
 
 def __get_discogs_client() -> discogs_client.Client:
     """Get Discogs client"""
