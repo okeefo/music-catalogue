@@ -59,6 +59,7 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
+# TODO: progress bar when tagging files.
 # TODO: Autotag, fix tagging of selected files.
 # TODO: implement renaming of tagged files to my format.
 # TODO: implement auto tagging selected files.

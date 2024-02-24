@@ -4,10 +4,8 @@ import send2trash
 import os
 from typing import List
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
-from ui.custom_progress_dialog import ProgressDialog
+from ui.progress_bar_helper import ProgressBarHelper
 from PyQt5.QtWidgets import QMessageBox, QProgressDialog
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
 import qt.resources_rcc
 
 import log_config
@@ -17,21 +15,28 @@ from PyQt5.QtWidgets import QApplication
 logger = log_config.get_logger(__name__)
 
 
-def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None:
+def __move_files(file_list: List[str], source_dir: str, target_dir: str, progress_bar:QProgressDialog=None ) -> None:
     """Move files between dirs"""
 
     userResponse = None
     files_to_delete = []
+    root = False
+    if not progress_bar:
+        progress_bar = ProgressBarHelper.get_progress_bar(len(file_list), "Moving", 10)
+        root = True
+    
+    
+    for i, source_file in enumerate(file_list):
 
-    # loop over the file list and move the files
-    for source_file in file_list:
-
-        fq_source_file = os.path.normpath(os.path.join(source_dir, source_file))
-        source_file = os.path.basename(fq_source_file)
-        fq_target_file = os.path.normpath(os.path.join(target_dir, source_file))
-
+        source_file, fq_source_file, fq_target_file = __get_fully_qualified_file_name(source_file, source_dir, target_dir)
+        
+        
+        ProgressBarHelper.update_progress_bar_text(progress_bar, f"Moving {source_file}...")
+        if root:
+            ProgressBarHelper.update_progress_bar_value(progress_bar, i)
+        
         logger.info(f'Moving "{fq_source_file}" to "{target_dir}"')
-        # Check if the file already exists in the target directory
+
         if os.path.exists(fq_target_file):
 
             userResponse = __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, fq_target_file, target_dir, userResponse)
@@ -70,11 +75,21 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str) -> None
                 continue
 
         shutil.move(fq_source_file, target_dir)
-              
+    
+    if root:    
+        logger.info("Move files done, cleaning up any empty directories and source files")
+        __clean_up(files_to_delete)
+        logger.info("Clean up done")
+        ProgressBarHelper.complete_progress_bar(progress_bar, len(file_list))
 
-    logger.info("Move files done, cleaning up any empty directories and source files")
-    __clean_up(files_to_delete)
-    logger.info("Clean up done")
+def __get_fully_qualified_file_name(source_file, source_dir, target_dir) -> tuple[str, str, str]:
+    """Get the fully qualified file names for the source and target files"""
+
+    fq_source_file = os.path.normpath(os.path.join(source_dir, source_file))
+    source_file = os.path.basename(fq_source_file)
+    fq_target_file = os.path.normpath(os.path.join(target_dir, source_file))
+
+    return source_file, fq_source_file, fq_target_file 
 
 def __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, fq_target_file, target_dir, userResponse) -> int:
     logger.info(f"File/Dir '{source_file}' already exists in target directory: {target_dir}")
@@ -127,6 +142,7 @@ def ask_and_move_files(file_list: List[str], source_dir, target_dir: str) -> Non
         message = f"Moving the selected files to:\n\n{target_dir}\n\nDo you want to continue?"
     else:
         message = f"Moving: \n\n {file_list[0]}\n to:\n{target_dir}\n\nDo you want to continue?"
+        
     response = show_message_box(message, ButtonType.YesNoCancel, "Move Files", "warning")
     logger.info(f"User chose: {convert_response_to_string(response)}")
     __move_files(file_list, source_dir, target_dir) if response == QMessageBox.Yes else logger.info("Move files cancelled by user")
@@ -152,25 +168,13 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
 
     total_files = len(file_list)
     copied_files = 0
-    if(total_files >= 10):
-        progress = __get_progress_bar(total_files,"Copying")
-    else:
-        progress = None
+    progress = ProgressBarHelper.get_progress_bar(total_files, "Copying", 5)
 
-    # loop over the file list and move the files
-    for i, source_file in enumerate(file_list):
+    for copied_files, source_file in enumerate(file_list):
 
-        # update progress
-        if progress is not None:
-            progress.setLabelText(f"Copying {source_file}...")
+        ProgressBarHelper.update_progress_bar_text(progress, f"Copying {source_file}...")
 
-        already_exists = False
-        if os.path.isfile(source_file):
-            already_exists = os.path.exists(os.path.join(target_dir, os.path.basename(source_file)))
-        elif os.path.isdir(source_file):
-            already_exists = os.path.exists(os.path.join(target_dir, os.path.basename(source_file)))
-
-        if already_exists:
+        if __target_file_exists(source_file, target_dir):
 
             if userResponse is None:
                 userResponse = show_message_box(f"The file:\n'{source_file}'\nalready exists in the target directory.\n\nDo you want to overwrite it?", ButtonType.YesNoToAllCancel, "Overwrite File?")
@@ -181,7 +185,6 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
                 return
 
             elif userResponse in [QMessageBox.No, QMessageBox.NoToAll]:
-                # skip the file
                 logger.info(f"Skipping file: {source_file} ")
                 if userResponse == QMessageBox.No:
                     userResponse = None
@@ -190,50 +193,38 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
             elif userResponse == QMessageBox.Yes:
                 userResponse = None
 
-        if os.path.isfile(source_file):
-            logger.info(f'Copying file "{source_file}" to "{target_dir}"')
-            shutil.copy(source_file, target_dir)
+        __do_copy_file(source_file, target_dir, userResponse)
+
+        ProgressBarHelper.update_progress_bar_value(progress, copied_files+1)
+
+        if ProgressBarHelper.user_has_cancelled(progress):
+            break
+
+    ProgressBarHelper.complete_progress_bar(progress, total_files)
 
 
-        elif os.path.isdir(source_file):
-            logger.info(f'Copying directory "{source_file}" to "{target_dir}"')
-            shutil.copytree(source_file, os.path.join(target_dir, os.path.basename(source_file)))
+def __target_file_exists(source_file, target_dir) -> bool:
+    """Check if the target file exists"""
 
-        else:
-            logger.error(f"Source path does not exist: {source_file}")
+    fq_source_file = os.path.normpath(source_file)
+    source_file = os.path.basename(fq_source_file)
+    fq_target_file = os.path.normpath(os.path.join(target_dir, source_file))
 
-        if progress is not None:
-            copied_files += 1
-            progress.setValue(copied_files)
-            if progress.wasCanceled():
-                break
-    
-    if progress is not None:
-        __get_ack_from_user_that_progress_has_completed(progress, total_files)
-    
-def __get_ack_from_user_that_progress_has_completed(progress:QProgressDialog , total_files:int) -> None: 
-    progress.setValue(total_files)
-    progress.setLabelText("Processing complete. Click 'Cancel' to close this dialog")
-    while not progress.wasCanceled():
-        QApplication.processEvents()
-        time.sleep(0.5)  # sleep for a short time to reduce CPU usage
+    return os.path.exists(fq_target_file)
 
 
+def __do_copy_file(source_file, target_dir, userResponse):
 
-def __get_progress_bar(total_files: int, type:str) -> QProgressDialog:
-    """Get a progress bar"""
-    
-    progress = QProgressDialog(f"{type} files...", "Cancel", 0, total_files)
-    progress.setWindowIcon(QIcon(":/icons/icons/headphones.svg"))
-    progress.setWindowTitle(f"{type} Files")
-    progress.setLabelText(f"{type} Files...")
-    progress.setCancelButtonText("Cancel")
-    progress.setWindowModality(Qt.ApplicationModal)
-    progress.setWindowFlags(progress.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-    progress.setAutoClose(False)
-    progress.setAutoReset(False)
-    progress.show()
-    return progress
+    if os.path.isfile(source_file):
+        logger.info(f'Copying file "{source_file}" to "{target_dir}"')
+        shutil.copy(source_file, target_dir)
+
+    elif os.path.isdir(source_file):
+        logger.info(f'Copying directory "{source_file}" to "{target_dir}"')
+        shutil.copytree(source_file, os.path.join(target_dir, os.path.basename(source_file)))
+
+    else:
+        logger.error(f"Source path does not exist: {source_file}")
 
 
 def ask_and_copy_files(file_list: List[str], target_dir: str) -> None:
@@ -244,10 +235,12 @@ def ask_and_copy_files(file_list: List[str], target_dir: str) -> None:
         return
 
     logger.info(f"Prompt user to copy files from '{file_list}' to '{target_dir}'")
+   
     if len(file_list) > 2:
         message = f"Copying the selected files to:\n\n{target_dir}\n\nDo you want to continue?"
     else:
         message = f"Copying: \n\n {file_list} to:\n\n{target_dir}\n\nDo you want to continue?"
+        
     response = show_message_box(message, ButtonType.YesNoCancel, "Copy Files", "warning")
     logger.info(f"User chose: {convert_response_to_string(response)}")
     __copy_files(file_list, target_dir) if response == QMessageBox.Yes else logger.info("Copy files cancelled by user")
@@ -279,9 +272,9 @@ def delete_files(file_path: List[str]) -> str:
     logger.info(f"User chose: '{convert_response_to_string(response)}'")
 
     if response == QMessageBox.Yes:
-        for item in file_path:
+        for i, item in enumerate(file_path):
             send2trash.send2trash(item)
-            logger.info(f"Deleted: {item} = '{selected_files}' files and '{selected_dirs}' directories")
+            logger.info(f"Deleted: {item} : {i} of {selected_files} files and {selected_dirs} directories")
         return f"Deleted: '{selected_files}' files and '{selected_dirs}' directories"
     else:
         msg = "Delete files cancelled by user"
