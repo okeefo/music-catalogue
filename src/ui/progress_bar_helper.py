@@ -19,7 +19,7 @@ class ProgressBarHelper:
         progress.setValue(total_files)
         x = 5
         while x > 0:
-            progress.setLabelText(f"Processing complete. This dialog will close in {x} seconds. Or press click cancel to exit")
+            progress.setLabelText(f"Processing complete.\n\n This dialog will close in {x} seconds. \n\n Or press click cancel to exit")
             QApplication.processEvents()
             time.sleep(1)
             x -= 1
@@ -45,11 +45,11 @@ class ProgressBarHelper:
         progress.setWindowFlags(progress.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         progress.setAutoClose(False)
         progress.setAutoReset(False)
-        
+
         font = QFont()
-        font.setPointSize(12)  
+        font.setPointSize(10)
         progress.setFont(font)
-        
+
         progress.show()
         QApplication.processEvents()
         return progress
@@ -67,7 +67,18 @@ class ProgressBarHelper:
         """Update the progress bar text"""
 
         if progress:
-            progress.setLabelText(message)
+            progress.setLabelText(f"\n\n{message}\n")
+            QApplication.processEvents()
+
+
+
+    @staticmethod
+    def update_progress_bar(progress: QProgressDialog, message: str, value: int) -> None:
+        """Update the progress bar text"""
+
+        if progress:
+            progress.setLabelText(f"\n\n{message}\n")
+            progress.setValue(value)
             QApplication.processEvents()
 
     @staticmethod
