@@ -35,8 +35,24 @@ class TreeViewContextMenuHandler(QWidget):
         self.__setup_menus()
         self.__setup_vlc_path()
         self.__setup_action_map()
+        self.__setup_display_menu_map()
         self.audio_tag_helper = AudioTagHelper()
         self.clipboard = []
+
+    def __setup_display_menu_map(self):
+        self.display_menu_map = {
+            "info": {0: [self.info_dir_action], 1: [self.info_dir_action, self.info_selected_action]},
+            "rename": {1: [self.rename_file_action]},
+            "open_in": {"default": [self.open_in_mp3tag_action, self.open_in_vlc_action]},
+            "tag": {0: [self.auto_tag_dir_action], 1: [self.auto_tag_dir_action, self.auto_tag_selected_action], "default": [self.auto_tag_dir_action, self.auto_tag_selected_action]},
+            "tag_filename": {0: [self.tag_filename_dir_action], 1: [self.tag_filename_dir_action, self.tag_filename_selected_action]},
+            "media_player": {"default": [self.play_action, self.stop_action, self.pause_action]},
+            "repackage": {0: [self.repackage_dir_action], 1: [self.repackage_dir_action, self.repackage_select_action]},
+            "move": {0: [self.move_all_action], 1: [self.move_all_action, self.move_selected_action], "default": [self.move_all_action, self.move_selected_action]},
+            "copy": {1: [self.copy_selected_across_action, self.copy_selected_to_clipboard_action]},
+            "paste": {"default": [self.paste_items_to_root_action, self.paste_items_to_selected_action]},
+            "delete": {1: [self.delete_action]},
+        }
 
     def __setup_action_map(self):
         self.action_map = {
@@ -130,6 +146,14 @@ class TreeViewContextMenuHandler(QWidget):
         if add_separator:
             menu.addSeparator()
 
+    def __add_actions_to_menu(self, menu: QMenu, action_type: str, number_of_selected_items: int, is_special: bool = False) -> None:
+        """ Adds actions to the menu based on the number of selected items and the type of action. Returns: None"""
+        actions = self.display_menu_map[action_type].get(number_of_selected_items, [])
+        if is_special and number_of_selected_items == 1:
+            actions = [] if is_special else self.display_menu_map[action_type].get(1, [])
+        menu.addActions(actions)
+        menu.addSeparator()
+
     def get_menu_to_display(self, file_path: str, tree_view: QTreeView) -> QMenu:
         """Selects menu based on file type"""
         menu = QMenu()
@@ -138,98 +162,19 @@ class TreeViewContextMenuHandler(QWidget):
         is_dir = number_of_selected_items == 1 and os.path.isdir(file_path)
         is_audio_file = number_of_selected_items == 1 and self.audio_tag_helper.isSupportedAudioFile(file_path)
 
-        self.__menu_add_info_actions(menu, number_of_selected_items)
-        self.__menu_add_rename_actions(menu, number_of_selected_items)
-        self.__menu_add_open_in_actions(menu)
-        self.__menu_add_tag_actions(menu, number_of_selected_items, is_dir)
-        self.__menu_add_tag_filename_actions(menu, number_of_selected_items, is_dir)
-        self.__menu_add_media_player_actions(menu, is_audio_file)
-        self.__menu_add_repackage_actions(menu, number_of_selected_items, is_dir)
-        self.__menu_add_move_actions(menu, number_of_selected_items)
-        self.__menu_add_copy_actions(menu, number_of_selected_items)
-        self.__menu_add_paste_actions(menu)
-        self.__menu_add_delete_actions(menu, number_of_selected_items)
+        self.__add_actions_to_menu(menu, 'info', number_of_selected_items)
+        self.__add_actions_to_menu(menu, 'rename', number_of_selected_items)
+        self.__add_actions_to_menu(menu, 'open_in', number_of_selected_items)
+        self.__add_actions_to_menu(menu, 'tag', number_of_selected_items, is_dir)
+        self.__add_actions_to_menu(menu, 'tag_filename', number_of_selected_items, is_dir)
+        self.__add_actions_to_menu(menu, 'media_player', number_of_selected_items, is_audio_file)
+        self.__add_actions_to_menu(menu, 'repackage', number_of_selected_items, is_dir)
+        self.__add_actions_to_menu(menu, 'move', number_of_selected_items)
+        self.__add_actions_to_menu(menu, 'copy', number_of_selected_items)
+        self.__add_actions_to_menu(menu, 'paste', number_of_selected_items)
+        self.__add_actions_to_menu(menu, 'delete', number_of_selected_items)
 
         return menu
-
-    def __menu_add_info_actions(self, menu: QMenu, number_of_selected_items: int) -> None:
-        """Adds info actions to the menu"""
-        
-        if number_of_selected_items == 0:
-            self.__add_actions_to_menu(menu, [self.info_dir_action])
-        else:
-            self.__add_actions_to_menu(menu, [self.info_dir_action, self.info_selected_action])
-
-    def __menu_add_rename_actions(self, menu: QMenu, number_of_selected_items: int) -> None:
-        """Adds rename actions to the menu"""
-        
-        if number_of_selected_items == 1:
-            self.__add_actions_to_menu(menu, [self.rename_file_action])
-
-    def __menu_add_open_in_actions(self, menu: QMenu) -> None:
-        """Adds open in actions to the menu"""
-        
-        self.__add_actions_to_menu(menu, [self.open_in_mp3tag_action, self.open_in_vlc_action])
-
-    def __menu_add_tag_actions(self, menu: QMenu, number_of_selected_items: int, is_dir: bool) -> None:
-        """Adds tag actions to the menu"""
-        
-        if number_of_selected_items == 0:
-            self.__add_actions_to_menu(menu, [self.auto_tag_dir_action])
-
-        elif number_of_selected_items == 1 and not is_dir or number_of_selected_items > 1:
-            self.__add_actions_to_menu(menu, [self.auto_tag_dir_action, self.auto_tag_selected_action])
-            
-    def __menu_add_tag_filename_actions(self, menu: QMenu, number_of_selected_items: int, is_dir: bool) -> None:
-        """Adds tag filename actions to the menu"""
-        
-        if number_of_selected_items == 0:
-            self.__add_actions_to_menu(menu, [self.tag_filename_dir_action])
-
-        elif not is_dir:
-            self.__add_actions_to_menu(menu, [self.tag_filename_dir_action, self.tag_filename_selected_action])
-
-    def __menu_add_media_player_actions(self, menu: QMenu, is_audio_File: bool) -> None:
-        """Adds media player actions to the menu"""
-
-        if is_audio_File:
-            self.__add_actions_to_menu(menu, [self.play_action, self.stop_action, self.pause_action])
-
-    def __menu_add_repackage_actions(self, menu: QMenu, number_of_selected_items: int, is_dir: bool) -> None:
-        """Adds repackage actions to the menu"""
-
-        if number_of_selected_items == 0:
-            self.__add_actions_to_menu(menu, [self.repackage_dir_action])
-
-        elif not is_dir:
-            self.__add_actions_to_menu(menu, [self.repackage_dir_action, self.repackage_select_action])
-
-    def __menu_add_move_actions(self, menu: QMenu, number_of_selected_items: int) -> None:
-        """Adds move actions to the menu"""
-
-        if number_of_selected_items == 0:
-            self.__add_actions_to_menu(menu, [self.move_all_action])
-        else:
-            self.__add_actions_to_menu(menu, [self.move_all_action, self.move_selected_action])
-            
-    def __menu_add_copy_actions(self, menu: QMenu, number_of_selected_items: int) -> None:
-        """Adds copy actions to the menu"""
-
-        if number_of_selected_items > 0:
-            self.__add_actions_to_menu(menu, [self.copy_selected_across_action, self.copy_selected_to_clipboard_action])
-            
-    def __menu_add_paste_actions(self, menu: QMenu) -> None:
-        """Adds paste actions to the menu"""
-
-        if len(self.clipboard) > 0:
-            self.__add_actions_to_menu(menu, [self.paste_items_to_root_action, self.paste_items_to_selected_action])
-            
-    def __menu_add_delete_actions(self, menu: QMenu, number_of_selected_items: int) -> None:
-        """Adds delete actions to the menu"""
-
-        if number_of_selected_items > 0:
-            self.__add_actions_to_menu(menu, [self.delete_action])
-        
 
     def show_menu(self, tree_view: QTreeView, index: QModelIndex, position: QPoint, other_tree_view: MyTreeView) -> None:
         """Displays a context menu when right clicking on a tree view. Returns: None"""
