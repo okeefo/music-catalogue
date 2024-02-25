@@ -188,14 +188,20 @@ def __tag_files_in_release(files: List[str], file_count: int, release: ReleaseFa
 
     user_cancelled = False
 
-    for i, file in enumerate(files):
+    for file in files:
 
         file_count += 1
         progress_bar.update_progress_bar(f"Auto Tagging - Release ID: {release.get_id()} - File: {file}", file_count)
 
+        if file_track_no_match := re.search(r"(\d+)(?=\.\w+$)", file):
+            file_track_no = int(file_track_no_match[1])-1
+        else:
+            logger.error(f"Failed to get track number from file: {file}")
+            continue 
+
         full_path = Path(os.path.join(root_dir, file))
 
-        track_info = release.get_track_info(i)
+        track_info = release.get_track_info(file_track_no)
         logger.info(f"Updating tags for file: {file}")
         logger.info(f"tags: {track_info.get_desc_csv()}")
 

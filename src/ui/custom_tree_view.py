@@ -8,6 +8,7 @@ from ui.custom_image_label import pop_up_image_dialogue
 from log_config import get_logger
 
 import contextlib
+from PyQt5.QtWidgets import QApplication
 
 
 # create logger
@@ -102,18 +103,24 @@ class FileSystemModel(QFileSystemModel):
 
 class MyTreeView(QTreeView):
     """A TreeView that allows to select multiple items at once."""
+    
+    def __init__(self, *args, **kwargs):
+        super(MyTreeView, self).__init__(*args, **kwargs)
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setSelectionMode(QTreeView.ExtendedSelection)
 
     def mousePressEvent(self, event):
         """Select multiple items on mouse click."""
         index = self.indexAt(event.pos())
         if event.button() == Qt.LeftButton:
             if index.isValid():
-                self.clearSelection()
                 self.setCurrentIndex(index)
-                self.selectionModel().select(index, QItemSelectionModel.Select)
+                if QApplication.keyboardModifiers() == Qt.ControlModifier:
+                    self.selectionModel().select(index, QItemSelectionModel.Toggle)
+                else:
+                    self.selectionModel().select(index, QItemSelectionModel.Select)
         elif event.button() == Qt.RightButton:
             if index.isValid() and not self.selectionModel().isSelected(index):
-                #   self.clearSelection()
                 self.setCurrentIndex(index)
                 self.selectionModel().select(index, QItemSelectionModel.Select)
         super().mousePressEvent(event)
