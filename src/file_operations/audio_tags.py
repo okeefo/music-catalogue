@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 
 # The AudioTags class is used to manage and manipulate audio tags.
-class AudioTags:
+class AudioTagHelper:
 
     def get_tags(self, absolute_path_filename: str) -> dict:
         if not self.isSupported(absolute_path_filename):
@@ -74,21 +74,22 @@ class AudioTags:
     MEDIA = "MEDIA"
     STYLE = "STYLE"
     COUNTRY = "COUNTRY"
-    
-    def log_tag_key_values(self, file_path:str) ->None:
-            
+
+    def log_tag_key_values(self, file_path: str) -> None:
+
         audio = File(file_path)
         for key, value in audio.items():
             # if th ekey starts with APIC
             if key.startswith("APIC"):
-                logger.info(f'{key} - {value.pprint()} type={value.type} des={value.desc} mime={value.mime} enc={value.encoding}')
-            else:    
-                logger.info(f'{key}  - {value} ')
-            
-    def log_tags(self, file_path:str) ->None:
-            
+                logger.info(f"{key} - {value.pprint()} type={value.type} des={value.desc} mime={value.mime} enc={value.encoding}")
+            else:
+                logger.info(f"{key}  - {value} ")
+
+    def log_tags(self, file_path: str) -> None:
+
         audio = File(file_path)
-        logger.info(f'{audio.tags} ')
+        logger.info(f"{audio.tags} ")
+
 
 class PictureTypeDescription:
     descriptions = {

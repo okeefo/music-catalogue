@@ -28,7 +28,7 @@ from mutagen.id3 import PictureType
 from typing import Dict
 from typing import Union
 
-from file_operations.audio_tags import AudioTags
+from file_operations.audio_tags import AudioTagHelper
 from file_operations.audio_tags import PictureTypeDescription
 from file_operations.repackage_dir import repackage_dir_by_label
 from file_operations.file_utils import ask_and_move_files, ask_and_copy_files
@@ -74,7 +74,7 @@ class MainWindow(QMainWindow):
         # Set up instance variables
         self.config = configparser.ConfigParser()
         self.id3_tags = []
-        self.audio_tags = AudioTags()
+        self.audio_tags = AudioTagHelper()
         self.player = QMediaPlayer()
 
         # set up config
@@ -235,21 +235,21 @@ class MainWindow(QMainWindow):
         """Populates the id3_tags list with the names of the supported ID3 tags. Returns: None"""
 
         self.id3_tags = [
-            AudioTags.TITLE,
-            AudioTags.ARTIST,
-            AudioTags.ALBUM,
-            AudioTags.LABEL,
-            AudioTags.DISC_NUMBER,
-            AudioTags.TRACK_NUMBER,
-            AudioTags.CATALOG_NUMBER,
-            AudioTags.DISCOGS_RELEASE_ID,
-            AudioTags.URL,
-            AudioTags.ALBUM_ARTIST,
-            AudioTags.YEAR,
-            AudioTags.GENRE,
-            AudioTags.MEDIA,
-            AudioTags.STYLE,
-            AudioTags.COUNTRY
+            AudioTagHelper.TITLE,
+            AudioTagHelper.ARTIST,
+            AudioTagHelper.ALBUM,
+            AudioTagHelper.LABEL,
+            AudioTagHelper.DISC_NUMBER,
+            AudioTagHelper.TRACK_NUMBER,
+            AudioTagHelper.CATALOG_NUMBER,
+            AudioTagHelper.DISCOGS_RELEASE_ID,
+            AudioTagHelper.URL,
+            AudioTagHelper.ALBUM_ARTIST,
+            AudioTagHelper.YEAR,
+            AudioTagHelper.GENRE,
+            AudioTagHelper.MEDIA,
+            AudioTagHelper.STYLE,
+            AudioTagHelper.COUNTRY,
         ]
 
     def __setup_label_cache(self) -> None:
@@ -287,7 +287,6 @@ class MainWindow(QMainWindow):
             self.lbl_tar_media,
             self.lbl_tar_style,
             self.lbl_tar_country,
-            
         ]
         source_artwork_labels = {
             "art": self.label_source_art_type,
