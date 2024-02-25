@@ -156,7 +156,7 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
 
     total_files = len(file_name_list)
     logger.info(f"Auto tagging {total_files} files")
-    progress_bar = ProgressBarHelper.get_progress_bar(total_files, "Auto Tagging", 0)
+    progress_bar = ProgressBarHelper(total_files, "Auto Tagging", 0)
     release_ids = __group_files_by_release_id(file_name_list)
     user_cancelled = False
 
@@ -165,23 +165,23 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
     discogs_client = __get_discogs_client()
     file_count = 0
 
-    art = b'\x00'
+    art = b"\x00"
     for release_id, files in release_ids.items():
 
         files = sorted(files)
-        ProgressBarHelper.update_progress_bar_text(progress_bar, f"Auto Tagging - Release ID: {release_id}")
+        progress_bar.update_progress_bar_text(f"Auto Tagging - Release ID: {release_id}")
 
         release_raw = discogs_client.release(int(release_id[1:]))  # Remove the 'r' prefix from the release ID
         release = ReleaseFacade(release_raw)
         artwork_data = __get_cover_art_from_discogs(release_raw)
 
         user_cancelled, file_count = __tag_files_in_release(files, file_count, release, root_dir, artwork_data, audio_tags, progress_bar)
-    
+
         if user_cancelled:
             break
 
     if not user_cancelled:
-        ProgressBarHelper.complete_progress_bar(progress_bar, file_count)
+        progress_bar.complete_progress_bar(file_count)
 
 
 def __tag_files_in_release(files: List[str], file_count: int, release: ReleaseFacade, root_dir: str, artwork_data: bytes, audio_tags: AudioTags, progress_bar: ProgressBarHelper) -> Union[bool, int]:
@@ -191,7 +191,7 @@ def __tag_files_in_release(files: List[str], file_count: int, release: ReleaseFa
     for i, file in enumerate(files):
 
         file_count += 1
-        ProgressBarHelper.update_progress_bar(progress_bar, f"Auto Tagging - Release ID: {release.get_id()} - File: {file}", file_count)
+        progress_bar.update_progress_bar(f"Auto Tagging - Release ID: {release.get_id()} - File: {file}", file_count)
 
         full_path = Path(os.path.join(root_dir, file))
 
@@ -212,7 +212,7 @@ def __tag_files_in_release(files: List[str], file_count: int, release: ReleaseFa
 
         audio_tags.log_tag_key_values(str(full_path))
 
-        user_cancelled = ProgressBarHelper.user_has_cancelled(progress_bar)
+        user_cancelled = progress_bar.user_has_cancelled()
         if user_cancelled:
             break
 
@@ -266,7 +266,7 @@ def __get_cover_art_from_discogs(release_raw: Release) -> bytes:
 
         except Exception as e:
             logger.exception(f"Failed to get cover art from: {image_uri} : {e}")
-            
+
     return None
 
 
