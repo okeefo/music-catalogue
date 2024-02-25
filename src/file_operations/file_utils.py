@@ -2,85 +2,82 @@ import shutil
 import time
 import send2trash
 import os
-from typing import List
+from typing import List, Union
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
 from ui.progress_bar_helper import ProgressBarHelper
 from PyQt5.QtWidgets import QMessageBox, QProgressDialog
 import qt.resources_rcc
 
 import log_config
-from PyQt5.QtWidgets import QApplication
-
 
 logger = log_config.get_logger(__name__)
 
 
-def __move_files(file_list: List[str], source_dir: str, target_dir: str, progress_bar:QProgressDialog=None ) -> None:
+def __move_files(file_list: List[str], source_dir: str, target_dir: str, progress_bar: ProgressBarHelper = None) -> None:
     """Move files between dirs"""
 
     userResponse = None
     files_to_delete = []
     root = False
     if not progress_bar:
-        progress_bar = ProgressBarHelper.get_progress_bar(len(file_list), "Moving", 10)
+        progress_bar = ProgressBarHelper(len(file_list), "Moving", 10)
         root = True
-    
-    
+
     for i, source_file in enumerate(file_list):
 
         source_file, fq_source_file, fq_target_file = __get_fully_qualified_file_name(source_file, source_dir, target_dir)
-        
-        
-        ProgressBarHelper.update_progress_bar_text(progress_bar, f"Moving {source_file}...")
+
+        progress_bar.update_progress_bar_text(f"Moving {source_file}...")
         if root:
-            ProgressBarHelper.update_progress_bar_value(progress_bar, i)
-        
+            progress_bar.update_progress_bar_value(i)
+
         logger.info(f'Moving "{fq_source_file}" to "{target_dir}"')
 
         if os.path.exists(fq_target_file):
-
-            userResponse = __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, fq_target_file, target_dir, userResponse)
-
-            if userResponse == QMessageBox.Cancel:
-                logger.info("Move files cancelled by user")
+            action, userResponse = _handle_move_of_existing_target_file(source_file, fq_source_file, target_dir, fq_target_file, userResponse, files_to_delete)
+            if action == "cancel":
                 return
-
-            elif userResponse in [QMessageBox.Yes, QMessageBox.YesToAll]:
-
-                # if the source is a directory we need to merge the contents of the source directory into the target directory
-                if os.path.isdir(fq_source_file):
-                    logger.info(f'Merging directory "{fq_source_file}" into "{fq_target_file}"')
-                    # create fully qualified file names for the contents of the fq_source_dir
-                    __move_files(os.listdir(fq_source_file), fq_source_file, fq_target_file)
-
-                    # add fq_source_file to teh list files to delete later
-                    files_to_delete.append(fq_source_file)
-
-                    if userResponse == QMessageBox.Yes:
-                        userResponse = None
-
-                    continue
-
-                else:
-                    if userResponse == QMessageBox.Yes:
-                        userResponse = None
-
-                    send2trash.send2trash(fq_target_file)
-
-            elif userResponse in [QMessageBox.No, QMessageBox.NoToAll]:
-                # skip the file
-                logger.info(f"Skipping file: {source_file}")
-                if userResponse == QMessageBox.No:
-                    userResponse = None
+            if action == "skip":
                 continue
 
         shutil.move(fq_source_file, target_dir)
-    
-    if root:    
+
+    if root:
         logger.info("Move files done, cleaning up any empty directories and source files")
         __clean_up(files_to_delete)
         logger.info("Clean up done")
-        ProgressBarHelper.complete_progress_bar(progress_bar, len(file_list))
+        progress_bar.complete_progress_bar(len(file_list))
+
+
+def _handle_move_of_existing_target_file(source_file: str, fq_source_file: str, target_dir: str, fq_target_file: str, userResponse, files_to_delete: List[str]) -> Union[str, int]:
+
+    userResponse = __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, target_dir, userResponse)
+
+    action = ""
+    if userResponse == QMessageBox.Cancel:
+        logger.info("Move files cancelled by user")
+        action = "cancel"
+
+    elif userResponse in [QMessageBox.Yes, QMessageBox.YesToAll]:
+
+        if os.path.isdir(fq_source_file):
+            logger.info(f'Merging directory "{fq_source_file}" into "{fq_target_file}"')
+            __move_files(os.listdir(fq_source_file), fq_source_file, fq_target_file)
+            files_to_delete.append(fq_source_file)
+            action = "skip"
+
+        else:
+            send2trash.send2trash(fq_target_file)
+
+    elif userResponse in [QMessageBox.No, QMessageBox.NoToAll]:
+        # skip the file
+        logger.info(f"Skipping file: {source_file}")
+        if userResponse == QMessageBox.No:
+            userResponse = None
+        action = "skip"
+
+    return action, userResponse
+
 
 def __get_fully_qualified_file_name(source_file, source_dir, target_dir) -> tuple[str, str, str]:
     """Get the fully qualified file names for the source and target files"""
@@ -89,12 +86,13 @@ def __get_fully_qualified_file_name(source_file, source_dir, target_dir) -> tupl
     source_file = os.path.basename(fq_source_file)
     fq_target_file = os.path.normpath(os.path.join(target_dir, source_file))
 
-    return source_file, fq_source_file, fq_target_file 
+    return source_file, fq_source_file, fq_target_file
 
-def __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, fq_target_file, target_dir, userResponse) -> int:
+
+def __get_user_response_for_moving_an_existing_item(fq_source_file, source_file, target_dir, userResponse) -> int:
     logger.info(f"File/Dir '{source_file}' already exists in target directory: {target_dir}")
     # ask user if they want to overwrite the file
-    if userResponse is None:
+    if userResponse is None or userResponse in [QMessageBox.Yes, QMessageBox.No]:
         if os.path.isdir(fq_source_file):
             userResponse = show_message_box(
                 f"The directory:\n'{source_file}'\nalready exists in the target directory.\n{target_dir}\nDo you want to merge the contents?", ButtonType.YesNoToAllCancel, "Merge Directory?"
@@ -142,7 +140,7 @@ def ask_and_move_files(file_list: List[str], source_dir, target_dir: str) -> Non
         message = f"Moving the selected files to:\n\n{target_dir}\n\nDo you want to continue?"
     else:
         message = f"Moving: \n\n {file_list[0]}\n to:\n{target_dir}\n\nDo you want to continue?"
-        
+
     response = show_message_box(message, ButtonType.YesNoCancel, "Move Files", "warning")
     logger.info(f"User chose: {convert_response_to_string(response)}")
     __move_files(file_list, source_dir, target_dir) if response == QMessageBox.Yes else logger.info("Move files cancelled by user")
@@ -168,11 +166,11 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
 
     total_files = len(file_list)
     copied_files = 0
-    progress = ProgressBarHelper.get_progress_bar(total_files, "Copying", 5)
+    progress = ProgressBarHelper(total_files, "Copying", 5)
 
     for copied_files, source_file in enumerate(file_list):
 
-        ProgressBarHelper.update_progress_bar_text(progress, f"Copying {source_file}...")
+        progress.update_progress_bar_text(f"Copying {source_file}...")
 
         if __target_file_exists(source_file, target_dir):
 
@@ -195,12 +193,12 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
 
         __do_copy_file(source_file, target_dir, userResponse)
 
-        ProgressBarHelper.update_progress_bar_value(progress, copied_files+1)
+        progress.update_progress_bar_value(copied_files + 1)
 
-        if ProgressBarHelper.user_has_cancelled(progress):
+        if progress.user_has_cancelled():
             break
 
-    ProgressBarHelper.complete_progress_bar(progress, total_files)
+    progress.complete_progress_bar(total_files)
 
 
 def __target_file_exists(source_file, target_dir) -> bool:
@@ -217,7 +215,7 @@ def __do_copy_file(source_file, target_dir, userResponse):
 
     if os.path.isfile(source_file):
         logger.info(f'Copying file "{source_file}" to "{target_dir}"')
-        shutil.copy(source_file, target_dir)
+        shutil.copy2(source_file, target_dir)
 
     elif os.path.isdir(source_file):
         logger.info(f'Copying directory "{source_file}" to "{target_dir}"')
@@ -235,12 +233,12 @@ def ask_and_copy_files(file_list: List[str], target_dir: str) -> None:
         return
 
     logger.info(f"Prompt user to copy files from '{file_list}' to '{target_dir}'")
-   
+
     if len(file_list) > 2:
         message = f"Copying the selected files to:\n\n{target_dir}\n\nDo you want to continue?"
     else:
         message = f"Copying: \n\n {file_list} to:\n\n{target_dir}\n\nDo you want to continue?"
-        
+
     response = show_message_box(message, ButtonType.YesNoCancel, "Copy Files", "warning")
     logger.info(f"User chose: {convert_response_to_string(response)}")
     __copy_files(file_list, target_dir) if response == QMessageBox.Yes else logger.info("Copy files cancelled by user")
