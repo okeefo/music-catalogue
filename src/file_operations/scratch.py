@@ -1,31 +1,30 @@
-
 import re, os, sys, configparser, discogs_client, requests
 
 from pathlib import Path
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from file_operations.audio_tags import AudioTags
-from audio_tags import AudioTags
+from file_operations.audio_tags import AudioTagHelper
+from audio_tags import AudioTagHelper
 from log_config import get_logger
+
 logger = get_logger("f_o.scratch")
 
+
 def display(file_list, destination_dir):
-    
-    
-    audio_tags = AudioTags()
-    
+
+    audio_tags = AudioTagHelper()
+
     for file_name in file_list:
         full_path = os.path.join(destination_dir, file_name)
-        #audio_tags.get_tags(full_path)
-        
+        # audio_tags.get_tags(full_path)
+
         audio_tags.log_tag_key_values(full_path)
         logger.info("")
         logger.info("-------------------------------------------")
         logger.info("")
-       # audio_tags.log_tags(full_path)
-        
-        #logger.info(f"tags: {tags}")
+    # audio_tags.log_tags(full_path)
 
-
+    # logger.info(f"tags: {tags}")
 
 
 if __name__ == "__main__":

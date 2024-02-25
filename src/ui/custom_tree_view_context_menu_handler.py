@@ -13,7 +13,7 @@ from ui.custom_tree_view import MyTreeView
 from file_operations.file_utils import ask_and_move_files, delete_files, ask_and_copy_files
 from file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
 from file_operations.files_system_info import display_results
-from file_operations.auto_tag import auto_tag_files
+from file_operations.auto_tag import auto_tag_files, tag_filename
 
 import qt.resources_rcc
 
@@ -57,6 +57,8 @@ class TreeViewContextMenuHandler(QWidget):
             self.rename_file_action: lambda tree_view, dest_path: self.__do_rename_file(tree_view),
             self.auto_tag_dir_action: lambda tree_view, dest_path: self.__do_auto_tag_dir(tree_view),
             self.auto_tag_selected_action: lambda tree_view, dest_path: self.__do_auto_tag_selected_items(tree_view),
+            self.tag_filename_dir_action: lambda tree_view, dest_path: self.__do_tag_filename_dir(tree_view),
+            self.tag_filename_selected_action: lambda tree_view, dest_path: self.__do_tag_filename_selection(tree_view),
         }
 
     def __setup_menus(self):
@@ -82,6 +84,8 @@ class TreeViewContextMenuHandler(QWidget):
         self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename (F2 or Ctrl+7)", self)
         self.auto_tag_dir_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag dir", self)
         self.auto_tag_selected_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag selected", self)
+        self.tag_filename_selected_action = QAction(QtGui.QIcon(":/icons/icons/hash.svg"), "Tag Filename", self)
+        self.tag_filename_dir_action = QAction(QtGui.QIcon(":/icons/icons/hash.svg"), "Tag Filename - dir", self)
 
         # menu 1 - MP3 tag only
 
@@ -117,89 +121,69 @@ class TreeViewContextMenuHandler(QWidget):
             self.vlc_path = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
             logger.warning(f"VLC path not found in registry. Using default path: '{self.vlc_path}'")
 
+    def __add_actions_to_menu(self, menu: QMenu, actions: list, add_separator: bool = True):
+        """Helper function to add actions to the menu"""
+        for action in actions:
+            menu.addAction(action)
+        if add_separator:
+            menu.addSeparator()
+
+    def __create_menu_no_selection(self) -> QMenu:
+        """Creates a menu when no items are selected"""
+        menu = QMenu()
+        self.__add_actions_to_menu(menu, [self.info_dir_action, self.move_all_action, self.repackage_dir_action])
+        self.__add_actions_to_menu(menu, [self.auto_tag_dir_action, self.tag_filename_dir_action])
+        if len(self.clipboard) > 0:
+            self.__add_actions_to_menu(menu, [self.paste_items_to_root_action])
+        return menu
+
+    def __create_menu_single_dir_selected(self) -> QMenu:
+        menu = QMenu()
+        self.__add_actions_to_menu(menu, [self.info_selected_action, self.rename_file_action])
+        self.__add_actions_to_menu(menu, [self.open_in_mp3tag_action, self.open_in_vlc_action])
+        self.__add_actions_to_menu(menu, [self.move_selected_action])
+        self.__add_actions_to_menu(menu, [self.copy_selected_across_action, self.copy_selected_to_clipboard_action])
+        if len(self.clipboard) > 0:
+            self.__add_actions_to_menu(menu, [self.paste_items_to_root_action, self.paste_items_to_selected_action])
+        self.__add_actions_to_menu(menu, [self.delete_action])
+        return menu
+
     def get_menu_to_display(self, file_path: str, tree_view: QTreeView) -> QMenu:
         """Selects menu based on file type"""
-
         menu = QMenu()
+        number_of_selected_items = len(tree_view.selectionModel().selectedRows())
 
         # if no items are selected
-        if len(tree_view.selectionModel().selectedRows()) == 0 or file_path is None:
-            menu.addAction(self.info_dir_action)
-            menu.addSeparator()
-            menu.addAction(self.move_all_action)
-            menu.addAction(self.repackage_dir_action)
-            menu.addSeparator()
-            menu.addAction(self.auto_tag_dir_action)
-            if len(self.clipboard) > 0:
-                menu.addSeparator()
-                menu.addAction(self.paste_items_to_root_action)
-                menu.addSeparator()
+        if number_of_selected_items == 0 or file_path is None:
+            return self.__create_menu_no_selection()
 
-            return menu
+        if number_of_selected_items == 1 and os.path.isdir(file_path):
+            return self.__create_menu_single_dir_selected()
 
-        single_item_selected = len(tree_view.selectionModel().selectedRows()) == 1
+        single_item_selected = number_of_selected_items == 1
 
-        # single item selected and its dir
-        if os.path.isdir(file_path) and single_item_selected:
-            menu.addAction(self.info_selected_action)
-            menu.addSeparator()
-            menu.addAction(self.rename_file_action)
-            menu.addSeparator()
-            menu.addAction(self.open_in_mp3tag_action)
-            menu.addAction(self.open_in_vlc_action)
-            menu.addSeparator()
-            menu.addAction(self.move_selected_action)
-            menu.addSeparator()
-            menu.addAction(self.copy_selected_across_action)
-            menu.addAction(self.copy_selected_to_clipboard_action)
-            if len(self.clipboard) > 0:
-                menu.addSeparator()
-                menu.addAction(self.paste_items_to_root_action)
-                menu.addAction(self.paste_items_to_selected_action)
-            menu.addSeparator()
-            menu.addAction(self.delete_action)
-            return menu
-
-        # multiple items selected  or single item selected and its not a dir
-        menu.addAction(self.info_dir_action)
-        menu.addAction(self.info_selected_action)
-        menu.addSeparator()
+        # multiple items selected or single item selected and its not a dir
+        self.__add_actions_to_menu(menu, [self.info_dir_action, self.info_selected_action])
         if single_item_selected:
-            menu.addAction(self.rename_file_action)
-            menu.addSeparator()
-        menu.addAction(self.open_in_mp3tag_action)
-        menu.addAction(self.open_in_vlc_action)
-        menu.addSeparator()
-        menu.addAction(self.auto_tag_dir_action)
+            self.__add_actions_to_menu(menu, [self.rename_file_action])
+        self.__add_actions_to_menu(menu, [self.open_in_mp3tag_action, self.open_in_vlc_action])
+        self.__add_actions_to_menu(menu, [self.auto_tag_dir_action], False)
 
         if single_item_selected and file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
-            menu.addAction(self.auto_tag_selected_action)
-            menu.addSeparator()
-            menu.addAction(self.play_action)
-            menu.addAction(self.stop_action)
-            menu.addAction(self.pause_action)
-        
+            self.__add_actions_to_menu(menu, [self.auto_tag_selected_action], True)
+            self.__add_actions_to_menu(menu, [self.tag_filename_dir_action, self.tag_filename_selected_action, self.play_action, self.stop_action, self.pause_action])
         elif not single_item_selected:
-            menu.addAction(self.auto_tag_selected_action)
-        
-        menu.addSeparator()
-        menu.addAction(self.repackage_select_action)
-        menu.addAction(self.repackage_dir_action)
+            self.__add_actions_to_menu(menu, [self.auto_tag_selected_action], True)
+            self.__add_actions_to_menu(menu, [self.tag_filename_dir_action, self.tag_filename_selected_action])
 
-        menu.addSeparator()
-        menu.addAction(self.move_selected_action)
-        menu.addAction(self.move_all_action)
-
-        menu.addSeparator()
-        menu.addAction(self.copy_selected_across_action)
-        menu.addAction(self.copy_selected_to_clipboard_action)
+        self.__add_actions_to_menu(menu, [self.repackage_select_action, self.repackage_dir_action])
+        self.__add_actions_to_menu(menu, [self.move_selected_action, self.move_all_action])
+        self.__add_actions_to_menu(menu, [self.copy_selected_across_action, self.copy_selected_to_clipboard_action])
 
         if len(self.clipboard) > 0:
-            menu.addSeparator()
-            menu.addAction(self.paste_items_to_root_action)
+            self.__add_actions_to_menu(menu, [self.paste_items_to_root_action])
 
-        menu.addSeparator()
-        menu.addAction(self.delete_action)
+        self.__add_actions_to_menu(menu, [self.delete_action], add_separator=False)
 
         return menu
 
@@ -409,3 +393,19 @@ class TreeViewContextMenuHandler(QWidget):
         self.update_status("Auto tagging selected items")
         auto_tag_files(tree_view.get_selected_files(), tree_view.get_root_dir())
         logger.info("Menu action -> auto tag selected items : done")
+
+    def ____do_tag_filename_selection(self, tree_view: MyTreeView) -> None:
+        """Tags the filename of selected items. Returns: None"""
+
+        logger.info("Menu action -> tag filename selected items")
+        self.update_status("Tagging filename of selected items")
+        tag_filename(tree_view.get_selected_files(), tree_view.get_root_dir())
+        logger.info("Menu action -> tag filename selected items : done")
+
+    def __do_tag_filename_dir(self, tree_view: MyTreeView) -> None:
+        """Tags the filename of all items in a directory. Returns: None"""
+
+        logger.info("Menu action -> tag filename dir")
+        self.update_status("Tagging filename of all items in directory")
+        tag_filename(os.listdir(tree_view.get_root_dir()), tree_view.get_root_dir())
+        logger.info("Menu action -> tag filename dir : done")

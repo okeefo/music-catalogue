@@ -222,7 +222,6 @@ class MyTreeView(QTreeView):
         """Returns a list of the selected files (inc) in the tree view."""
 
         selected_indexes = self.selectionModel().selectedRows()
-        # return [self.model().data(i) for i in selected_indexes]
         root_path = self.model().rootPath()
         return [os.path.relpath(self.model().filePath(i), root_path) for i in selected_indexes]
 

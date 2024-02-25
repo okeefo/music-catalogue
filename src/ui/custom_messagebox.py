@@ -26,6 +26,7 @@ class ButtonType(enumerate):
     YesNoCancel = 1
     YesNoToAllCancel = 2
     Ok = 3
+    YesNo = 4
 
 
 def show_message_box(message: str, buttonType: ButtonType, title: str = "Message", icon: Literal["warning", "information"] = "warning", parent=None) -> int:
@@ -34,14 +35,16 @@ def show_message_box(message: str, buttonType: ButtonType, title: str = "Message
     msg_box.setWindowTitle(title)
     headphones = QIcon(":/icons/icons/headphones.svg")
     msg_box.setWindowIcon(headphones)
-    
-    if buttonType == ButtonType.YesNoCancel:
+
+    if buttonType == ButtonType.YesNo:
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+    elif buttonType == ButtonType.YesNoCancel:
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
     elif buttonType == ButtonType.YesNoToAllCancel:
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.YesToAll | QMessageBox.NoToAll | QMessageBox.Cancel)
     else:
         msg_box.setStandardButtons(QMessageBox.Ok)
-        
+
     if icon == "warning":
         msg_box.setIcon(QMessageBox.Warning)
     else:
@@ -64,7 +67,7 @@ if __name__ == "__main__":
     sys.path.insert(0, "C:\\dev\\projects\\python\\music-catalogue\\src")
     app = QApplication(sys.argv)
 
-    result = show_message_box("This is a test", ButtonType.YesNoToAllCancel, "Test Message","information")
+    result = show_message_box("This is a test", ButtonType.YesNoToAllCancel, "Test Message", "information")
     result = convert_response_to_string(result)
     print(f"response was {result}")
     sys.exit(result)

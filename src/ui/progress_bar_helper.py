@@ -68,7 +68,7 @@ class ProgressBarHelper:
             QApplication.processEvents()
 
     def update_progress_bar(self, message: str, value: int) -> None:
-        """Update the progress bar text"""
+        """Update the progress bar text and value"""
 
         if self.progress_bar:
             self.progress_bar.setLabelText(f"\n\n{message}\n")

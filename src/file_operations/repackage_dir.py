@@ -3,12 +3,12 @@ import shutil
 
 from PyQt5.QtWidgets import QMessageBox
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
-from file_operations.audio_tags import AudioTags
+from file_operations.audio_tags import AudioTagHelper
 from log_config import get_logger
 from typing import Tuple
 
 logger = get_logger(__name__)
-audio_tags = AudioTags()
+audio_tags = AudioTagHelper()
 
 
 def ___ask_user_to_overwrite(file, label):
@@ -21,9 +21,10 @@ def repackage_dir_by_label(source_dir: str, target_dir: str) -> None:
     """Repackages a directory by label"""
     logger.info(f"Repackaging '{source_dir}' to '{target_dir}'")
     repackage_files_by_label(os.listdir(source_dir), source_dir, target_dir)
-    
-def repackage_files_by_label(files:dict[str], source_dir: str, target_dir: str) -> None:
-    
+
+
+def repackage_files_by_label(files: dict[str], source_dir: str, target_dir: str) -> None:
+
     user_choice = None
     for file in files:
         ##if file is a dir then skip
@@ -79,31 +80,32 @@ def repackage_file_by_label(file: str, source_dir: str, target_dir: str, user_ch
         __repack(source_file, target_file)
 
     elif user_choice == QMessageBox.NoToAll:
-        __log_skip (target_file, user_choice)
-    
+        __log_skip(target_file, user_choice)
+
     elif user_choice == QMessageBox.YesToAll:
-        __log_overwrite (target_file, user_choice)
+        __log_overwrite(target_file, user_choice)
         __repack(source_file, target_file)
 
     else:
         user_choice = ___ask_user_to_overwrite(file, label)
 
         if user_choice in [QMessageBox.Yes, QMessageBox.YesToAll]:
-            __log_overwrite(target_file, user_choice)   
+            __log_overwrite(target_file, user_choice)
             __repack(source_file, target_file)
 
         else:
-            __log_skip (target_file, user_choice)
+            __log_skip(target_file, user_choice)
 
     return user_choice
 
-def __log_skip (target_file:str, user_choice:int )   -> None:
-        logger.info(f"Skipping - target file already exists '{target_file}' - User choice: {convert_response_to_string(user_choice)}")
 
-def __log_overwrite (target_file:str, user_choice:int )   -> None:
-        logger.info(f"Overwriting - target file already exists '{target_file}' - User choice: {convert_response_to_string(user_choice)}")
+def __log_skip(target_file: str, user_choice: int) -> None:
+    logger.info(f"Skipping - target file already exists '{target_file}' - User choice: {convert_response_to_string(user_choice)}")
 
-    
+
+def __log_overwrite(target_file: str, user_choice: int) -> None:
+    logger.info(f"Overwriting - target file already exists '{target_file}' - User choice: {convert_response_to_string(user_choice)}")
+
 
 def __repack(source_file: str, target_file: str):
     """Moves the source file to the target file"""
