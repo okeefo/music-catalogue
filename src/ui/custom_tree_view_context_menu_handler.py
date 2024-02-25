@@ -27,16 +27,37 @@ class TreeViewContextMenuHandler(QWidget):
 
     def __init__(self, player: QMediaPlayer, update_status: callable):
         """Initialise the TreeViewContextMenuHandler."""
-
-        logger.info("TreeViewContextMenuHandler initialising...")
         super().__init__()
         self.player = player
         self.update_status = update_status
         self.__setup_mp3tag_path()
         self.__setup_menus()
         self.__setup_vlc_path()
-        logger.info("TreeViewContextMenuHandler initialised...")
+        self.__setup_action_map()
         self.clipboard = []
+
+    def __setup_action_map(self):
+        self.action_map = {
+            self.delete_action: lambda tree_view, dest_path: self.__do_delete(tree_view),
+            self.open_in_mp3tag_action: lambda tree_view, dest_path: self.__do_open_in_mp3tag(tree_view),
+            self.open_in_vlc_action: lambda tree_view, dest_path: self.__do_open_in_vlc(tree_view),
+            self.repackage_dir_action: lambda tree_view, dest_path: self.__do_repackage_dir_by_label(tree_view),
+            self.repackage_select_action: lambda tree_view, dest_path: self.__do_repackage_selected_items_by_label(tree_view),
+            self.move_selected_action: lambda tree_view, dest_path: self.__do_move_selected_items(tree_view, dest_path),
+            self.move_all_action: lambda tree_view, dest_path: self.__do_move_all(tree_view, dest_path),
+            self.play_action: lambda tree_view, dest_path: self.__do_play_media(tree_view),
+            self.stop_action: lambda tree_view, dest_path: self.__do_stop_media(),
+            self.pause_action: lambda tree_view, dest_path: self.__do_pause_media(),
+            self.info_dir_action: lambda tree_view, dest_path: self.__do_show_info_dir(tree_view),
+            self.info_selected_action: lambda tree_view, dest_path: self.__do_show_info_selected_items(tree_view),
+            self.copy_selected_across_action: lambda tree_view, dest_path: self.__do_copy_selected_items_to_destination(tree_view, dest_path),
+            self.copy_selected_to_clipboard_action: lambda tree_view, dest_path: self.__do_copy_selected_items_to_clipboard(tree_view),
+            self.paste_items_to_root_action: lambda tree_view, dest_path: self.__do_paste_items_from_clipboard(tree_view),
+            self.paste_items_to_selected_action: lambda tree_view, dest_path: self.__do_paste_items_from_clipboard(tree_view, True),
+            self.rename_file_action: lambda tree_view, dest_path: self.__do_rename_file(tree_view),
+            self.auto_tag_dir_action: lambda tree_view, dest_path: self.__do_auto_tag_dir(tree_view),
+            self.auto_tag_selected_action: lambda tree_view, dest_path: self.__do_auto_tag_selected_items(tree_view),
+        }
 
     def __setup_menus(self):
         """Set up the menus."""
@@ -60,7 +81,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.paste_items_to_selected_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste in selected dir", self)
         self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename (F2 or Ctrl+7)", self)
         self.auto_tag_dir_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag dir", self)
-        self.auto_tag_selected_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag selected", self)  
+        self.auto_tag_selected_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag selected", self)
 
         # menu 1 - MP3 tag only
 
@@ -115,7 +136,7 @@ class TreeViewContextMenuHandler(QWidget):
                 menu.addSeparator()
 
             return menu
-        
+
         single_item_selected = len(tree_view.selectionModel().selectedRows()) == 1
 
         # single item selected and its dir
@@ -151,13 +172,16 @@ class TreeViewContextMenuHandler(QWidget):
         menu.addSeparator()
         menu.addAction(self.auto_tag_dir_action)
 
-        if len(tree_view.selectionModel().selectedRows()) == 1 and file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
+        if single_item_selected and file_path.lower().endswith((".wav", ".mp3", ".ogg", ".flac")):
             menu.addAction(self.auto_tag_selected_action)
             menu.addSeparator()
             menu.addAction(self.play_action)
             menu.addAction(self.stop_action)
             menu.addAction(self.pause_action)
-
+        
+        elif not single_item_selected:
+            menu.addAction(self.auto_tag_selected_action)
+        
         menu.addSeparator()
         menu.addAction(self.repackage_select_action)
         menu.addAction(self.repackage_dir_action)
@@ -195,62 +219,10 @@ class TreeViewContextMenuHandler(QWidget):
     def handle_action(self, action: QAction, tree_view: MyTreeView, dest_path: str) -> None:
         """Handles the action selected in the context menu"""
 
-        if action == self.delete_action:
-            self.__do_delete(tree_view)
-
-        elif action == self.open_in_mp3tag_action:
-            self.__do_open_in_mp3tag(tree_view.get_selected_files())
-
-        elif action == self.open_in_vlc_action:
-            self.__do_open_in_vlc(tree_view.get_selected_files())
-
-        elif action == self.repackage_dir_action:
-            self.__do_repackage_dir_by_label(tree_view)
-
-        elif action == self.repackage_select_action:
-            self.__do_repackage_selected_items_by_label(tree_view)
-
-        elif action == self.move_selected_action:
-            self.__do_move_selected_items(tree_view, dest_path)
-
-        elif action == self.move_all_action:
-            self.__do_move_all(tree_view, dest_path)
-
-        elif action == self.play_action:
-            self.__do_play_media(tree_view)
-
-        elif action == self.stop_action:
-            self.__do_stop_media()
-
-        elif action == self.pause_action:
-            self.__do_pause_media()
-
-        elif action == self.info_dir_action:
-            self.__do_show_info_dir(tree_view)
-
-        elif action == self.info_selected_action:
-            self.__do_show_info_selected_items(tree_view)
-
-        elif action == self.copy_selected_across_action:
-            self.__do_copy_selected_items_to_destination(tree_view, dest_path)
-
-        elif action == self.copy_selected_to_clipboard_action:
-            self.__do_copy_selected_items_to_clipboard(tree_view)
-
-        elif action == self.paste_items_to_root_action:
-            self.__do_paste_items_from_clipboard(tree_view)
-        
-        elif action == self.paste_items_to_selected_action:
-            self.__do_paste_items_from_clipboard(tree_view, True)
-            
-        elif action == self.rename_file_action:
-            self.__do_rename_file(tree_view)
-            
-        elif action == self.auto_tag_dir_action:
-            self.__do_auto_tag_dir(tree_view)
-            
-        elif action == self.auto_tag_selected_action:
-            self.__do_auto_tag_selected_items(tree_view)
+        if action in self.action_map:
+            self.action_map[action](tree_view, dest_path)
+        else:
+            logger.error(f"Action {action} not recognized.")
 
     def __do_delete(self, tree_view: MyTreeView) -> None:
         """Deletes selected files. Returns: None"""
@@ -260,9 +232,10 @@ class TreeViewContextMenuHandler(QWidget):
         self.update_status(result)
         logger.info("Menu action - delete : done")
 
-    def __do_open_in_mp3tag(self, file_path: List[str]) -> None:
+    def __do_open_in_mp3tag(self, tree_vew: MyTreeView) -> None:
         """Opens a file/directory in MP3Tag. Returns: None"""
 
+        file_path = tree_vew.get_selected_files()
         logger.info(f"Menu Action -> Opening file/s in MP3Tag: '{file_path}'")
         try:
             command = f'"{self.mp3tag_path}"'
@@ -281,9 +254,10 @@ class TreeViewContextMenuHandler(QWidget):
         except Exception as e:
             logger.error(f"Failed to open file/dir in MP3Tag: '{e}'")
 
-    def __do_open_in_vlc(self, file_paths: dict) -> None:
+    def __do_open_in_vlc(self, tree_view: MyTreeView) -> None:
         """Opens a file/directory in VLC. Returns: None"""
 
+        file_paths = tree_view.get_selected_files()
         logger.info(f"Menu Action -> Opening file/s in VLC: '{self.vlc_path,file_paths}'")
         command = [self.vlc_path] + file_paths
         subprocess.Popen(command, shell=False)
@@ -390,15 +364,15 @@ class TreeViewContextMenuHandler(QWidget):
         self.clipboard = tree_view.get_selected_files()
         logger.info("Menu action -> copy selected items to clipboard : done")
 
-    def __do_paste_items_from_clipboard(self, tree_view: MyTreeView, toSelectedDir: bool=False) -> None:
+    def __do_paste_items_from_clipboard(self, tree_view: MyTreeView, toSelectedDir: bool = False) -> None:
         """Pastes items from clipboard. Returns: None"""
 
         logger.info("Menu action -> paste items from clipboard")
         if toSelectedDir:
-           ask_and_copy_files(self.clipboard, tree_view.get_selected_files()[0])
+            ask_and_copy_files(self.clipboard, tree_view.get_selected_files()[0])
         else:
             ask_and_copy_files(self.clipboard, tree_view.get_root_dir())
-        self.clipboard = []
+        self.__clear_clipboard()
         logger.info("Menu action -> paste items from clipboard : done")
 
     def __do_copy_selected_items_to_destination(self, tree_view: MyTreeView, dest_path: str) -> None:
@@ -415,23 +389,23 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info("Menu action -> rename file")
         ## rename the file/dir at the current index
         logger.info(f"Old filename {tree_view.currentIndex().data()}")
-               
+
         tree_view.edit(tree_view.currentIndex())
-        logger.info(f"New filename {tree_view.currentIndex().data()}")        
+        logger.info(f"New filename {tree_view.currentIndex().data()}")
         logger.info("Menu action -> rename file : done")
-        
-    def __do_auto_tag_dir(self, tree_view: MyTreeView) -> None: 
+
+    def __do_auto_tag_dir(self, tree_view: MyTreeView) -> None:
         """Auto tags all files in a directory. Returns: None"""
-        
+
         logger.info("Menu action -> auto tag dir")
         self.update_status("Auto tagging directory")
-        auto_tag_files(os.listdir(tree_view.get_root_dir()),tree_view.get_root_dir())
+        auto_tag_files(os.listdir(tree_view.get_root_dir()), tree_view.get_root_dir())
         logger.info("Menu action -> auto tag dir : done")
-        
+
     def __do_auto_tag_selected_items(self, tree_view: MyTreeView) -> None:
         """Auto tags selected items. Returns: None"""
-        
+
         logger.info("Menu action -> auto tag selected items")
         self.update_status("Auto tagging selected items")
-       
+        auto_tag_files(tree_view.get_selected_files(), tree_view.get_root_dir())
         logger.info("Menu action -> auto tag selected items : done")
