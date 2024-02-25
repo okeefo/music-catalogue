@@ -515,7 +515,7 @@ class MainWindow(QMainWindow):
 
         absolute_filename = tree_view.model().filePath(item)
 
-        if not self.audio_tags.isSupported(absolute_filename):
+        if not self.audio_tags.isSupportedAudioFile(absolute_filename):
             return
 
         self._display_id3_tags(absolute_filename, tree_view)
