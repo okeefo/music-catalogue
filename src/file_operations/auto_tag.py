@@ -256,7 +256,7 @@ def tag_filename(files_to_rename: list[str], root_di: str) -> None:
 
         progress.update_progress_bar_text(f"Renaming file: {file}")
 
-        if os.path.isdir(full_path) or not audio_tag_helper.isSupported(full_path):
+        if os.path.isdir(full_path) or not audio_tag_helper.isSupportedAudioFile(full_path):
             logger.info(f"Skipping file reason=UnsupportedFileExtension: {full_path}")
         else:
             __rename_file_based_on_mask(mask, file, audio_tag_helper, root_dir)

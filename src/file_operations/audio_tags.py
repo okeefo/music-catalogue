@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 class AudioTagHelper:
 
     def get_tags(self, absolute_path_filename: str) -> dict:
-        if not self.isSupported(absolute_path_filename):
+        if not self.isSupportedAudioFile(absolute_path_filename):
             return {}
 
         try:
@@ -34,7 +34,7 @@ class AudioTagHelper:
         logger.info(f"Found tags in file: '{absolute_path_filename}' tags:'{tags}'")
         return tags
 
-    def isSupported(self, absolute_path_filename: str) -> bool:
+    def isSupportedAudioFile(self, absolute_path_filename: str) -> bool:
         path = Path(absolute_path_filename)
         if path is None:
             return False
@@ -47,7 +47,7 @@ class AudioTagHelper:
     def get_cover_art(self, absolute_path_filename: str) -> list[APIC]:
         """Returns a list of APIC tags for the artwork of the file."""
 
-        if not self.isSupported(absolute_path_filename):
+        if not self.isSupportedAudioFile(absolute_path_filename):
             return None
 
         path = Path(absolute_path_filename)

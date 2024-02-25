@@ -56,7 +56,7 @@ def repackage_file_by_label(file: str, source_dir: str, target_dir: str, user_ch
         return user_choice
 
     # check is file is supported else skip
-    if not audio_tags.isSupported(source_file):
+    if not audio_tags.isSupportedAudioFile(source_file):
         logger.warn(f"Skipping - file not supported: '{source_file}'")
         return user_choice
 
