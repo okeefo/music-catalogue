@@ -9,8 +9,7 @@ from typing import List
 from mutagen import File
 from mutagen.wave import WAVE
 from mutagen.id3 import ID3, WXXX, ID3, TIT2, APIC, TALB, TPE1, TPE2, TXXX, TDRC, TPOS, TCON, TPUB, TMED, TRCK, COMM
-import taglib
-from file_operations.audio_tags import AudioTagHelper
+from file_operations.audio_tags import AudioTagHelper, AUDIO_EXTENSIONS
 from ui.progress_bar_helper import ProgressBarHelper
 from ui.custom_messagebox import show_message_box, ButtonType, convert_response_to_string
 from log_config import get_logger
@@ -160,7 +159,7 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
 
     total_files = len(file_name_list)
     logger.info(f"Auto tagging {total_files} files")
-    progress_bar = ProgressBarHelper(total_files, "Auto Tagging", 0)
+    progress_bar = ProgressBarHelper(total_files, "Auto Tagging", 1)
     release_ids = __group_files_by_release_id(file_name_list)
     user_cancelled = False
 
@@ -242,7 +241,7 @@ def tag_filename(files_to_rename: list[str], root_dir: str) -> None:
     logger.info(f"Renaming {len(files_to_rename)} files based on tags")
 
     msg = "This will rename the files based on the tags. Are you sure you wish to continue?"
-    user_response = QMessageBox.question(None, "Rename files based on tags", msg, QMessageBox.Yes | QMessageBox.No)
+    user_response = show_message_box(msg, ButtonType.YesNo, "Rename files based on tags", "warning")
     logger.info(f"User response: {convert_response_to_string(user_response)}")
     if user_response == QMessageBox.No:
         return
@@ -402,7 +401,10 @@ def __group_files_by_release_id(files: List[str]) -> dict:
 
     logger.info(f"Grouping {len(files)} files by release id")
 
-    release_id_pattern = re.compile(r"r(\d+)-\d+\.wav$")
+    # Join the extensions in the pattern, escaping the dot
+    extensions_pattern = "|".join(re.escape(ext) for ext in AUDIO_EXTENSIONS)
+
+    release_id_pattern = re.compile(rf"r(\d+)-\d+.({extensions_pattern})$")
     release_id_to_files = {}
 
     for file in files:
@@ -413,6 +415,7 @@ def __group_files_by_release_id(files: List[str]) -> dict:
             if release_id not in release_id_to_files:
                 release_id_to_files[release_id] = []
             release_id_to_files[release_id].append(file)
+            
 
     logger.info(f"Grouped {len(release_id_to_files)} release ids")
     # log the release ids
