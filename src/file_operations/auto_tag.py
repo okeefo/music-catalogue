@@ -13,9 +13,9 @@ import taglib
 from file_operations.audio_tags import AudioTagHelper
 from ui.progress_bar_helper import ProgressBarHelper
 from ui.custom_messagebox import show_message_box, ButtonType, convert_response_to_string
-from PyQt5.QtWidgets import QApplication
 from log_config import get_logger
 from typing import Union
+from PyQt5.QtWidgets import QMessageBox
 
 logger = get_logger("f_o.auto_tag")
 
@@ -232,7 +232,7 @@ def __tag_files_in_release(
     return user_cancelled, file_count
 
 
-def tag_filename(files_to_rename: list[str], root_di: str) -> None:
+def tag_filename(files_to_rename: list[str], root_dir: str) -> None:
     """Get the filename mask from the config file"""
 
     if files_to_rename is None or not files_to_rename:
@@ -242,10 +242,9 @@ def tag_filename(files_to_rename: list[str], root_di: str) -> None:
     logger.info(f"Renaming {len(files_to_rename)} files based on tags")
 
     msg = "This will rename the files based on the tags. Are you sure you wish to continue?"
-    user_response = show_message_box(msg, ButtonType.YesNo, "Rename files based on tags", "warning")
-
+    user_response = QMessageBox.question(None, "Rename files based on tags", msg, QMessageBox.Yes | QMessageBox.No)
     logger.info(f"User response: {convert_response_to_string(user_response)}")
-    if user_response == ButtonType.No:
+    if user_response == QMessageBox.No:
         return
 
     mask = get_filename_mask_from_config()
