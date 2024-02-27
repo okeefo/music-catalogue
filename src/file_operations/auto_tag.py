@@ -274,17 +274,23 @@ def __rename_file_based_on_mask(mask, file, audio_tags: AudioTagHelper, root_dir
     _, ext = os.path.splitext(file)
     new_name += ext
 
-    full_path = Path(os.path.join(root_dir, new_name))
+    _, new_name = os.path.split(new_name)
 
-    logger.info(f"Renaming file: {file} to: {new_name}")
 
     try:
+        new_name = re.sub(r'[<>:"/\\|?*]', '', str(new_name))
+        logger.info(f"Renaming file: {file} to: {new_name}")
+        full_path = Path(os.path.join(root_dir, new_name))
+        # if target file skip
+        if os.path.exists(full_path):
+            logger.info(f"File already exists: {full_path}")
+            return full_path
+         
         os.rename(file, full_path)
-
+    
     except Exception as e:
+        logger.error(f"Failed to rename file: {file} to: {new_name} ", exc_info=True)
 
-        logger.error(f"Failed to rename file: {file} to: {new_name}")
-        logger.error(e.with_traceback)
 
     return full_path
 
