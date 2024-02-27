@@ -60,9 +60,7 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
 
-# TODO: implement renaming of tagged files to my format.
-# TODO: implement auto tagging selected files.
-
+# TODO: fix Paste items.
 
 class MainWindow(QMainWindow):
     """Main window class for the application."""

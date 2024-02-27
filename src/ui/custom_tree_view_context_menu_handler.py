@@ -119,8 +119,8 @@ class TreeViewContextMenuHandler(QWidget):
         self.delete_action = QAction(QtGui.QIcon(":/icons/icons/delete.svg"), "Delete", self)
         self.move_selected_action = QAction(QtGui.QIcon(":/icons/icons/send.svg"), "Move", self)
         self.move_all_action = QAction(QtGui.QIcon(":/icons/icons/send.svg"), "Move All", self)
-        self.repackage_dir_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Repackage this Dir", self)
-        self.repackage_select_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Repackage Selection", self)
+        self.repackage_dir_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Repackage All", self)
+        self.repackage_select_action = QAction(QtGui.QIcon(":/icons/icons/briefcase.svg"), "Repackage", self)
         self.info_dir_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info all items", self)
         self.info_selected_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info selected items", self)
         self.copy_selected_across_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy across.", self)
@@ -128,10 +128,10 @@ class TreeViewContextMenuHandler(QWidget):
         self.paste_items_to_root_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste here", self)
         self.paste_items_to_selected_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste in selected dir", self)
         self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename (F2 or Ctrl+7)", self)
-        self.auto_tag_dir_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag dir", self)
-        self.auto_tag_selected_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "Auto Tag selected", self)
-        self.tag_filename_selected_action = QAction(QtGui.QIcon(":/icons/icons/hash.svg"), "Tag Filename", self)
-        self.tag_filename_dir_action = QAction(QtGui.QIcon(":/icons/icons/hash.svg"), "Tag Filename - dir", self)
+        self.auto_tag_dir_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "ID Tag - All ", self)
+        self.auto_tag_selected_action = QAction(QtGui.QIcon(":/icons/icons/globe.svg"), "ID Tag", self)
+        self.tag_filename_selected_action = QAction(QtGui.QIcon(":/icons/icons/hash.svg"), "Tags -> Filename", self)
+        self.tag_filename_dir_action = QAction(QtGui.QIcon(":/icons/icons/hash.svg"), "Tags -> Filename - All", self)
 
         # menu 1 - MP3 tag only
 
