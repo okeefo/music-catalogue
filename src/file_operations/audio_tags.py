@@ -2,7 +2,7 @@ from pathlib import Path
 from log_config import get_logger
 import taglib
 from mutagen.wave import WAVE
-from mutagen.id3 import ID3, APIC
+from mutagen.id3 import ID3, APIC, ID3NoHeaderError
 from mutagen import File
 
 AUDIO_EXTENSIONS = [".mp3", ".wav"]
@@ -56,8 +56,11 @@ class AudioTagHelper:
             filedata = WAVE(absolute_path_filename)
             return [] if filedata.tags is None else filedata.tags.getall("APIC")
         else:
-            filedata = ID3(absolute_path_filename)
-            return filedata.getall("APIC")
+            try:
+                filedata = ID3(absolute_path_filename)
+                return filedata.getall("APIC")
+            except ID3NoHeaderError:
+                return []
 
     TITLE = "TITLE"
     ARTIST = "ARTIST"
