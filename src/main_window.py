@@ -60,7 +60,11 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
 
+# TODO: process file and increase volume
+# TODO: Add button to run the works  - speed, split, tag, repackage
 # TODO: fix Paste items.
+# TODO: fix the artwork display
+# TODO: complete settings management
 
 class MainWindow(QMainWindow):
     """Main window class for the application."""

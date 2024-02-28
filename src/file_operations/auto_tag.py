@@ -2,7 +2,7 @@ import re, os, sys, configparser, discogs_client, requests
 
 from pathlib import Path
 
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from discogs_client.models import Release
 from pydantic import BaseModel
@@ -75,7 +75,7 @@ class ReleaseFacade(BaseModel):
         return self.release.title
 
     def get_catalog_number(self) -> str:
-        return self.release.data.get("labels")[0].get("catno")
+        return self.release.labels[0].data.get("catno")
 
     def get_country(self) -> str:
         return self.release.country
@@ -99,13 +99,13 @@ class ReleaseFacade(BaseModel):
         return str(trackNumber + 1)
 
     def get_url(self) -> str:
-        return self.release.data.get("uri")
+        return self.release.url
 
     def get_year(self) -> str:
         return self.release.data.get("released")
 
     def get_media(self) -> str:
-        format_data = self.release.data.get("formats")[0]
+        format_data = self.release.formats[0]
         media = format_data.get("name")
         descriptions = format_data.get("descriptions", [])
         description = ", ".join(desc for desc in descriptions if desc)
@@ -114,10 +114,10 @@ class ReleaseFacade(BaseModel):
     def get_track_info(self, trackNumber: int) -> TrackInfo:
         return TrackInfo(
             title=self.get_track_title(trackNumber),
-            album_artist=self.remove_brackets_and_numbers(self.get_album_artist()),
-            artist=self.remove_brackets_and_numbers(self.get_artist(trackNumber)),
+            album_artist=self.__remove_brackets_and_numbers(self.get_album_artist()),
+            artist=self.__remove_brackets_and_numbers(self.get_artist(trackNumber)),
             album_name=self.get_album(),
-            label=self.remove_brackets_and_numbers(self.get_publisher()),
+            label=self.__remove_brackets_and_numbers(self.get_publisher()),
             disc_number=self.get_disc_number(trackNumber),
             track_number=self.get_track_number(trackNumber),
             catalog_number=self.get_catalog_number(),
@@ -130,8 +130,11 @@ class ReleaseFacade(BaseModel):
             country=self.get_country(),
         )
 
-    def remove_brackets_and_numbers(self, string: str):
+    def __remove_brackets_and_numbers(self, string: str):
         return re.sub(r"\(\d+\)", "", string).strip()
+    
+    def get_number_of_tracks(self) -> int:
+        return len(self.release.tracklist)
 
 
 def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
@@ -143,11 +146,10 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
     release_ids = __group_files_by_release_id(file_name_list, root_dir)
     user_cancelled = False
 
-    discogs_client = __get_discogs_client()
+    discogs_client = get_discogs_client()
     file_count = 0
 
     for release_id, files in release_ids.items():
-        release_id = int(release_id[1:])  # Remove the 'r' prefix from the release ID
         files.sort()
         progress_bar.update_progress_bar_text(f"Auto Tagging - Release ID: {release_id}")
 
@@ -404,7 +406,7 @@ def __add_cover_art(song: Union[WAVE.tags, ID3], art_work, full_path: Path) -> N
     return song
 
 
-def __get_discogs_client() -> discogs_client.Client:
+def get_discogs_client() -> discogs_client.Client:
     """Get Discogs client"""
 
     logger.info("Getting Discogs client")
@@ -425,20 +427,42 @@ def __group_files_by_release_id(files: List[str], root_dir: str) -> dict:
     release_id_to_files = {}
 
     for file in files:
-        file = os.path.join(root_dir, file)
-        if match := release_id_pattern.search(file):
-            release_id = f"r{match[1]}"
-            logger.info(f"Found release id '{release_id}' in file '{file}'")
-
-            if release_id not in release_id_to_files:
-                release_id_to_files[release_id] = []
-            release_id_to_files[release_id].append(file)
+        
+        release_id = __valid_File_check(file)      
+        if release_id is None:
+            continue
+        
+        if release_id not in release_id_to_files:
+            release_id_to_files[release_id] = []
+        
+        release_id_to_files[release_id].append(file)
 
     logger.info(f"Grouped {len(release_id_to_files)} release ids")
     # log the release ids
     logger.info(f"Release ids: {release_id_to_files.keys()}")
     return release_id_to_files
 
+def __valid_File_check(file: str) -> str:
+    """Check if the file is valid"""
+    
+    if match := re.search(r"r(\d{6,10})", file):
+        release_id = match[1]
+        logger.info(f"{release_id} - Found release id {release_id} in file name: {file}")
+        
+        # Search for a number of max two digits before the file extension
+        if match := re.search(r"[-_](\d{1,2})\.\w+$", file):
+            track_number = match[1]
+            logger.info(f"{release_id} - Found track number {track_number} in file name: {file}")
+            return release_id
+        else:
+            logger.warn(f"{release_id} - Could not find track number in file name, skipping: {file}")
+
+    else:
+        logger.error(f"Could not find release id in file name, skipping: {file}")
+    
+    return None
+
+    
 
 if __name__ == "__main__":
     file_list = ["a8_jam and spoon-r21478021-02.wav"]
