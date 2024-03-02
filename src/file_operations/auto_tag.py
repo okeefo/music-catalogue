@@ -161,6 +161,7 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
 
         if user_cancelled:
             break
+        
 
     if not user_cancelled:
         progress_bar.complete_progress_bar(total_files)

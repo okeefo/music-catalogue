@@ -64,7 +64,7 @@ PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not k
 # TODO: Add button to run the works  - speed, split, tag, repackage
 # TODO: fix Paste items.
 # TODO: fix the artwork display
-# TODO: complete settings management
+# TODO: complete settings management - create a config manager
 
 class MainWindow(QMainWindow):
     """Main window class for the application."""
@@ -189,11 +189,17 @@ class MainWindow(QMainWindow):
     def __setup_action_buttons(self) -> None:
         """Set up the action buttons. Returns: None"""
         # repackage button
-        self.but_repackage = self.findChild(QPushButton, "butt_repackage")
-        self.but_repackage.clicked.connect(lambda: self.on_repackage_button_clicked())
-        self.but_repackage.setToolTip("[Ctrl+R] Repackage the source directory -> target directory")
-        self.but_repackage.setToolTipDuration(1000)
-        self.but_repackage.setShortcut("Ctrl+R")
+        self.but_repackage_src = self.findChild(QPushButton, "butt_repackage_source")
+        self.but_repackage_src.clicked.connect(lambda: self.on_repackage_button_clicked(self.tree_source, self.tree_target))
+        self.but_repackage_src.setToolTip("[Ctrl+R] Repackage the source directory -> target directory")
+        self.but_repackage_src.setToolTipDuration(1000)
+        self.but_repackage_src.setShortcut("Ctrl+R")
+        
+        self.but_repackage_tar = self.findChild(QPushButton, "butt_repackage_target")
+        self.but_repackage_tar.clicked.connect(lambda: self.on_repackage_button_clicked(self.tree_target, self.tree_source))
+        self.but_repackage_tar.setToolTip("[Ctrl+Shift+R] Repackage the target directory -> source directory")
+        self.but_repackage_tar.setToolTipDuration(1000)
+        self.but_repackage_tar.setShortcut("Ctrl+R")
 
         self.but_restore = self.findChild(QPushButton, "but_restore")
         self.but_restore.clicked.connect(lambda: self.on_restore_button_clicked())
@@ -472,9 +478,9 @@ class MainWindow(QMainWindow):
             tree_view.change_dir(directory)
             path.setText(directory)
 
-    def on_repackage_button_clicked(self) -> None:
+    def on_repackage_button_clicked(self, tree_source: MyTreeView, tree_target: MyTreeView) -> None:
         """Set up the repackage button. Returns: None"""
-        self.repackage()
+        self.repackage(tree_source, tree_target)
 
     def _display_and_log_error(self, e) -> None:
         """Displays the error message and logs the error to the log file. Returns: None"""
@@ -597,20 +603,22 @@ class MainWindow(QMainWindow):
             else:
                 label.setText(value)
 
+   
     def get_labels(self, tree_view: QTreeView, label_type: str) -> Union[list, dict]:
         """Returns a list or dictionary of source or target labels based on label_type."""
         source, target = self.label_cache.get(label_type, (None, None))
         return source if tree_view == self.tree_source else target
 
-    def repackage(self) -> None:
+    def repackage(self, tree_source: MyTreeView, tree_target: MyTreeView) -> None:
         """moves the files from the source directory to the target directory based on the LABEL tag. Returns: None"""
 
-        source_dir = self.tree_source.get_root_dir()
-        target_dir = self.tree_target.get_root_dir()
+        source_dir = tree_source.get_root_dir()
+        target_dir = tree_target.get_root_dir()
 
         self.update_status("Repackaging started...")
-        logger.info(f"Repackaging started... '{source_dir}' -> '{target_dir}'")
+        logger.info("Repackaging started...")
         repackage_dir_by_label(source_dir, target_dir)
+        logger.info("Repackaging finished...")
 
     def toggleMenu(self) -> None:
         """Toggles the left menu. Returns: None"""
