@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>2106</width>
-    <height>736</height>
+    <width>2122</width>
+    <height>1066</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -378,7 +378,7 @@ QGroupBox::title {
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="but_settings">
             <property name="styleSheet">
              <string notr="true">*{border:none;
 	text-align: middle;}</string>
@@ -857,75 +857,6 @@ QPushButton::pressed
                        </spacer>
                       </item>
                       <item>
-                       <widget class="QPushButton" name="butt_repackage">
-                        <property name="font">
-                         <font>
-                          <pointsize>9</pointsize>
-                         </font>
-                        </property>
-                        <property name="styleSheet">
-                         <string notr="true">/*-----QPushButton-----*/
-QPushButton
-{
-/**	background-color:  rgb(92, 106, 106);
-	color: #ffffff;
-**/	
-   border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-}
-
-QPushButton::disabled
-{
-	background-color: #404040;
-	color: #656565;
-	border-color: #051a39;
-
-}
-
-
-QPushButton::hover
-{
-	background-color: lightgrey;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}
-
-
-QPushButton::pressed
-{
-	background-color: rgb(125, 155, 143);
-	color: #ffffff;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}</string>
-                        </property>
-                        <property name="text">
-                         <string>RePack &gt;</string>
-                        </property>
-                        <property name="icon">
-                         <iconset resource="resources.qrc">
-                          <normaloff>:/icons/icons/briefcase.svg</normaloff>:/icons/icons/briefcase.svg</iconset>
-                        </property>
-                        <property name="iconSize">
-                         <size>
-                          <width>24</width>
-                          <height>24</height>
-                         </size>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
                        <spacer name="verticalSpacer_10">
                         <property name="orientation">
                          <enum>Qt::Vertical</enum>
@@ -943,6 +874,12 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_copy_to_target">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
                         <property name="font">
                          <font>
                           <pointsize>9</pointsize>
@@ -1002,10 +939,22 @@ QPushButton::pressed
                          <iconset resource="resources.qrc">
                           <normaloff>:/icons/icons/arrow-right.svg</normaloff>:/icons/icons/arrow-right.svg</iconset>
                         </property>
+                        <property name="iconSize">
+                         <size>
+                          <width>20</width>
+                          <height>20</height>
+                         </size>
+                        </property>
                        </widget>
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_copy_to_source">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
                         <property name="font">
                          <font>
                           <pointsize>9</pointsize>
@@ -1063,6 +1012,12 @@ QPushButton::pressed
                         <property name="icon">
                          <iconset resource="resources.qrc">
                           <normaloff>:/icons/icons/arrow-left.svg</normaloff>:/icons/icons/arrow-left.svg</iconset>
+                        </property>
+                        <property name="iconSize">
+                         <size>
+                          <width>20</width>
+                          <height>20</height>
+                         </size>
                         </property>
                        </widget>
                       </item>
@@ -1081,6 +1036,12 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_move_to_target">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
                         <property name="font">
                          <font>
                           <pointsize>9</pointsize>
@@ -1139,10 +1100,22 @@ QPushButton::pressed
                          <iconset resource="resources.qrc">
                           <normaloff>:/icons/icons/arrow-right.svg</normaloff>:/icons/icons/arrow-right.svg</iconset>
                         </property>
+                        <property name="iconSize">
+                         <size>
+                          <width>20</width>
+                          <height>20</height>
+                         </size>
+                        </property>
                        </widget>
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_move_to_source">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
                         <property name="font">
                          <font>
                           <pointsize>9</pointsize>
@@ -1202,6 +1175,12 @@ QPushButton::pressed
                          <iconset resource="resources.qrc">
                           <normaloff>:/icons/icons/arrow-left.svg</normaloff>:/icons/icons/arrow-left.svg</iconset>
                         </property>
+                        <property name="iconSize">
+                         <size>
+                          <width>20</width>
+                          <height>20</height>
+                         </size>
+                        </property>
                        </widget>
                       </item>
                       <item>
@@ -1218,7 +1197,13 @@ QPushButton::pressed
                        </spacer>
                       </item>
                       <item>
-                       <widget class="QPushButton" name="but_auto_tag">
+                       <widget class="QPushButton" name="butt_repackage_source">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
                         <property name="font">
                          <font>
                           <pointsize>9</pointsize>
@@ -1272,11 +1257,92 @@ QPushButton::pressed
 }</string>
                         </property>
                         <property name="text">
-                         <string>Autotag</string>
+                         <string>RePack</string>
                         </property>
                         <property name="icon">
                          <iconset resource="resources.qrc">
-                          <normaloff>:/icons/icons/globe.svg</normaloff>:/icons/icons/globe.svg</iconset>
+                          <normaloff>:/icons/icons/arrow-right.svg</normaloff>:/icons/icons/arrow-right.svg</iconset>
+                        </property>
+                        <property name="iconSize">
+                         <size>
+                          <width>20</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="butt_repackage_target">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
+                        <property name="font">
+                         <font>
+                          <pointsize>9</pointsize>
+                         </font>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
+                        <property name="text">
+                         <string>RePack</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="resources.qrc">
+                          <normaloff>:/icons/icons/arrow-left.svg</normaloff>:/icons/icons/arrow-left.svg</iconset>
+                        </property>
+                        <property name="iconSize">
+                         <size>
+                          <width>20</width>
+                          <height>20</height>
+                         </size>
                         </property>
                        </widget>
                       </item>
@@ -1295,6 +1361,12 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_restore">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
                         <property name="font">
                          <font>
                           <pointsize>9</pointsize>
@@ -1377,6 +1449,12 @@ QPushButton::pressed
                       </item>
                       <item>
                        <widget class="QPushButton" name="but_exit_2">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
                         <property name="font">
                          <font>
                           <pointsize>9</pointsize>
@@ -3721,7 +3799,7 @@ QPushButton::pressed
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>2106</width>
+     <width>2122</width>
      <height>21</height>
     </rect>
    </property>
