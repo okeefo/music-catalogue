@@ -1,4 +1,4 @@
-import re, os, sys, subprocess
+import re, os, sys, subprocess, tempfile, shutil
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from typing import List, Tuple
@@ -8,13 +8,13 @@ from log_config import get_logger
 from auto_tag import get_discogs_client, ReleaseFacade, auto_tag_files
 
 from PyQt5.QtWidgets import QApplication
-from pyloudnorm import Meter
-from subprocess import CompletedProcess
+
 
 from config_manager import ConfigurationManager
 
 config = ConfigurationManager()
 config.add_to_system_path("utils\\sox")
+config.add_to_system_path("utils\\soundstretch")
 logger = get_logger(__name__)
 __DISCOGS_CLIENT = get_discogs_client()
 
@@ -82,7 +82,7 @@ def __split_audio_file(fq_audio_file: str, root_dir: str, release: ReleaseFacade
     return file_list
 
 
-def __reduce_speed_of_file_from_45_33rpm(fq_file_name: str, release_id:str) -> str:
+def __reduce_speed_of_file_from_45_33rpm(source_file: str, target_file:str, release_id:str) -> Tuple[bool, str]:
     """Reduce the speed of the audio file
     
     The speed increase from 33.3 RPM to 45 RPM is approximately 35.1%. This is calculated as follows:
@@ -98,36 +98,15 @@ def __reduce_speed_of_file_from_45_33rpm(fq_file_name: str, release_id:str) -> s
     The slight difference between 26.0% and 25.926% is due to rounding errors in the calculations.
     
     """
-    logger.info(f"{release_id} - Reducing speed of file from 45 RPM to 33 RPM")
-    
-    new_file_name = fq_file_name.replace(".wav", "_slow.wav")
+    logger.info(f"{release_id} - Reducing speed of file from 45 RPM to 33 RPM, source file is: {source_file}, target file is: {target_file}")
 
-    if os.path.exists(new_file_name):
-        logger.info(f"{release_id} - File has already been processed:  Skipping...")
-        return new_file_name
-    
-    command = ['.\\soundstretch-v2.3.2\\soundstretch.exe', fq_file_name, new_file_name, '-rate=-25.926']   
-    __execute_system_command(command, "reduce speed of file", release_id)
-    
-    logger.info(f"{release_id} - Reducing speed of file completed: new file is: {new_file_name}")
-
-def __execute_system_command(command: List, action: str, release_id:str) -> Tuple[bool, str]:
-    logger.info(f"{release_id} - {action} - {command}")
-    try:
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            logger.error(f"{release_id} - {action} - Command failed with exit code {result.returncode}")
-            logger.error(f"{release_id} - {action} - Error was: {result.stderr}")
-            return False, f"Command failed with exit code {result.returncode}. Error was: {result.stderr}"
-        else:
-            logger.info(f"{release_id} - {action} - succeeded with exit code {result.returncode}")
-            logger.info(f"{release_id} - {action} - Output was: {result.stdout}")
-            return True, f"Command succeeded with exit code {result.returncode}. Output was: {result.stdout}"
-    except Exception as e:
-        logger.error(f"{release_id} - An error occurred while running the command: {e}")
-        return False, f"An error occurred while running the command: {e}"
+    command_mask = ['soundstretch.exe', '{source}', '{target}', '-rate=-25.926']
+    return __execute_and_rename(source_file, target_file, command_mask, release_id)
+     
 
 def __amplify_file(source_file: str, target_file:str, release_id:str) -> Tuple[bool, str]:
+    """ Amplify the audio file to the correct volume level. To do this, it calculates the gain value and then applies it to the audio file."""
+    
     logger.info(f"{release_id} - Amplifying the audio: calculating gain value")
 
     gain_value = __get_volume(source_file)
@@ -135,17 +114,29 @@ def __amplify_file(source_file: str, target_file:str, release_id:str) -> Tuple[b
         logger.info(f"{release_id} - Audio is already at the correct volume:  Skipping...")
         return True, "No Action Taken"
 
-    command=['sox.exe', '-v', f'{gain_value}', f'{source_file}', f'{target_file}']
+    command=['sox.exe', '-v', f'{gain_value}', '{source}', '{target}']
+    return __execute_and_rename(source_file, target_file, command, release_id)
 
-    logger.info(f"{release_id} - Amplifying the audio by {gain_value} dB - {command}")
-    success, message = __execute_system_command(command, "amplifying audio", release_id)
+def __execute_and_rename(source_file: str, target_file: str, command_mask: list, release_id: str) -> Tuple[bool, str]:
+    temp_fd, temp_file = tempfile.mkstemp(suffix=".wav", dir=os.path.dirname(source_file))  # Add dir parameter
+
+    # Replace placeholders in the command mask with the source file and temporary file
+    command = [arg.replace('{source}', source_file).replace('{target}', temp_file) for arg in command_mask]
+
+    logger.info(f"{release_id} - Executing command: {command}")
+    success, message = __execute_system_command(command, "processing audio", release_id)
 
     if not success:
         return False, message
-    
-    logger.info(f"{release_id} - Amplifying sound completed: target file is: {target_file}")
-    return True, f"{target_file}"
 
+    os.close(temp_fd)  # Close the file descriptor before renaming the file
+
+    if source_file == target_file:
+        os.remove(source_file)
+
+    os.rename(temp_file, target_file)
+    logger.info(f"{release_id} - Processing completed: target file is: {target_file}")
+    return True, f"{target_file}"
 
 def __get_volume(file_path: str) -> float:
     result = subprocess.run(['sox', file_path, '-n', 'stat'], capture_output=True, text=True)
@@ -200,7 +191,21 @@ def __get_release_id(file_path) -> str:
     else:
         logger.error(f"Could not find release id in file name: {file_path}")
         return None
-
+def __execute_system_command(command: List, action: str, release_id:str) -> Tuple[bool, str]:
+    logger.info(f"{release_id} - {action} - {command}")
+    try:
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            logger.error(f"{release_id} - {action} - Command failed with exit code {result.returncode}")
+            logger.error(f"{release_id} - {action} - Error was: {result.stderr}")
+            return False, f"Command failed with exit code {result.returncode}. Error was: {result.stderr}"
+        else:
+            logger.info(f"{release_id} - {action} - succeeded with exit code {result.returncode}")
+            logger.info(f"{release_id} - {action} - Output was: {result.stdout}")
+            return True, f"Command succeeded with exit code {result.returncode}. Output was: {result.stdout}"
+    except Exception as e:
+        logger.error(f"{release_id} - An error occurred while running the command: {e}")
+        return False, f"An error occurred while running the command: {e}"
 
 def __normalise_file_path(fq_file_path: str) -> Tuple[str, str, str]:
     """Normalise the file path"""
@@ -214,5 +219,6 @@ if __name__ == "__main__":
     app = QApplication([])  # Create QApplication instance first
     
     #batch_process_file("e:\\Audacity Projects\\a20_HV_Regen_2_33rpm_[r22685345].wav")
-    __amplify_file("e:\\Audacity Projects\\a20_test.wav", "e:\\Audacity Projects\\a20_test_amp.wav", "r22685345")
+    __reduce_speed_of_file_from_45_33rpm("e:\\Audacity Projects\\a20_HV_Regen_2_33rpm_[r22685345].wav", "e:\\Audacity Projects\\a20_test.wav", "r22685345")
+    __reduce_speed_of_file_from_45_33rpm("e:\\Audacity Projects\\a20_test.wav", "e:\\Audacity Projects\\a20_test_amped.wav", "r22685345")
     print("Done")

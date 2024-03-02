@@ -62,7 +62,7 @@ PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not k
 
 # TODO: process file split
 # DONE process file increase volume
-# TODO: process file chaneg tempo
+# DONE: process file chaneg tempo
 # TODO: Add button to run the works  - speed, split, tag, repackage
 # TODO: and menu options run the owrks or selected file/files - wav files only
 # TODO: fix Paste items.
