@@ -164,6 +164,7 @@ class TreeViewContextMenuHandler(QWidget):
         number_of_selected_items = len(tree_view.selectionModel().selectedRows())
         is_dir = number_of_selected_items == 1 and os.path.isdir(file_path)
         is_audio_file = number_of_selected_items == 1 and self.audio_tag_helper.isSupportedAudioFile(file_path)
+        has_clipboard = len(self.clipboard) > 0
 
         self.__add_actions_to_menu(menu, "info", number_of_selected_items)
         self.__add_actions_to_menu(menu, "new_folder", number_of_selected_items)
@@ -175,7 +176,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.__add_actions_to_menu(menu, "repackage", number_of_selected_items, is_dir)
         self.__add_actions_to_menu(menu, "move", number_of_selected_items)
         self.__add_actions_to_menu(menu, "copy", number_of_selected_items)
-        self.__add_actions_to_menu(menu, "paste", number_of_selected_items)
+        self.__add_actions_to_menu(menu, "paste", number_of_selected_items, has_clipboard)
         self.__add_actions_to_menu(menu, "delete", number_of_selected_items)
 
         return menu
@@ -412,3 +413,6 @@ class TreeViewContextMenuHandler(QWidget):
         # highlight the new folder and set it to edit mode
         tree_view.edit(tree_view.model().index(os.path.join(root, "New Folder")))
         logger.info("Menu action -> new folder : done")
+
+if __name__ == "__main__":
+   print("This is the wrong file to run. Run main_window.py instead")
