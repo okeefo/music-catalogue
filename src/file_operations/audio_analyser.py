@@ -20,78 +20,119 @@ logger = get_logger(__name__)
 __DISCOGS_CLIENT = get_discogs_client()
 
 
-def batch_process_file(fq_file_path: str) -> None:
+def batch_process_file(fq_files: List[str]) -> None:
 
-    fq_file_path, root_dir, file_name = __normalise_file_path(fq_file_path)
-    logger.info(f"Processing file: {file_name}")
+    for fq_file_path in fq_files:
+        fq_file_path, root_dir, file_name = __normalise_file_path(fq_file_path)
+        logger.info(f"Processing file: {file_name}")
 
-    release_id = __get_release_id(fq_file_path)
-    if release_id is None:
-        return
+        release_id = __get_release_id(fq_file_path)
+        if release_id is None:
+            continue
 
-    release = __get_release(release_id)
-    if release is None:
-        return
+        release = __get_release(release_id)
+        if release is None:
+            continue
+        
+        source_file = fq_file_path
+        target_file = __get_temp_file(fq_file_path)
 
-    source_file = fq_file_path
-    target_file = __get_temp_file(fq_file_path)
+        # Reduce the speed of the file if it is 33rpm
+        result, source_file  = __reduce_recording_speed(source_file, target_file, release)
+        if(not result):
+            continue
 
-    # Reduce the speed of the file if it is 33rpm
-    speed = __get_recorded_speed(fq_file_path, release)
-    if speed == "33":
-        result, message = __reduce_speed_of_file_from_45_33rpm(source_file, target_file, release_id)
+        # Amplify the file
+        result, message = __amplify_file(source_file, target_file, release_id)
         if not result:
-            logger.error(f"{release_id} - Could not reduce speed of file: {message}")
-            return
-        source_file = target_file
+            continue
+
+        os.remove(fq_file_path)
+        os.replace(target_file, fq_file_path)
+        
+        tracks = __split_audio_file(fq_file_path, root_dir, release)
+
+        # Tag the files and rename them
+        auto_tag_files(tracks, root_dir)
+
+        logger.info(f"{release.get_id()} - Processing complete for file: {file_name}")
+
+def __reduce_recording_speed(source_file: str, target_file: str, release: ReleaseFacade) -> Tuple[bool, str]:
+    
+    speed = __get_recorded_speed(source_file, release)
+    if speed == "33":
+        result, message = __reduce_speed_of_file_from_45_33rpm(source_file, target_file, release.get_id())
+        return (True, target_file) if result else (result, message)
     else:
-        logger.info(f"{release_id} - NO identifiers to change speed:  Skipping...")
-
-    # Amplify the file
-    result, message = __amplify_file(source_file, target_file, release_id)
-    if not result:
-        logger.error(f"{release_id} - Could not amplify file: {message}")
-        return
-
-
-    # Split the file into tracks
-    # tracks = __split_audio_file(target_file, root_dir, release)
-
-    # Tag the files and rename them
-    # auto_tag_files(split_audio_file, root_dir)
-
-    logger.info(f"{release.get_id()} - Processing complete for file: {file_name}")
+        logger.info(f"{release.get_id()} - NO identifiers to change speed:  Skipping...")
+        return True, source_file
+        
 
 
 def __split_audio_file(fq_audio_file: str, root_dir: str, release: ReleaseFacade) -> List[str]:
-
+    """ Split the audio file into individual tracks based on the number of tracks in the release.  
+        If the number of tracks in the release does not match the number of tracks in the audio file, adjust the silence threshold and try again.  
+        If the number of tracks in the release does not match the number of tracks in the audio file after X attempts, exit the loop.
+        Implemented a binary search approach here to find the correct silence threshold."""    
+    
     logger.info(f"{release.get_id()} - Comparing number of tracks in release and audio file:")
+
+    number_of_tracks = release.get_number_of_tracks()
+    #TODO:  set these number if the configuration manager
+    low_thresh = -55  # Initial low threshold
+    high_thresh = -35  # Initial high threshold
+    max_attempts = 8  # max number of attempts
+
+    for _ in range(max_attempts):
+        silence_thresh = (low_thresh + high_thresh) / 2  # Midpoint of current range
+        chunks = __execute_split(fq_audio_file, silence_thresh)
+
+        number_of_chunks = len(chunks)
+        if number_of_tracks is not None and number_of_chunks == number_of_tracks:
+            return __split(release.get_id(), fq_audio_file, chunks, silence_thresh)  # Exit the loop if the number of chunks matches the number of tracks
+
+        # Adjust the silence threshold based on the number of chunks
+        if number_of_chunks < number_of_tracks:
+            low_thresh = silence_thresh  # Adjust the low threshold if there are too few chunks
+        else:
+            high_thresh = silence_thresh  # Adjust the high threshold if there are too many chunks
+
+        logger.error(
+            f"{release.get_id()} - Number of tracks in release {number_of_tracks} does not match number found in audio file {number_of_chunks}.  Adjusting silence threshold to {silence_thresh}..."
+        )
+
+    logger.error(f"{release.get_id()} - Could not split audio file into tracks after maximum attempts.  Exiting...")
+    return []
+
+
+def __split(release_id: str, fq_audio_file: str, chunks: List[AudioSegment], silence_thresh: int) -> List[str]:
+    number_of_chunks = len(chunks)
+    filename = fq_audio_file.split("\\")[-1]
+    logger.info(f"{release_id} - Number of tracks in release {number_of_chunks} matches number of tracks in audio file {filename},  silence threshold {silence_thresh}")
+    logger.info(f"{release_id} - Splitting audio file into {number_of_chunks} tracks")
+
+    file_list = []
+    for track_no, chunk in enumerate(chunks, start=1):
+        track_name = fq_audio_file.replace(".wav", f"_{track_no}.wav")
+        logger.info(f"{release_id} - writing track {track_name} to disk.")
+        chunk.export(track_name, format="wav")
+        file_list.append(track_name)
+
+    return file_list
+
+
+def __execute_split(fq_audio_file: str, silence_thresh: int) -> List[AudioSegment]:
+    """Split the audio file into individual tracks"""
+
     audio = AudioSegment.from_wav(fq_audio_file)
-    chunks = split_on_silence(audio, min_silence_len=2000, silence_thresh=-45, keep_silence=1000, seek_step=10)
+    chunks = split_on_silence(audio, min_silence_len=2000, silence_thresh=silence_thresh, keep_silence=True, seek_step=10)
     cleaned_chunks = []
     for chunk in chunks:
         estimated_size = chunk.frame_count() * 2 / 1024
         if estimated_size >= 550:
             cleaned_chunks.append(chunk)
 
-    number_of_tracks = release.get_number_of_tracks()
-    number_of_chunks = len(cleaned_chunks)
-    if number_of_tracks is not None and number_of_chunks != number_of_tracks:
-        logger.error(f"{release.get_id()} - Number of tracks in release {release.get_number_of_tracks()} does not match number of tracks in audio file {number_of_chunks}.  Skipping...")
-        return []
-
-    logger.info(f"{release.get_id()} - Number of tracks in release {release.get_number_of_tracks()} matches number of tracks in audio file {fq_audio_file}")
-    logger.info(f"{release.get_id()} - Splitting audio file into {number_of_chunks} tracks")
-
-    file_list = []
-    for track_no, chunk in enumerate(cleaned_chunks, start=1):
-
-        track_name = fq_audio_file.replace(".wav", f"_{track_no}.wav")
-        logger.info(f"{release.get_id()} - writing track {track_name} to disk.")
-        chunk.export(track_name, format="wav")
-        file_list.append(track_name)
-
-    return file_list
+    return cleaned_chunks
 
 
 def __reduce_speed_of_file_from_45_33rpm(source_file: str, target_file: str, release_id: str) -> Tuple[bool, str]:
@@ -164,7 +205,7 @@ def __get_volume(file_path: str) -> float:
 def __get_temp_file(file_path: str) -> str:
     """Get a temporary file to use as the target file for processing.  This is to avoid overwriting the source file."""
     temp_fd, temp_file = tempfile.mkstemp(suffix=".wav", dir=os.path.dirname(file_path))
-    os.close(temp_fd) 
+    os.close(temp_fd)
     return temp_file
 
 
@@ -223,7 +264,7 @@ def __execute_system_command(command: List, action: str, release_id: str) -> Tup
             logger.info(f"{release_id} - {action} - Output was: {result.stdout}")
             return True, f"Command succeeded with exit code {result.returncode}. Output was: {result.stdout}"
     except Exception as e:
-        logger.error(f"{release_id} - An error occurred while running the command: {e}")
+        logger.error(f"{release_id} - {action} - An error occurred while running the command: {e}")
         return False, f"An error occurred while running the command: {e}"
 
 
@@ -241,5 +282,5 @@ if __name__ == "__main__":
     # batch_process_file("e:\\Audacity Projects\\a20_HV_Regen_2_33rpm_[r22685345].wav")
     # __reduce_speed_of_file_from_45_33rpm("e:\\Audacity Projects\\a20_HV_Regen_2_33rpm_[r22685345].wav", "e:\\Audacity Projects\\a20_test.wav", "r22685345")
     # __reduce_speed_of_file_from_45_33rpm("e:\\Audacity Projects\\a20_test.wav", "e:\\Audacity Projects\\a20_test_amped.wav", "r22685345")
-    batch_process_file("e:\\Audacity Projects\\a20_HV_Regen_33rpm_[r22685345].wav")
+    batch_process_file(["e:\\Audacity Projects\\a20_HV_Regen_33rpm_[r22685345].wav","e:\\Audacity Projects\\a19_LightsOver_[r23187587].wav"])
     print("Done")

@@ -60,11 +60,8 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
 
-# TODO: process file split
-# DONE process file increase volume
-# DONE: process file chaneg tempo
-# TODO: Add button to run the works  - speed, split, tag, repackage
-# TODO: and menu options run the owrks or selected file/files - wav files only
+# TODO: Add button to run the works - speed, split, tag, repackage
+# TODO: and menu options run the works or selected file/files - wav files only
 # TODO: fix Paste items.
 # TODO: fix the artwork display
 # TODO: complete settings management - create a config manager
