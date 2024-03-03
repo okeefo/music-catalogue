@@ -60,9 +60,7 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
 
-# TODO: Add button to run the works - speed, split, tag, repackage
 # TODO: and menu options run the works or selected file/files - wav files only
-# TODO: fix Paste items.
 # TODO: fix the artwork display
 # TODO: complete settings management - create a config manager
 
@@ -653,6 +651,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
 
+    import sys
     try:
         # Create an instance of MainWindow
         main_window = MainWindow(app)
@@ -667,3 +666,8 @@ if __name__ == "__main__":
         logger.exception("Unhandled exception: %s", e)
         logger.error(traceback.format_exc())
         raise
+    
+    finally:
+        logger.info("Application exited")
+        app.quit()
+        sys.exit(0)
