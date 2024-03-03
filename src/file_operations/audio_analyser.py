@@ -1,4 +1,5 @@
 import re, os, sys, subprocess, tempfile, shutil
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from typing import List, Tuple
@@ -31,22 +32,33 @@ def batch_process_file(fq_file_path: str) -> None:
     release = __get_release(release_id)
     if release is None:
         return
-    
+
+    source_file = fq_file_path
+    target_file = __get_temp_file(fq_file_path)
+
     # Reduce the speed of the file if it is 33rpm
     speed = __get_recorded_speed(fq_file_path, release)
     if speed == "33":
-        fq_file_path = __reduce_speed_of_file_from_45_33rpm(fq_file_path, release_id)
+        result, message = __reduce_speed_of_file_from_45_33rpm(source_file, target_file, release_id)
+        if not result:
+            logger.error(f"{release_id} - Could not reduce speed of file: {message}")
+            return
+        source_file = target_file
     else:
         logger.info(f"{release_id} - NO identifiers to change speed:  Skipping...")
 
     # Amplify the file
-    fq_file_path = __amplify_file(fq_file_path, release_id)
+    result, message = __amplify_file(source_file, target_file, release_id)
+    if not result:
+        logger.error(f"{release_id} - Could not amplify file: {message}")
+        return
+
 
     # Split the file into tracks
-    split_audio_file = __split_audio_file(fq_file_path, root_dir, release)
-    
+    # tracks = __split_audio_file(target_file, root_dir, release)
+
     # Tag the files and rename them
-    auto_tag_files(split_audio_file, root_dir)
+    # auto_tag_files(split_audio_file, root_dir)
 
     logger.info(f"{release.get_id()} - Processing complete for file: {file_name}")
 
@@ -82,31 +94,31 @@ def __split_audio_file(fq_audio_file: str, root_dir: str, release: ReleaseFacade
     return file_list
 
 
-def __reduce_speed_of_file_from_45_33rpm(source_file: str, target_file:str, release_id:str) -> Tuple[bool, str]:
+def __reduce_speed_of_file_from_45_33rpm(source_file: str, target_file: str, release_id: str) -> Tuple[bool, str]:
     """Reduce the speed of the audio file
-    
+
     The speed increase from 33.3 RPM to 45 RPM is approximately 35.1%. This is calculated as follows:
     (45 - 33.3) / 33.3 * 100 = 35.1%
 
-    To revert the speed back to the original, you need to decrease the speed by the same factor. 
-    However, you need to decrease the speed relative to the increased speed (45 RPM), not the original speed (33.3 RPM). 
+    To revert the speed back to the original, you need to decrease the speed by the same factor.
+    However, you need to decrease the speed relative to the increased speed (45 RPM), not the original speed (33.3 RPM).
     This is calculated as follows:
     100 - (100 / (1 + 35.1 / 100)) = 26.0%
-    
-    So, a decrease of 26.0% from the increased speed (45 RPM) will bring you back to the original speed (33.3 RPM). 
-    This is why I use -rate=-25.926 
+
+    So, a decrease of 26.0% from the increased speed (45 RPM) will bring you back to the original speed (33.3 RPM).
+    This is why I use -rate=-25.926
     The slight difference between 26.0% and 25.926% is due to rounding errors in the calculations.
-    
+
     """
     logger.info(f"{release_id} - Reducing speed of file from 45 RPM to 33 RPM, source file is: {source_file}, target file is: {target_file}")
 
-    command_mask = ['soundstretch.exe', '{source}', '{target}', '-rate=-25.926']
-    return __execute_and_rename(source_file, target_file, command_mask, release_id)
-     
+    command_mask = ["soundstretch.exe", "{source}", "{target}", "-rate=-25.926"]
+    return __execute_and_rename("Slowing", source_file, target_file, command_mask, release_id)
 
-def __amplify_file(source_file: str, target_file:str, release_id:str) -> Tuple[bool, str]:
-    """ Amplify the audio file to the correct volume level. To do this, it calculates the gain value and then applies it to the audio file."""
-    
+
+def __amplify_file(source_file: str, target_file: str, release_id: str) -> Tuple[bool, str]:
+    """Amplify the audio file to the correct volume level. To do this, it calculates the gain value and then applies it to the audio file."""
+
     logger.info(f"{release_id} - Amplifying the audio: calculating gain value")
 
     gain_value = __get_volume(source_file)
@@ -114,41 +126,46 @@ def __amplify_file(source_file: str, target_file:str, release_id:str) -> Tuple[b
         logger.info(f"{release_id} - Audio is already at the correct volume:  Skipping...")
         return True, "No Action Taken"
 
-    command=['sox.exe', '-v', f'{gain_value}', '{source}', '{target}']
-    return __execute_and_rename(source_file, target_file, command, release_id)
+    command = ["sox.exe", "-v", f"{gain_value}", "{source}", "{target}"]
+    return __execute_and_rename("Amplifying", source_file, target_file, command, release_id)
 
-def __execute_and_rename(source_file: str, target_file: str, command_mask: list, release_id: str) -> Tuple[bool, str]:
-    temp_fd, temp_file = tempfile.mkstemp(suffix=".wav", dir=os.path.dirname(source_file))  # Add dir parameter
+
+def __execute_and_rename(action: str, source_file: str, target_file: str, command_mask: list, release_id: str) -> Tuple[bool, str]:
+    """Execute the command and rename the file.  Use a temporary file to avoid overwriting the source file."""
+
+    temp_file = __get_temp_file(source_file)
 
     # Replace placeholders in the command mask with the source file and temporary file
-    command = [arg.replace('{source}', source_file).replace('{target}', temp_file) for arg in command_mask]
+    command = [arg.replace("{source}", source_file).replace("{target}", temp_file) for arg in command_mask]
 
-    logger.info(f"{release_id} - Executing command: {command}")
-    success, message = __execute_system_command(command, "processing audio", release_id)
+    logger.info(f"{release_id} - {action}:  Executing command: {command}")
+    success, message = __execute_system_command(command, action, release_id)
 
     if not success:
         return False, message
 
-    os.close(temp_fd)  # Close the file descriptor before renaming the file
-
     if source_file == target_file:
         os.remove(source_file)
 
-    os.rename(temp_file, target_file)
-    logger.info(f"{release_id} - Processing completed: target file is: {target_file}")
+    os.replace(temp_file, target_file)
+    logger.info(f"{release_id} - {action}: completed, target file is: {target_file}")
     return True, f"{target_file}"
 
+
 def __get_volume(file_path: str) -> float:
-    result = subprocess.run(['sox', file_path, '-n', 'stat'], capture_output=True, text=True)
+    result = subprocess.run(["sox", file_path, "-n", "stat"], capture_output=True, text=True)
     lines = result.stderr.splitlines()
     return next(
-        (
-            float(line.split(':')[-1].strip())
-            for line in lines
-            if 'Volume adjustment:' in line
-        ),
+        (float(line.split(":")[-1].strip()) for line in lines if "Volume adjustment:" in line),
         None,
     )
+
+
+def __get_temp_file(file_path: str) -> str:
+    """Get a temporary file to use as the target file for processing.  This is to avoid overwriting the source file."""
+    temp_fd, temp_file = tempfile.mkstemp(suffix=".wav", dir=os.path.dirname(file_path))
+    os.close(temp_fd) 
+    return temp_file
 
 
 def __get_recorded_speed(filename: str, release: ReleaseFacade) -> str:
@@ -191,7 +208,9 @@ def __get_release_id(file_path) -> str:
     else:
         logger.error(f"Could not find release id in file name: {file_path}")
         return None
-def __execute_system_command(command: List, action: str, release_id:str) -> Tuple[bool, str]:
+
+
+def __execute_system_command(command: List, action: str, release_id: str) -> Tuple[bool, str]:
     logger.info(f"{release_id} - {action} - {command}")
     try:
         result = subprocess.run(command, capture_output=True, text=True)
@@ -207,6 +226,7 @@ def __execute_system_command(command: List, action: str, release_id:str) -> Tupl
         logger.error(f"{release_id} - An error occurred while running the command: {e}")
         return False, f"An error occurred while running the command: {e}"
 
+
 def __normalise_file_path(fq_file_path: str) -> Tuple[str, str, str]:
     """Normalise the file path"""
     fq_file_path = os.path.normpath(fq_file_path)
@@ -217,8 +237,9 @@ def __normalise_file_path(fq_file_path: str) -> Tuple[str, str, str]:
 if __name__ == "__main__":
 
     app = QApplication([])  # Create QApplication instance first
-    
-    #batch_process_file("e:\\Audacity Projects\\a20_HV_Regen_2_33rpm_[r22685345].wav")
-    __reduce_speed_of_file_from_45_33rpm("e:\\Audacity Projects\\a20_HV_Regen_2_33rpm_[r22685345].wav", "e:\\Audacity Projects\\a20_test.wav", "r22685345")
-    __reduce_speed_of_file_from_45_33rpm("e:\\Audacity Projects\\a20_test.wav", "e:\\Audacity Projects\\a20_test_amped.wav", "r22685345")
+
+    # batch_process_file("e:\\Audacity Projects\\a20_HV_Regen_2_33rpm_[r22685345].wav")
+    # __reduce_speed_of_file_from_45_33rpm("e:\\Audacity Projects\\a20_HV_Regen_2_33rpm_[r22685345].wav", "e:\\Audacity Projects\\a20_test.wav", "r22685345")
+    # __reduce_speed_of_file_from_45_33rpm("e:\\Audacity Projects\\a20_test.wav", "e:\\Audacity Projects\\a20_test_amped.wav", "r22685345")
+    batch_process_file("e:\\Audacity Projects\\a20_HV_Regen_33rpm_[r22685345].wav")
     print("Done")
