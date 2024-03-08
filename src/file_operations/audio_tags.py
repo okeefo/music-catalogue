@@ -11,6 +11,15 @@ logger = get_logger(__name__)
 
 # The AudioTags class is used to manage and manipulate audio tags.
 class AudioTagHelper:
+    
+    def __init__(self):
+        pass
+        
+    def get_tags_and_cover_art(self, absolute_path_filename: str) -> tuple[dict,list[APIC]]:
+        
+        tags = self.get_tags(absolute_path_filename)
+        cover__art = self.get_cover_art(absolute_path_filename)
+        return tags, cover__art
 
     def get_tags(self, absolute_path_filename: str) -> dict:
         if not self.isSupportedAudioFile(absolute_path_filename):
@@ -33,6 +42,19 @@ class AudioTagHelper:
 
         logger.info(f"Found tags in file: '{absolute_path_filename}' tags:'{tags}'")
         return tags
+    
+    # Given a collection of tags and a fully qualified filename, write the tags to the file
+    def write_tags(self, absolute_path_filename: str, tags: dict) -> None:
+        if not self.isSupportedAudioFile(absolute_path_filename):
+            return
+
+        try:
+            file = taglib.File(absolute_path_filename)
+            file.tags = tags
+            file.save()
+        except Exception:
+            logger.exception(f"Could not write tags to file: '{absolute_path_filename}'")
+            
 
     def isSupportedAudioFile(self, absolute_path_filename: str) -> bool:
         path = Path(absolute_path_filename)
@@ -53,14 +75,39 @@ class AudioTagHelper:
         path = Path(absolute_path_filename)
 
         if path.suffix == ".wav":
-            filedata = WAVE(absolute_path_filename)
-            return [] if filedata.tags is None else filedata.tags.getall("APIC")
-        else:
             try:
-                filedata = ID3(absolute_path_filename)
-                return filedata.getall("APIC")
-            except ID3NoHeaderError:
+                filedata = WAVE(absolute_path_filename)
+                return [] if filedata.tags is None else filedata.tags.getall("APIC")
+            except Exception:
                 return []
+        try:
+            filedata = ID3(absolute_path_filename)
+            return filedata.getall("APIC")
+        except ID3NoHeaderError:
+            return []
+        
+    # Given a collection of cover art, a List[APIC] data and a fully qualified filename, write the cover art to the file, using mutagen
+    def write_cover_art(self, absolute_path_filename: str, cover_art: list[APIC]) -> None:
+        
+        if not self.isSupportedAudioFile(absolute_path_filename):
+            return
+        
+        path = Path(absolute_path_filename)
+
+        if path.suffix == ".wav":
+            filedata = WAVE(absolute_path_filename)
+            for art in cover_art:
+                filedata.tags.add(art)
+            filedata.save()
+        
+        try:
+            file = ID3(absolute_path_filename)
+            for art in cover_art:
+                file.add(art)
+            file.save()
+        except Exception:
+            logger.exception(f"Could not write cover art to file: '{absolute_path_filename}'")
+
 
     TITLE = "TITLE"
     ARTIST = "ARTIST"

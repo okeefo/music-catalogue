@@ -15,11 +15,13 @@ from file_operations.repackage_dir import repackage_dir_by_label, repackage_file
 from file_operations.files_system_info import display_results
 from file_operations.auto_tag import auto_tag_files, tag_filename
 from file_operations.audio_tags import AudioTagHelper
+from file_operations.audio_processor import slowdown_files_45_33, amplify_files, split_files, auto_process_files, speed_up_files_33_45rpm
 
 import qt.resources_rcc
 
 # create logger
 from log_config import get_logger
+from tkinter import messagebox
 
 logger = get_logger(__name__)
 
@@ -32,7 +34,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.player = player
         self.update_status = update_status
         self.__setup_mp3tag_path()
-        self.__setup_menus()
+        self.__setup_menu_actions()
         self.__setup_vlc_path()
         self.__setup_action_map()
         self.__setup_display_menu_map()
@@ -53,6 +55,12 @@ class TreeViewContextMenuHandler(QWidget):
             "copy": {0: [self.copy_selected_across_action], "default": [self.copy_selected_across_action, self.copy_selected_to_clipboard_action]},
             "paste": {"override": [self.paste_items_to_root_action, self.paste_items_to_selected_action]},
             "delete": {0: [], "default": [self.delete_action]},
+            # submenu - Audio Processing - options
+            "batch": {"default": [self.process_batch_action]},
+            "slow_down": {0: [], "default": [self.process_slowdown_action]},
+            "speed_up": {0: [], "default": [self.process_speed_up_action]},
+            "amplify": {0: [], "default": [self.process_amplify_action]},
+            "split": {0: [], "default": [self.process_split_action]},
         }
 
     def __setup_action_map(self):
@@ -79,9 +87,14 @@ class TreeViewContextMenuHandler(QWidget):
             self.tag_filename_dir_action: lambda tree_view, dest_path: self.__do_tag_filename_dir(tree_view),
             self.tag_filename_selected_action: lambda tree_view, dest_path: self.__do_tag_filename_selection(tree_view),
             self.new_folder_action: lambda tree_view, dest_path: self.__do_new_folder(tree_view),
+            self.process_amplify_action: lambda tree_view, dest_path: self.__do_process_amplify(tree_view),
+            self.process_batch_action: lambda tree_view, dest_path: self.__do_process_batch(tree_view),
+            self.process_slowdown_action: lambda tree_view, dest_path: self.__do_process_slowdown(tree_view),
+            self.process_speed_up_action: lambda tree_view, dest_path: self.__do_process_speed_up(tree_view),
+            self.process_split_action: lambda tree_view, dest_path: self.__do_process_split(tree_view),
         }
 
-    def __setup_menus(self):
+    def __setup_menu_actions(self):
         """Set up the menus."""
 
         # define actions
@@ -107,8 +120,11 @@ class TreeViewContextMenuHandler(QWidget):
         self.tag_filename_selected_action = QAction(QtGui.QIcon(":/icons/icons/hash.svg"), "Tags -> Filename", self)
         self.tag_filename_dir_action = QAction(QtGui.QIcon(":/icons/icons/hash.svg"), "Tags -> Filename - All", self)
         self.new_folder_action = QAction(QtGui.QIcon(":/icons/icons/folder-plus.svg"), "New Folder", self)
-
-        # menu 1 - MP3 tag only
+        self.process_slowdown_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Slow 45rpm -> 33rpm", self)
+        self.process_speed_up_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Speed 33rpm -> 45rpm", self)
+        self.process_amplify_action = QAction(QtGui.QIcon(":/icons/icons/volume-2.svg"), "Amplify", self)
+        self.process_split_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Split multi track", self)
+        self.process_batch_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Batch Process (split,amp,slow,tag)", self)
 
     def __clear_clipboard(self) -> None:
         """Clear the clipboard. Returns: None"""
@@ -160,16 +176,28 @@ class TreeViewContextMenuHandler(QWidget):
     def get_menu_to_display(self, file_path: str, tree_view: QTreeView) -> QMenu:
         """Selects menu based on file type"""
         menu = QMenu()
+        submenu = QMenu("Process Audio", menu)
 
         number_of_selected_items = len(tree_view.selectionModel().selectedRows())
         is_dir = number_of_selected_items == 1 and os.path.isdir(file_path)
         is_audio_file = number_of_selected_items == 1 and self.audio_tag_helper.isSupportedAudioFile(file_path)
         has_clipboard = len(self.clipboard) > 0
 
+        self.__add_actions_to_menu(submenu, "batch", number_of_selected_items)
+        self.__add_actions_to_menu(submenu, "slow_down", number_of_selected_items)
+        self.__add_actions_to_menu(submenu, "speed_up", number_of_selected_items)
+        self.__add_actions_to_menu(submenu, "amplify", number_of_selected_items)
+        self.__add_actions_to_menu(submenu, "split", number_of_selected_items)
+
         self.__add_actions_to_menu(menu, "info", number_of_selected_items)
         self.__add_actions_to_menu(menu, "new_folder", number_of_selected_items)
         self.__add_actions_to_menu(menu, "rename", number_of_selected_items)
         self.__add_actions_to_menu(menu, "open_in", number_of_selected_items)
+
+        if len(submenu.actions()) > 0:
+            menu.addMenu(submenu)
+            menu.addSeparator()
+
         self.__add_actions_to_menu(menu, "tag", number_of_selected_items, is_dir)
         self.__add_actions_to_menu(menu, "tag_filename", number_of_selected_items, is_dir)
         self.__add_actions_to_menu(menu, "media_player", number_of_selected_items, is_audio_file)
@@ -290,6 +318,7 @@ class TreeViewContextMenuHandler(QWidget):
 
         logger.info(f"Menu action -> stop: Stopping media player: {self.player.mediaStatus()}")
         self.player.stop()
+        self.player.setMedia(QMediaContent())
         self.__log_media_update("Stopped", "stop")
 
     def __do_pause_media(self) -> None:
@@ -414,5 +443,46 @@ class TreeViewContextMenuHandler(QWidget):
         tree_view.edit(tree_view.model().index(os.path.join(root, "New Folder")))
         logger.info("Menu action -> new folder : done")
 
+    def __do_process_amplify(self, tree_view: MyTreeView) -> None:
+        """Amplifies the volume. Returns: None"""
+
+        logger.info("Menu action -> amplify")
+        amplify_files(tree_view.get_selected_files())
+        self.update_status("Amplifying selected items")
+        logger.info("Menu action -> amplify : done")
+
+    def __do_process_batch(self, tree_view: MyTreeView) -> None:
+        """Performs a batch action. Returns: None"""
+
+        logger.info("Menu action -> process batch")
+        auto_process_files(tree_view.get_selected_files())
+        self.update_status("Processing batch")
+        logger.info("Menu action -> process batch : done")
+
+    def __do_process_slowdown(self, tree_view: MyTreeView) -> None:
+        """Performs a slowdown action. Returns: None"""
+
+        logger.info("Menu action -> process slowdown")
+        slowdown_files_45_33(tree_view.get_selected_files())
+        self.update_status("Processing slowdown")
+        logger.info("Menu action -> process slowdown : done")
+
+    def __do_process_speed_up(self, tree_view: MyTreeView) -> None:
+        """Performs a speed_up action. Returns: None"""
+
+        logger.info("Menu action -> process speed up")
+        speed_up_files_33_45rpm(tree_view.get_selected_files())
+        self.update_status("Processing speed up")
+        logger.info("Menu action -> process speed up : done")
+
+    def __do_process_split(self, tree_view: MyTreeView) -> None:
+        """Performs a split action. Returns: None"""
+
+        logger.info("Menu action -> process split")
+        self.update_status("Processing split")
+        split_files(tree_view.get_selected_files())
+        logger.info("Menu action -> process split : done")
+
+
 if __name__ == "__main__":
-   print("This is the wrong file to run. Run main_window.py instead")
+    print("This is the wrong file to run. Run main_window.py instead")
