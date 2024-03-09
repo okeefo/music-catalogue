@@ -4,10 +4,9 @@ from pathlib import Path
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from discogs_client.models import Release
+from discogs_client.models import Release, Track
 from pydantic import BaseModel
-from typing import List
-from mutagen import File
+from typing import List, Optional
 from mutagen.wave import WAVE
 from mutagen.id3 import ID3, ID3NoHeaderError, WXXX, ID3, TIT2, APIC, TALB, TPE1, TPE2, TXXX, TDRC, TPOS, TCON, TPUB, TMED, TRCK, COMM
 from file_operations.audio_tags import AudioTagHelper, AUDIO_EXTENSIONS
@@ -61,11 +60,11 @@ class ReleaseFacade(BaseModel):
         return self.release.id
 
     def get_track_title(self, trackNumber: int) -> str:
-        return self.release.tracklist[trackNumber].title
+        return self.get_track_list()[trackNumber].title
 
     def get_artist(self, trackNumber: int) -> str:
-        if self.release.tracklist[trackNumber].artists:
-            return self.release.tracklist[trackNumber].artists[0].name
+        if self.get_track_list()[trackNumber].artists:
+            return self.get_track_list()[trackNumber].artists[0].name
         return self.release.data.get("artists_sort") or self.release.artists[0].name
 
     def get_album_artist(self) -> str:
@@ -78,7 +77,7 @@ class ReleaseFacade(BaseModel):
         return self.release.labels[0].data.get("catno")
 
     def get_country(self) -> str:
-        return self.release.country
+        return "" if self.release.country is None else self.release.country
 
     def get_discogs_release_id(self) -> str:
         return self.release.id
@@ -90,7 +89,7 @@ class ReleaseFacade(BaseModel):
         return self.release.labels[0].name
 
     def get_disc_number(self, trackNumber: int) -> str:
-        return self.release.tracklist[trackNumber].position
+        return self.get_track_list()[trackNumber].position
 
     def get_styles(self) -> str:
         return ", ".join(self.release.styles)
@@ -133,9 +132,29 @@ class ReleaseFacade(BaseModel):
     def __remove_brackets_and_numbers(self, string: str):
         return re.sub(r"\(\d+\)", "", string).strip()
     
-    def get_number_of_tracks(self) -> int:
-        return len(self.release.tracklist)
+    
+    def get_track_list(self) -> List[Track]:
+        
+        return [
+            track
+            for track in self.release.tracklist
+            if track.position != ""
+        ]
 
+
+    def get_number_of_tracks(self) -> int:
+        return len(self.get_track_list())
+    
+    def find_track_no(self, track_no: str, track_title: str) -> int:
+            
+        return next(
+            (
+                i
+                for i, track in enumerate(self.get_track_list())
+                if track.position == track_no or track.title == track_title
+            ),
+            -1,
+        )
 
 def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
     """Auto tag files"""
@@ -162,9 +181,12 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
         if user_cancelled:
             break
         
+        
+
+
 
     if not user_cancelled:
-        progress_bar.complete_progress_bar(total_files)
+        progress_bar.complete_progress_bar()
 
 
 def __tag_files_in_release(
@@ -178,11 +200,14 @@ def __tag_files_in_release(
     for file in files:
         file = os.path.join(root_dir, file)
         file_count += 1
-        progress_bar.update_progress_bar(f"Auto Tagging - Release ID: {release.get_id()} - File: {file}", file_count)
+        progress_bar.increment_with_message(f"Auto Tagging - Release ID: {release.get_id()} - File: {file}")
 
         if file_track_no_match := re.search(r"(\d+)(?=\.\w+$)", file):
             file_track_no = int(file_track_no_match[1]) - 1
         else:
+            tags = audio_tag_helper.get_tags(file)
+            file_track_no = release.find_track_no(tags[AudioTagHelper.TRACK_NUMBER][0], tags[AudioTagHelper.TITLE][0])
+        if file_track_no == -1:
             logger.error(f"Failed to get track number from file: {file}")
             continue
 
@@ -261,7 +286,7 @@ def tag_filename(files_to_rename: list[str], root_dir: str) -> None:
         else:
             __rename_file_based_on_mask(mask, file, audio_tag_helper, root_dir)
 
-        progress.update_progress_bar_value(i + 1)
+        progress.increment()
 
 
 def __rename_file_based_on_mask(mask, file, audio_tags: AudioTagHelper, root_dir: str) -> str:
@@ -279,21 +304,19 @@ def __rename_file_based_on_mask(mask, file, audio_tags: AudioTagHelper, root_dir
 
     _, new_name = os.path.split(new_name)
 
-
     try:
-        new_name = re.sub(r'[<>:"/\\|?*]', '', str(new_name))
+        new_name = re.sub(r'[<>:"/\\|?*]', "", str(new_name))
         logger.info(f"Renaming file: {file} to: {new_name}")
         full_path = Path(os.path.join(root_dir, new_name))
         # if target file skip
         if os.path.exists(full_path):
             logger.info(f"File already exists: {full_path}")
             return full_path
-         
+
         os.rename(file, full_path)
-    
+
     except Exception as e:
         logger.error(f"Failed to rename file: {file} to: {new_name} ", exc_info=True)
-
 
     return full_path
 
@@ -306,7 +329,15 @@ def __derive_new_file_name(mask: str, tags: dict) -> str:
 
         new_tag = __get_mapping_for_tag(tag)
         if new_tag in tags and tags[new_tag]:
-            new_name = new_name.replace(f"%{tag}%", tags[new_tag][0])
+            value = tags[new_tag][0]
+            # if value contains a / slash then tahe everything on the left of it 
+            if "/" in value:
+                value = value.split("/")[0]
+                
+            if "\\" in value:
+                value = value.split("\\")[0]
+                
+            new_name = new_name.replace(f"%{tag}%", value )
         else:
             return None
     return new_name
@@ -421,12 +452,7 @@ def __group_files_by_release_id(files: List[str], root_dir: str) -> dict:
     """Group files by release id and return a dictionary with the release id as the key and the files as the value."""
     logger.info(f"Grouping {len(files)} files by release id")
 
-    # Join the extensions in the pattern, escaping the dot
-    extensions_pattern = "|".join(re.escape(ext) for ext in AUDIO_EXTENSIONS)
-
-    release_id_pattern = re.compile(rf"r(\d+)-\d+.({extensions_pattern})$")
     release_id_to_files = {}
-
     for file in files:
         
         release_id = __valid_File_check(file)      
@@ -443,13 +469,14 @@ def __group_files_by_release_id(files: List[str], root_dir: str) -> dict:
     logger.info(f"Release ids: {release_id_to_files.keys()}")
     return release_id_to_files
 
+
 def __valid_File_check(file: str) -> str:
     """Check if the file is valid"""
-    
+
     if match := re.search(r"r(\d{6,10})", file):
         release_id = match[1]
         logger.info(f"{release_id} - Found release id {release_id} in file name: {file}")
-        
+
         # Search for a number of max two digits before the file extension
         if match := re.search(r"[-_](\d{1,2})\.\w+$", file):
             track_number = match[1]
@@ -459,11 +486,15 @@ def __valid_File_check(file: str) -> str:
             logger.warn(f"{release_id} - Could not find track number in file name, skipping: {file}")
 
     else:
+        tags = audio_tag_helper.get_tags(file)
+        if release_id := tags[audio_tag_helper.DISCOGS_RELEASE_ID]:
+            logger.info(f"{release_id[0]} - Found release id {release_id} in file tags: {file}")
+            return release_id[0]
+
         logger.error(f"Could not find release id in file name, skipping: {file}")
-    
+
     return None
 
-    
 
 if __name__ == "__main__":
     file_list = ["a8_jam and spoon-r21478021-02.wav"]

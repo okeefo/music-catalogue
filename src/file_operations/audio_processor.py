@@ -8,8 +8,7 @@ from pydub.silence import split_on_silence
 from log_config import get_logger
 from file_operations.auto_tag import get_discogs_client, ReleaseFacade, auto_tag_files
 from file_operations.audio_tags import AudioTagHelper
-from PyQt5.QtWidgets import QApplication
-
+from ui.progress_bar_helper import ProgressBarHelper
 
 from config_manager import ConfigurationManager
 
@@ -55,10 +54,17 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
     If Split, the file will, be split and tagged.
     If Speed_Up, the file will only be speed up.
     """
+    
+    progress_parts = 4 if option == "ALL" else 1
+    num = (len(fq_files) * progress_parts) + 2
+    progress_bar = ProgressBarHelper(num, "Processing..", min_files=1)
 
     maintain_tags = option != "ALL"
 
     for fq_file_path in fq_files:
+
+        status_msg = f"Processing file: {os.path.basename(fq_file_path)}\n"
+        progress_bar.increment_with_message(status_msg)
 
         fq_file_path, root_dir, file_name = __normalise_file_path(fq_file_path)
 
@@ -71,7 +77,7 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
         if not fq_file_path.endswith(".wav"):
             logger.info(f"Skipping, wavs only,  file: {fq_file_path}")
             continue
-        
+
         if is_file_locked(fq_file_path):
             logger.error(f"Skipping, file is locked: {fq_file_path}")
             continue
@@ -88,63 +94,77 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
 
         # Reduce the speed of the file to 33rpm
         if option in ["ALL", "Slowdown"]:
-            result = __reduce_recording_speed(fq_file_path, release, maintain_tags)
+            progress_bar.increment_with_message(f"{status_msg} Reduce speed to 33rpm")
+            result = __reduce_recording_speed(fq_file_path, release, maintain_tags, option=="Slowdown")
             if (not result) or option == "Slowdown":
                 continue
 
         # Amplify the file
         if option in ["ALL", "Amplify"]:
+            progress_bar.increment_with_message(f"{status_msg} Amplify file")
             result = __amplify_file(fq_file_path, release_id, maintain_tags)
             if not result or option == "Amplify":
                 continue
 
         # Speed up the file to 45rpm
         if option == "Speed_Up":
+            progress_bar.increment_with_message(f"{status_msg} increasing speed up to 45rpm")
             __increase_speed_of_file_from_33_45rpm(fq_file_path, release, maintain_tags)
             continue
 
         # Split the file into individual tracks
-        tracks = __split_audio_file(fq_file_path, release)
+        if option in ["ALL", "Split"]:
+            progress_bar.increment_with_message(f"{status_msg} splitting into files")
+            tracks = __split_audio_file(fq_file_path, release, progress_bar)
+            if option == "Split":
+                continue
 
         # Tag the files and rename them
+        progress_bar.update_progress_bar_text(f"{status_msg} tagging files")
         auto_tag_files(tracks, root_dir)
 
-        logger.info(f"{release.get_id()} - Processing complete for file: {file_name}")
+        logger.info(f"{release.get_id()} - Processing complete for file {file_name}")
+
+    progress_bar.complete_progress_bar()
 
 
-def __reduce_recording_speed(source_file: str, release: ReleaseFacade, maintain_tags=False) -> Tuple[bool, str]:
+def __reduce_recording_speed(source_file: str, release: ReleaseFacade, maintain_tags=False, skip_speed_check=False) -> Tuple[bool, str]:
+    """Reduce the speed of the file by a ration of 45rpm -> 33rpm."""
     
-
     if maintain_tags:
         tags, cover_art = audio_tag_helper.get_tags_and_cover_art(source_file)
 
-    speed = __get_recorded_speed(source_file, release)
+    if not skip_speed_check:
+        speed = __get_recorded_speed(source_file, release)
 
-    if speed != "33":
-        logger.info(f"{release.get_id()} - NO identifiers to change speed:  Skipping...")
-        return True
+        if speed != "33":
+            logger.info(f"{release.get_id()} - NO identifiers to change speed:  Skipping...")
+            return True
 
-    result  = __reduce_speed_of_file_from_45_33rpm(source_file, release.get_id())
-    
+    result = __reduce_speed_of_file_from_45_33rpm(source_file, release.get_id())
+
     if result and maintain_tags:
         audio_tag_helper.write_tags(source_file, tags)
         audio_tag_helper.write_cover_art(source_file, cover_art)
-        
+
     return result
 
 
-def __split_audio_file(fq_audio_file: str, release: ReleaseFacade) -> List[str]:
+def __split_audio_file(fq_audio_file: str, release: ReleaseFacade, progress_bar: ProgressBarHelper = None) -> List[str]:
     """Split the audio file into individual tracks based on the number of tracks in the release.
     If the number of tracks in the release does not match the number of tracks in the audio file, adjust the silence threshold and try again.
     If the number of tracks in the release does not match the number of tracks in the audio file after X attempts, exit the loop.
     Implemented a binary search approach here to find the correct silence threshold."""
 
-    logger.info(f"{release.get_id()} - Comparing number of tracks in release and audio file:")
+    msg  = f"{release.get_id()} - Comparing number of tracks in release and audio file:"
+    logger.info(msg)
+    if progress_bar is not None:    
+        progress_bar.update_progress_bar_text(msg)
 
     number_of_tracks = release.get_number_of_tracks()
     # TODO:  set these number if the configuration manager
     low_thresh = -55  # Initial low threshold
-    high_thresh = -35  # Initial high threshold
+    high_thresh = -25  # Initial high threshold
     max_attempts = 8  # max number of attempts
 
     for _ in range(max_attempts):
@@ -161,11 +181,16 @@ def __split_audio_file(fq_audio_file: str, release: ReleaseFacade) -> List[str]:
         else:
             high_thresh = silence_thresh  # Adjust the high threshold if there are too many chunks
 
-        logger.error(
-            f"{release.get_id()} - Number of tracks in release {number_of_tracks} does not match number found in audio file {number_of_chunks}.  Adjusting silence threshold to {silence_thresh}..."
-        )
+        msg =f"{release.get_id()} - Number of tracks in release {number_of_tracks} does not match number found in audio file {number_of_chunks}.  Adjusting silence threshold to {silence_thresh}..."
+        logger.error(msg)
+        if progress_bar is not None:    
+            progress_bar.update_progress_bar_text(msg)
+    
 
-    logger.error(f"{release.get_id()} - Could not split audio file into tracks after maximum attempts.  Exiting...")
+    msg=f"{release.get_id()} - Could not split audio file into tracks after maximum attempts.  Exiting..."
+    logger.error(msg)
+    progress_bar.update_progress_bar_text(msg)
+    
     return []
 
 
@@ -217,7 +242,7 @@ def __reduce_speed_of_file_from_45_33rpm(source_file: str, release_id: str) -> b
     return __execute_and_rename("Slowing", source_file, command_mask, release_id)
 
 
-def __increase_speed_of_file_from_33_45rpm(source_file: str, release_id: str, maintain_tags = False) -> bool:
+def __increase_speed_of_file_from_33_45rpm(source_file: str, release_id: str, maintain_tags=False) -> bool:
     """Increase the speed of the audio file from 33 RPM to 45 RPM. Percentage increase calculation is as follows:
 
     (from speed - to speed) / from speed * 100
@@ -225,19 +250,19 @@ def __increase_speed_of_file_from_33_45rpm(source_file: str, release_id: str, ma
     (33.333 - 45 / 33.333) * 100 = 35.001
 
     """
-    
+
     logger.info(f"{release_id} - Speeding up file from 33 RPM to 45 RPM")
-    
+
     if maintain_tags:
         tags, cover_art = audio_tag_helper.get_tags_and_cover_art(source_file)
-        
+
     command_mask = ["soundstretch.exe", "{source}", "{target}", "-rate=35.001"]
     result = __execute_and_rename("Speeding up", source_file, command_mask, release_id)
-    
+
     if result and maintain_tags:
         audio_tag_helper.write_tags(source_file, tags)
         audio_tag_helper.write_cover_art(source_file, cover_art)
-        
+
     return result
 
 
@@ -245,10 +270,9 @@ def __amplify_file(source_file: str, release_id: str, maintain_tags) -> bool:
     """Amplify the audio file to the correct volume level. To do this, it calculates the gain value and then applies it to the audio file."""
 
     logger.info(f"{release_id} - Amplifying the audio: calculating gain value")
-    
+
     if maintain_tags:
         tags, cover_art = audio_tag_helper.get_tags_and_cover_art(source_file)
-
 
     gain_value = __get_volume(source_file)
     if gain_value == 0:
@@ -256,11 +280,11 @@ def __amplify_file(source_file: str, release_id: str, maintain_tags) -> bool:
         return True, "No Action Taken"
 
     command = ["sox.exe", "-v", f"{gain_value}", "{source}", "{target}"]
-    result =  __execute_and_rename("Amplifying", source_file, command, release_id)
+    result = __execute_and_rename("Amplifying", source_file, command, release_id)
     if result and maintain_tags:
         audio_tag_helper.write_tags(source_file, tags)
         audio_tag_helper.write_cover_art(source_file, cover_art)
-        
+
     return result
 
 
@@ -277,12 +301,7 @@ def __execute_and_rename(action: str, source_file: str, command_mask: list, rele
 
     if not success:
         return False
-    
-    # Get the current permissions
-    file_stat = os.stat(source_file)
 
-    # Make the file writable
-    #os.chmod(source_file, file_stat.st_mode | stat.S_IWRITE)
     os.replace(temp_file, source_file)
     logger.info(f"{release_id} - {action}: completed")
     return True
@@ -366,17 +385,19 @@ def __execute_system_command(command: List, action: str, release_id: str) -> Tup
         logger.error(f"{release_id} - {action} - An error occurred while running the command: {e}")
         return False
 
+
 def is_file_locked(file_path):
     """Check if a file is locked by trying to open it in append mode."""
     locked = None
     if os.path.exists(file_path):
         try:
-            if file_object := open(file_path, 'a'):
+            if file_object := open(file_path, "a"):
                 locked = False
                 file_object.close()
         except IOError:
             locked = True
     return locked
+
 
 def __normalise_file_path(fq_file_path: str) -> Tuple[str, str, str]:
     """Normalise the file path"""
