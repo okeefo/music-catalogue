@@ -29,7 +29,7 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str, progres
 
         progress_bar.update_progress_bar_text(f"Moving {source_file}...")
         if root:
-            progress_bar.update_progress_bar_value(i)
+            progress_bar.increment()
 
         logger.info(f'Moving "{fq_source_file}" to "{target_dir}"')
 
@@ -46,7 +46,7 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str, progres
         logger.info("Move files done, cleaning up any empty directories and source files")
         __clean_up(files_to_delete)
         logger.info("Clean up done")
-        progress_bar.complete_progress_bar(len(file_list))
+        progress_bar.complete_progress_bar()
 
 
 def _handle_move_of_existing_target_file(source_file: str, fq_source_file: str, target_dir: str, fq_target_file: str, userResponse, files_to_delete: List[str]) -> Union[str, int]:
@@ -193,12 +193,12 @@ def __copy_files(file_list: dict[str], target_dir: str, userResponse: int = None
 
         __do_copy_file(source_file, target_dir, userResponse)
 
-        progress.update_progress_bar_value(copied_files + 1)
+        progress.increment()
 
         if progress.user_has_cancelled():
             break
 
-    progress.complete_progress_bar(total_files)
+    progress.complete_progress_bar()
 
 
 def __target_file_exists(source_file, target_dir) -> bool:

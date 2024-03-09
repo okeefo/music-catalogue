@@ -59,8 +59,6 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
-
-# TODO: and menu options run the works or selected file/files - wav files only
 # TODO: fix the artwork display
 # TODO: complete settings management - create a config manager
 
