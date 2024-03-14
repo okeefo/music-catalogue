@@ -139,6 +139,35 @@ class AudioTagHelper:
 
         audio = File(file_path)
         logger.info(f"{audio.tags} ")
+        
+    def get_title(self, tags: dict) -> str:
+        
+        if tags is None:
+            return ""
+
+        return tags[self.TITLE][0].strip() if self.TITLE in tags else ""
+    
+    def get_disc_number(self, tags: dict) -> str:
+        
+        if tags is None:
+            return ""
+
+        return tags[self.DISC_NUMBER][0] if self.DISC_NUMBER in tags else ""    
+
+        
+    def get_track_number(self, tags: dict) -> str:
+        
+        if tags is None:
+            return ""
+
+        return tags[self.TRACK_NUMBER][0] if self.TRACK_NUMBER in tags else "" 
+    
+    def get_release_id(self, tags: dict) -> str:
+        
+        if tags is None:
+            return ""
+
+        return tags[self.DISCOGS_RELEASE_ID][0] if self.DISCOGS_RELEASE_ID in tags else ""  
 
 
 class PictureTypeDescription:

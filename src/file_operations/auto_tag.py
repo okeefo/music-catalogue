@@ -43,7 +43,7 @@ class TrackInfo(BaseModel):
         return f"title:{self.title}, album_artist:{self.album_artist}, artist:{self.artist}, album_name:{self.album_name}, label:{self.label}, disc_no:{self.disc_number}, tack_no:{self.track_number}, catno:{self.catalog_number}, id:{self.discogs_id}, genres:{self.genres}, year:{self.year}, media:{self.media}, styles:{self.styles}, country:{self.country}, url:{self.url}"
 
 
-audio_tag_helper = AudioTagHelper()
+tag_helper = AudioTagHelper()
 
 
 class Config:
@@ -101,7 +101,7 @@ class ReleaseFacade(BaseModel):
         return self.release.url
 
     def get_year(self) -> str:
-        return self.release.data.get("released")
+        return str(self.release.data.get("released"))
 
     def get_media(self) -> str:
         format_data = self.release.formats[0]
@@ -145,16 +145,20 @@ class ReleaseFacade(BaseModel):
     def get_number_of_tracks(self) -> int:
         return len(self.get_track_list())
     
-    def find_track_no(self, track_no: str, track_title: str) -> int:
+    def find_track_no(self, track_no: str, track_title: str, disc_number: str) -> int:
             
-        return next(
-            (
-                i
-                for i, track in enumerate(self.get_track_list())
-                if track.position == track_no or track.title == track_title
-            ),
-            -1,
-        )
+        for i, track in enumerate(self.get_track_list()):
+            
+            if track_title == track.title:
+                return i
+            
+            if track_no == track.position:
+                return i  
+            
+            if disc_number == track.position:
+                return i
+        
+        return -1
 
 def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
     """Auto tag files"""
@@ -176,15 +180,11 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
         release = ReleaseFacade(release=release_raw)
         artwork_data = __get_cover_art_from_discogs(release_raw)
 
-        user_cancelled, file_count = __tag_files_in_release(files, file_count, release, root_dir, artwork_data, audio_tag_helper, progress_bar)
+        user_cancelled, file_count = __tag_files_in_release(files, file_count, release, root_dir, artwork_data, tag_helper, progress_bar)
 
         if user_cancelled:
             break
         
-        
-
-
-
     if not user_cancelled:
         progress_bar.complete_progress_bar()
 
@@ -200,13 +200,9 @@ def __tag_files_in_release(
     for file in files:
         file = os.path.join(root_dir, file)
         file_count += 1
-        progress_bar.increment_with_message(f"Auto Tagging - Release ID: {release.get_id()} - File: {file}")
+        progress_bar.increment_with_message(f"Auto Tagging - Release ID: {release.get_id()} - File: {file}.. Looking for track position..")
 
-        if file_track_no_match := re.search(r"(\d+)(?=\.\w+$)", file):
-            file_track_no = int(file_track_no_match[1]) - 1
-        else:
-            tags = audio_tag_helper.get_tags(file)
-            file_track_no = release.find_track_no(tags[AudioTagHelper.TRACK_NUMBER][0], tags[AudioTagHelper.TITLE][0])
+        file_track_no = __find_track_position_from_file(file, release)
         if file_track_no == -1:
             logger.error(f"Failed to get track number from file: {file}")
             continue
@@ -223,6 +219,16 @@ def __tag_files_in_release(
             break
 
     return user_cancelled, file_count
+
+def __find_track_position_from_file(file: str, release: ReleaseFacade) -> int:
+    
+    # check tags first    
+    tags = tag_helper.get_tags(file)
+    file_track_no = release.find_track_no(tag_helper.get_track_number(tags), tag_helper.get_title(tags), tag_helper.get_disc_number(tags))
+    if file_track_no == -1:
+        if file_track_no_match := re.search(r"(\d+)(?=\.\w+$)", file):
+            return int(file_track_no_match[1]) - 1
+    return file_track_no
 
 
 def __tag_and_rename(mask: str, file: str, audio_tags: AudioTagHelper, root_dir: str, track_info: TrackInfo, artwork_data: bytes) -> Path:
@@ -281,10 +287,10 @@ def tag_filename(files_to_rename: list[str], root_dir: str) -> None:
 
         progress.update_progress_bar_text(f"Renaming file: {file}")
 
-        if os.path.isdir(full_path) or not audio_tag_helper.isSupportedAudioFile(full_path):
+        if os.path.isdir(full_path) or not tag_helper.isSupportedAudioFile(full_path):
             logger.info(f"Skipping file reason=UnsupportedFileExtension: {full_path}")
         else:
-            __rename_file_based_on_mask(mask, file, audio_tag_helper, root_dir)
+            __rename_file_based_on_mask(mask, file, tag_helper, root_dir)
 
         progress.increment()
 
@@ -486,10 +492,10 @@ def __valid_File_check(file: str) -> str:
             logger.warn(f"{release_id} - Could not find track number in file name, skipping: {file}")
 
     else:
-        tags = audio_tag_helper.get_tags(file)
-        if release_id := tags[audio_tag_helper.DISCOGS_RELEASE_ID]:
+        tags = tag_helper.get_tags(file)
+        if release_id := tag_helper.get_release_id(tags):
             logger.info(f"{release_id[0]} - Found release id {release_id} in file tags: {file}")
-            return release_id[0]
+            return release_id
 
         logger.error(f"Could not find release id in file name, skipping: {file}")
 
