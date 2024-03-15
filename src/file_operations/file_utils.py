@@ -23,30 +23,39 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str, progres
         progress_bar = ProgressBarHelper(len(file_list), "Moving", 10)
         root = True
 
-    for i, source_file in enumerate(file_list):
+    try:
+        for source_file in file_list:
+            source_file, fq_source_file, fq_target_file = __get_fully_qualified_file_name(source_file, source_dir, target_dir)
 
-        source_file, fq_source_file, fq_target_file = __get_fully_qualified_file_name(source_file, source_dir, target_dir)
+            progress_bar.update_progress_bar_text(f"Moving {source_file}...")
+            if root:
+                progress_bar.increment()
 
-        progress_bar.update_progress_bar_text(f"Moving {source_file}...")
+            logger.info(f'Moving "{fq_source_file}" to "{target_dir}"')
+
+            if os.path.exists(fq_target_file):
+                action, userResponse = _handle_move_of_existing_target_file(source_file, fq_source_file, target_dir, fq_target_file, userResponse, files_to_delete)
+                if action == "cancel":
+                    return
+                if action == "skip":
+                    continue
+
+            shutil.move(fq_source_file, target_dir)
+
         if root:
-            progress_bar.increment()
-
-        logger.info(f'Moving "{fq_source_file}" to "{target_dir}"')
-
-        if os.path.exists(fq_target_file):
-            action, userResponse = _handle_move_of_existing_target_file(source_file, fq_source_file, target_dir, fq_target_file, userResponse, files_to_delete)
-            if action == "cancel":
-                return
-            if action == "skip":
-                continue
-
-        shutil.move(fq_source_file, target_dir)
-
-    if root:
-        logger.info("Move files done, cleaning up any empty directories and source files")
-        __clean_up(files_to_delete)
-        logger.info("Clean up done")
-        progress_bar.complete_progress_bar()
+            logger.info("Move files done, cleaning up any empty directories and source files")
+            __clean_up(files_to_delete)
+            logger.info("Clean up done")
+            progress_bar.complete_progress_bar()
+    
+    except Exception as e:
+    
+        logger.error(f"Error moving files: {e}")
+        if root:
+            progress_bar.update_progress_bar_text("Error moving files, check log files for details")
+            progress_bar.complete_progress_bar()
+            
+        show_message_box(f"Error moving files, check log files for details: {e}", ButtonType.Ok, "Error Moving Files")
 
 
 def _handle_move_of_existing_target_file(source_file: str, fq_source_file: str, target_dir: str, fq_target_file: str, userResponse, files_to_delete: List[str]) -> Union[str, int]:
