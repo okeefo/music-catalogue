@@ -58,13 +58,20 @@ Music Catalogue is packed with features that simplify the organisation of a musi
 * **File Management**: Easily manage your music files with two file explorers.
 
 ## Installation
-This is a python applciation and reqires a python environment.  It runs only on windows.  It has been tested on windows 11 and 10.  It should run on windows 7 and 8.
+This is a python application and requires a python environment.  It runs only on windows.  It has been tested on windows 11 and 10.  It should run on windows 7 and 8.
 
 Third party DLLs and executables are included and the path is automatically updated for the session when the application is run.  These DLLs and executables are required for the wav file processing.
 
 for tagging install the following:
-mutagen
-taglib
+
+pip install mutagen
+pip install winshell
+pip install pywin32
+pip install pytaglib
+pip install send2trash
+pip install discogs_client
+pip install pydub
+
 
 The application has been tested with python 3.10.4.  It should work with python 3.10 and later. 
 
