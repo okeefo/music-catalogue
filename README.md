@@ -1,5 +1,6 @@
 # music-catalogue
 
+STATUS = database integration in progress. 
 
 As there is only a single contributor, me, and there is no other contributor, I will not be using a git workflow.  I will be using a single branch and will be committing to the main branch.
 
@@ -77,9 +78,10 @@ The application has been tested with python 3.10.4.  It should work with python 
 
 ## Upcoming features:
 
+* Database options - scan the music collection and create a database of the music collection  - in progress.
+
 * Configuration manager to make it easier to update the config file - change the defaults
 
-* Database options - scan the music collection and create a database of the music collection
 
 ## Getting Started
 

@@ -59,7 +59,9 @@ INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to inst
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
 
+# TODO: database integration - in progress
 # TODO: fix the artwork display
+# TODO: add a settings dialog
 # TODO: complete settings management - create a config manager
 
 class MainWindow(QMainWindow):
