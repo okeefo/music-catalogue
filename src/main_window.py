@@ -51,7 +51,7 @@ app = QApplication([])
 ICON_INDEX = 0
 CONFIG_SECTION_DIRECTORIES = "Directories"
 CONFIG_SECTION_WINDOW = "Window"
-CONFIG_WINDOW_HIGHT = "hight"
+CONFIG_WINDOW_HEIGHT = "height"
 CONFIG_WINDOW_WIDTH = "Width"
 CONFIG_LAST_TARGET_DIRECTORY = "last_target_directory"
 CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
@@ -231,7 +231,7 @@ class MainWindow(QMainWindow):
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
         self.resize(
             self.config.getint(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, fallback=800),
-            self.config.getint(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, fallback=600),
+            self.config.getint(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HEIGHT, fallback=600),
         )
 
         self.setMinimumSize(QSize(800, 600))
@@ -450,7 +450,7 @@ class MainWindow(QMainWindow):
         """Updates the config file with the current window size and position. Returns: None"""
 
         # Write the window size to the config file
-        self.config.set(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HIGHT, f"{self.size().height()}")
+        self.config.set(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_HEIGHT, f"{self.size().height()}")
         self.config.set(CONFIG_SECTION_WINDOW, CONFIG_WINDOW_WIDTH, f"{self.size().width()}")
         self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_SOURCE_DIRECTORY, self.path_info_bar_source.text())
         self.config.set(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_TARGET_DIRECTORY, self.path_info_bar_target.text())
