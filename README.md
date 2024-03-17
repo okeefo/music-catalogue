@@ -1,5 +1,14 @@
 # music-catalogue
-# Music Catalogue
+
+
+As there is only a single contributor, me, and there is no other contributor, I will not be using a git workflow.  I will be using a single branch and will be committing to the main branch.
+
+Any other branches created are simple to try out new features.
+
+I have yet to create a version and as this is a hobby project i may not do so for some time.
+
+For ideas, bugs and feature requests please use the issues tab.
+
 
 ## History
 
@@ -51,17 +60,19 @@ Music Catalogue is packed with features that simplify the organisation of a musi
 ## Installation
 This is a python applciation and reqires a python environment.  It runs only on windows.  It has been tested on windows 11 and 10.  It should run on windows 7 and 8.
 
-Third party DLLs and executables are included and the path is automatically updated for the session when the application is run.  These DLLs and executables are requied for the wav file processing.
+Third party DLLs and executables are included and the path is automatically updated for the session when the application is run.  These DLLs and executables are required for the wav file processing.
 
-for tagging plsae install the following:
+for tagging install the following:
 mutagen
 taglib
 
 The application has been tested with python 3.10.4.  It should work with python 3.10 and later. 
 
-## Upcoiming features:
+## Upcoming features:
 
-* Configuration manager to make it easier to updat ehte config file - change the defaults
+* Configuration manager to make it easier to update the config file - change the defaults
+
+* Database options - scan the music collection and create a database of the music collection
 
 ## Getting Started
 
