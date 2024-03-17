@@ -11,7 +11,6 @@ log_file_cleared = False
 
 
 def __get_config():
-
     # Read the configuration options from config.ini
     config = configparser.ConfigParser()
     config.read(get_absolute_path_config())
@@ -38,7 +37,10 @@ def __get_config():
 
     return config
 
-def __create_config_entry(config):
+
+def __create_config_entry(config) -> None:
+    """Create the main_logger section in the config.ini file with default settings."""
+
     config.add_section("main_logger")
     config.set("main_logger", "log_dir", get_absolute_path_log_dir())
     config.set("main_logger", "clear_log_each_run", "False")
@@ -50,7 +52,8 @@ def __create_config_entry(config):
         config.write(config_file)
 
 
-def get_logger(name):
+def get_logger(name) -> Logger:
+    """Returns a logger with the specified name. If the logger already exists, it is returned. Otherwise, a new logger is created and returned."""
 
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
@@ -65,7 +68,9 @@ file_handler = None
 console_handler = None
 
 
-def add_file_handlers(logger: Logger) -> RotatingFileHandler:
+def add_file_handlers(logger: Logger) -> None:
+    """Adds a file handler and a console handler to the specified logger."""
+
     global file_handler
     global console_handler
 
@@ -81,8 +86,7 @@ def add_file_handlers(logger: Logger) -> RotatingFileHandler:
 
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
-    
-    
+
 
 def __get_formatter() -> logging.Formatter:
     """Returns a formatter for the log file. Returns: logging.Formatter"""
@@ -90,6 +94,8 @@ def __get_formatter() -> logging.Formatter:
 
 
 def __initialise_file_handler() -> logging.FileHandler:
+    """Initialises the file handler for the logger. Returns: logging.FileHandler"""
+
     global file_handler
     global log_file_cleared
 
@@ -119,8 +125,9 @@ def __initialise_file_handler() -> logging.FileHandler:
 
 
 def __initialise_console_handler() -> logging.StreamHandler:
-    console_handler = logging.StreamHandler(stream=sys.stdout)
-    console_handler.setFormatter(__get_formatter())
-    console_handler.setLevel(logging.INFO)
-    console_handler.stream = codecs.open(sys.stdout.fileno(), "w", "utf-8")
-    return console_handler
+    """Initialises the console handler for the logger. Returns: logging.StreamHandler"""
+
+    handler = logging.StreamHandler(stream=sys.stdout)
+    handler.setFormatter(__get_formatter())
+    handler.setLevel(logging.INFO)
+    return handler
