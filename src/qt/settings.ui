@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>settings_dialog</class>
+ <widget class="QDialog" name="settings_dialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -17,7 +17,7 @@
    <string>Settings</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resources.qrc">
+   <iconset resource="../../../../music-catalogue/src/qt/resources.qrc">
     <normaloff>:/icons/icons/headphones.svg</normaloff>:/icons/icons/headphones.svg</iconset>
   </property>
   <property name="styleSheet">
@@ -193,7 +193,7 @@ QGroupBox{
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="lineEdit"/>
+         <widget class="QLineEdit" name="start_dir_source"/>
         </item>
         <item row="0" column="2">
          <widget class="QPushButton" name="pushButton">
@@ -207,7 +207,7 @@ QGroupBox{
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
+           <iconset resource="../../../../music-catalogue/src/qt/resources.qrc">
             <normaloff>:/icons/icons/more-horizontal.svg</normaloff>:/icons/icons/more-horizontal.svg</iconset>
           </property>
          </widget>
@@ -225,7 +225,7 @@ QGroupBox{
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="lineEdit_2"/>
+         <widget class="QLineEdit" name="start_dir_target"/>
         </item>
         <item row="1" column="2">
          <widget class="QPushButton" name="pushButton_2">
@@ -239,7 +239,79 @@ QGroupBox{
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
+           <iconset resource="../../../../music-catalogue/src/qt/resources.qrc">
+            <normaloff>:/icons/icons/more-horizontal.svg</normaloff>:/icons/icons/more-horizontal.svg</iconset>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox_5">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>120</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>DataBase</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <item>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_6">
+          <property name="minimumSize">
+           <size>
+            <width>125</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>9</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Name</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="db_name"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_8">
+          <property name="font">
+           <font>
+            <pointsize>9</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>location</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="db_location"/>
+        </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="pushButton_5">
+          <property name="maximumSize">
+           <size>
+            <width>40</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../music-catalogue/src/qt/resources.qrc">
             <normaloff>:/icons/icons/more-horizontal.svg</normaloff>:/icons/icons/more-horizontal.svg</iconset>
           </property>
          </widget>
@@ -329,7 +401,7 @@ QGroupBox{
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="resources.qrc">
+           <iconset resource="../../../../music-catalogue/src/qt/resources.qrc">
             <normaloff>:/icons/icons/more-horizontal.svg</normaloff>:/icons/icons/more-horizontal.svg</iconset>
           </property>
          </widget>
@@ -360,10 +432,10 @@ QGroupBox{
          </spacer>
         </item>
         <item row="0" column="1" colspan="2">
-         <widget class="QLineEdit" name="lineEdit_3"/>
+         <widget class="QLineEdit" name="log_dir"/>
         </item>
         <item row="2" column="1">
-         <widget class="QSpinBox" name="spinBox">
+         <widget class="QSpinBox" name="backup_count">
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -378,14 +450,14 @@ QGroupBox{
          </widget>
         </item>
         <item row="3" column="1">
-         <widget class="QCheckBox" name="checkBox">
+         <widget class="QCheckBox" name="clear_each_run">
           <property name="text">
            <string/>
           </property>
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QSpinBox" name="spinBox_2"/>
+         <widget class="QSpinBox" name="max_log_size"/>
         </item>
        </layout>
       </item>
@@ -407,7 +479,7 @@ QGroupBox{
       <item>
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="0" column="1">
-         <widget class="QLineEdit" name="lineEdit_5">
+         <widget class="QLineEdit" name="discogs_token">
           <property name="minimumSize">
            <size>
             <width>250</width>
@@ -463,7 +535,7 @@ QGroupBox{
      <property name="maximumSize">
       <size>
        <width>16777215</width>
-       <height>120</height>
+       <height>70</height>
       </size>
      </property>
      <property name="title">
@@ -472,6 +544,9 @@ QGroupBox{
      <layout class="QHBoxLayout" name="horizontalLayout_4">
       <item>
        <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="file_mask"/>
+        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label_7">
           <property name="minimumSize">
@@ -486,32 +561,7 @@ QGroupBox{
            </font>
           </property>
           <property name="text">
-           <string>TextLabel</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="lineEdit_7"/>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_8">
-          <property name="font">
-           <font>
-            <pointsize>9</pointsize>
-           </font>
-          </property>
-          <property name="text">
-           <string>TextLabel</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="lineEdit_8"/>
-        </item>
-        <item row="1" column="2">
-         <widget class="QPushButton" name="pushButton_8">
-          <property name="text">
-           <string>PushButton</string>
+           <string>File mask</string>
           </property>
          </widget>
         </item>
@@ -606,13 +656,13 @@ QPushButton::pressed
   </layout>
  </widget>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../../../../music-catalogue/src/qt/resources.qrc"/>
  </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>settings_dialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -628,7 +678,7 @@ QPushButton::pressed
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>settings_dialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

@@ -36,6 +36,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.__setup_mp3tag_path()
         self.__setup_menu_actions()
         self.__setup_vlc_path()
+        self.__setup_audacity_path()
         self.__setup_action_map()
         self.__setup_display_menu_map()
         self.audio_tag_helper = AudioTagHelper()
@@ -46,7 +47,7 @@ class TreeViewContextMenuHandler(QWidget):
             "info": {0: [self.info_dir_action], "default": [self.info_dir_action, self.info_selected_action]},
             "new_folder": {0: [self.new_folder_action], "default": [self.new_folder_action]},
             "rename": {1: [self.rename_file_action]},
-            "open_in": {"default": [self.open_in_mp3tag_action, self.open_in_vlc_action]},
+            "open_in": {"default": [self.open_in_mp3tag_action, self.open_in_vlc_action, self.open_in_audacity_action]},
             "tag": {0: [self.auto_tag_dir_action], "override": [self.auto_tag_dir_action], "default": [self.auto_tag_dir_action, self.auto_tag_selected_action]},
             "tag_filename": {0: [self.tag_filename_dir_action], "override": [self.tag_filename_dir_action], "default": [self.tag_filename_dir_action, self.tag_filename_selected_action]},
             "media_player": {"override": [self.play_action, self.stop_action, self.pause_action]},
@@ -68,6 +69,7 @@ class TreeViewContextMenuHandler(QWidget):
             self.delete_action: lambda tree_view, dest_path: self.__do_delete(tree_view),
             self.open_in_mp3tag_action: lambda tree_view, dest_path: self.__do_open_in_mp3tag(tree_view),
             self.open_in_vlc_action: lambda tree_view, dest_path: self.__do_open_in_vlc(tree_view),
+            self.open_in_audacity_action: lambda tree_view, dest_path: self.__do_open_in_audacity(tree_view),
             self.repackage_dir_action: lambda tree_view, dest_path: self.__do_repackage_dir_by_label(tree_view),
             self.repackage_select_action: lambda tree_view, dest_path: self.__do_repackage_selected_items_by_label(tree_view),
             self.move_selected_action: lambda tree_view, dest_path: self.__do_move_selected_items(tree_view, dest_path),
@@ -100,6 +102,7 @@ class TreeViewContextMenuHandler(QWidget):
         # define actions
         self.open_in_mp3tag_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/mp3tag_icon.png")), "Open in MP3Tag", self)
         self.open_in_vlc_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/vlc.ico")), "Open in VLC", self)
+        self.open_in_audacity_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/audacity_ico.svg")), "Open in Audacity", self)
         self.play_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Play", self)
         self.stop_action = QAction(QtGui.QIcon(":/icons/icons/stop-circle.svg"), "Stop", self)
         self.pause_action = QAction(QtGui.QIcon(":/icons/icons/pause.svg"), "Pause", self)
@@ -157,6 +160,21 @@ class TreeViewContextMenuHandler(QWidget):
         if self.vlc_path is None:
             self.vlc_path = "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe"
             logger.warning(f"VLC path not found in registry. Using default path: '{self.vlc_path}'")
+
+    def __setup_audacity_path(self) -> None:
+        """get audacity path from registry"""
+
+        self.audacity_path = None
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Audacity.exe") as key:
+                self.audacity_path = winreg.QueryValueEx(key, "")[0]
+
+        except Exception as e:
+            logger.error(f"Failed to get Audacity path from registry: '{e}'")
+
+        if self.audacity_path is None:
+            self.audacity_path = "C:\\Program Files\\Audacity\\Audacity.exe"
+            logger.warning(f"Audacity path not found in registry. Using default path: '{self.audacity_path}'")
 
     def __add_actions_to_menu(self, menu: QMenu, action_type: str, number_of_selected_items: int, override: bool = False) -> None:
         """Adds actions to the menu based on the number of selected items and the type of action. Returns: None"""
@@ -268,6 +286,15 @@ class TreeViewContextMenuHandler(QWidget):
         command = [self.vlc_path] + file_paths
         subprocess.Popen(command, shell=False)
         logger.info(f"Menu Action -> opening file/s in VLC: done")
+
+    def __do_open_in_audacity(self, tree_view: MyTreeView) -> None:
+        """Opens a file/directory in Audacity. Returns: None"""
+
+        file_paths = tree_view.get_selected_files(True)
+        logger.info(f"Menu Action -> Opening file/s in Audacity: '{self.audacity_path,file_paths}'")
+        command = [self.audacity_path] + file_paths
+        subprocess.Popen(command, shell=False)
+        logger.info(f"Menu Action -> opening file/s in Audacity: done")
 
     def __do_repackage_dir_by_label(self, tree_view: MyTreeView) -> None:
         """Repackages a directory. Returns: None"""

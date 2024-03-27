@@ -37,6 +37,7 @@ from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
 from ui.custom_image_label import ImageLabel
 from ui.custom_tree_view import MyTreeView
 from ui.custom_line_edit import MyLineEdit
+from ui.settings_dialogue import SettingsDialog
 
 # Set logger instance
 from log_config import get_logger
@@ -228,6 +229,12 @@ class MainWindow(QMainWindow):
         self.but_copy_to_source.setToolTip("[Ctrl+shift+C] Copy the select items in the target directory -> target directory")
         self.but_copy_to_source.setToolTipDuration(1000)
         self.but_copy_to_source.setShortcut("Ctrl+shift+C")
+
+        self.but_settings = self.findChild(QPushButton, "but_settings")
+        self.but_settings.clicked.connect(lambda: self.on_settings_button_clicked())
+        self.but_settings.setToolTip("[Ctrl+S] Open the settings dialog")
+        self.but_settings.setToolTipDuration(1000)
+        self.but_settings.setShortcut("Ctrl+S")
 
     def __setup_window_size(self) -> None:
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
@@ -427,6 +434,12 @@ class MainWindow(QMainWindow):
             path_info_bar.setText(tree_view.get_root_dir())
         else:
             tree_view.change_dir(os.path.normpath(path_info_bar.text()))
+
+    def on_settings_button_clicked(self) -> None:
+        """Handles the settings button click event. Returns: None"""
+        logger.info("Opening the settings dialog")
+        dialog = SettingsDialog().exec_()
+
 
     def go_up_dir_level(self, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
 

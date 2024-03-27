@@ -2,6 +2,7 @@ import os
 import configparser
 from log_config import get_logger
 
+
 logger = get_logger(__name__)
 
 class ConfigurationManager:
@@ -25,3 +26,8 @@ class ConfigurationManager:
             
         else:
             logger.info(f"{fq_path} is already in the system PATH")
+
+
+
+
+
