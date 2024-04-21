@@ -89,6 +89,7 @@ class FileSystemModel(QFileSystemModel):
         if index.column() == 1 and role == Qt.DisplayRole:
             if size_str := super().data(index, role):
                 # Remove unit from the string and convert to float
+                size_str = size_str.replace(',', '')  # Remove comma
                 size = float(size_str.split()[0])
                 # Convert size from MiB to KB
                 size *= 1024

@@ -92,7 +92,12 @@ class ReleaseFacade(BaseModel):
         return self.get_track_list()[trackNumber].position
 
     def get_styles(self) -> str:
-        return ", ".join(self.release.styles)
+        if isinstance(self.release.styles, str):
+            return self.release.styles
+        elif isinstance(self.release.styles, (list, tuple)):
+            return ", ".join(self.release.styles)
+        else:
+            return ""
 
     def get_track_number(self, trackNumber: int) -> str:
         return str(trackNumber + 1)
@@ -345,7 +350,7 @@ def __derive_new_file_name(mask: str, tags: dict) -> str:
                 
             new_name = new_name.replace(f"%{tag}%", value )
         else:
-            return None
+            new_name = new_name.replace(f"%{tag}%", "unknown_eek" )
     return new_name
 
 

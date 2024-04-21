@@ -9,18 +9,18 @@ from PyQt5.QtCore import QUrl, QPoint, QModelIndex
 
 from typing import List
 
-from ui.custom_tree_view import MyTreeView
-from file_operations.file_utils import ask_and_move_files, delete_files, ask_and_copy_files
-from file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
-from file_operations.files_system_info import display_results
-from file_operations.auto_tag import auto_tag_files, tag_filename
-from file_operations.audio_tags import AudioTagHelper
-from file_operations.audio_processor import slowdown_files_45_33, amplify_files, split_files, auto_process_files, speed_up_files_33_45rpm
+from src.ui.custom_tree_view import MyTreeView
+from src.file_operations.file_utils import ask_and_move_files, delete_files, ask_and_copy_files
+from src.file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
+from src.file_operations.files_system_info import display_results
+from src.file_operations.auto_tag import auto_tag_files, tag_filename
+from src.file_operations.audio_tags import AudioTagHelper
+from src.file_operations.audio_processor import slowdown_files_45_33, amplify_files, split_files, auto_process_files, speed_up_files_33_45rpm, trim_audio_silence
 
-import qt.resources_rcc
+import src.qt.resources_rcc
 
 # create logger
-from log_config import get_logger
+from src.log_config import get_logger
 from tkinter import messagebox
 
 logger = get_logger(__name__)
@@ -37,6 +37,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.__setup_menu_actions()
         self.__setup_vlc_path()
         self.__setup_audacity_path()
+        self.__setup_media_info_path()
         self.__setup_action_map()
         self.__setup_display_menu_map()
         self.audio_tag_helper = AudioTagHelper()
@@ -47,7 +48,8 @@ class TreeViewContextMenuHandler(QWidget):
             "info": {0: [self.info_dir_action], "default": [self.info_dir_action, self.info_selected_action]},
             "new_folder": {0: [self.new_folder_action], "default": [self.new_folder_action]},
             "rename": {1: [self.rename_file_action]},
-            "open_in": {"default": [self.open_in_mp3tag_action, self.open_in_vlc_action, self.open_in_audacity_action]},
+            "open_in": {"default": [self.open_in_mp3tag_action, self.open_in_vlc_action, self.open_in_audacity_action], 1: [self.open_in_mp3tag_action, self.open_in_vlc_action,
+                                                                                                                            self.open_in_audacity_action,self.open_media_info_action]},
             "tag": {0: [self.auto_tag_dir_action], "override": [self.auto_tag_dir_action], "default": [self.auto_tag_dir_action, self.auto_tag_selected_action]},
             "tag_filename": {0: [self.tag_filename_dir_action], "override": [self.tag_filename_dir_action], "default": [self.tag_filename_dir_action, self.tag_filename_selected_action]},
             "media_player": {"override": [self.play_action, self.stop_action, self.pause_action]},
@@ -62,6 +64,7 @@ class TreeViewContextMenuHandler(QWidget):
             "speed_up": {0: [], "default": [self.process_speed_up_action]},
             "amplify": {0: [], "default": [self.process_amplify_action]},
             "split": {0: [], "default": [self.process_split_action]},
+            "trim": {0: [], "default": [self.process_trim_action]},
         }
 
     def __setup_action_map(self):
@@ -70,6 +73,7 @@ class TreeViewContextMenuHandler(QWidget):
             self.open_in_mp3tag_action: lambda tree_view, dest_path: self.__do_open_in_mp3tag(tree_view),
             self.open_in_vlc_action: lambda tree_view, dest_path: self.__do_open_in_vlc(tree_view),
             self.open_in_audacity_action: lambda tree_view, dest_path: self.__do_open_in_audacity(tree_view),
+            self.open_media_info_action: lambda tree_view, dest_path: self.__do_open_in_media_info(tree_view),
             self.repackage_dir_action: lambda tree_view, dest_path: self.__do_repackage_dir_by_label(tree_view),
             self.repackage_select_action: lambda tree_view, dest_path: self.__do_repackage_selected_items_by_label(tree_view),
             self.move_selected_action: lambda tree_view, dest_path: self.__do_move_selected_items(tree_view, dest_path),
@@ -94,6 +98,7 @@ class TreeViewContextMenuHandler(QWidget):
             self.process_slowdown_action: lambda tree_view, dest_path: self.__do_process_slowdown(tree_view),
             self.process_speed_up_action: lambda tree_view, dest_path: self.__do_process_speed_up(tree_view),
             self.process_split_action: lambda tree_view, dest_path: self.__do_process_split(tree_view),
+            self.process_trim_action: lambda tree_view, dest_path: self.__do_process_trim(tree_view),
         }
 
     def __setup_menu_actions(self):
@@ -103,6 +108,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.open_in_mp3tag_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/mp3tag_icon.png")), "Open in MP3Tag", self)
         self.open_in_vlc_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/vlc.ico")), "Open in VLC", self)
         self.open_in_audacity_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/audacity_ico.svg")), "Open in Audacity", self)
+        self.open_media_info_action = QAction(QtGui.QIcon(os.path.abspath("src/qt/icons/mediainfo.ico")), "Open in MediaInfo", self)
         self.play_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Play", self)
         self.stop_action = QAction(QtGui.QIcon(":/icons/icons/stop-circle.svg"), "Stop", self)
         self.pause_action = QAction(QtGui.QIcon(":/icons/icons/pause.svg"), "Pause", self)
@@ -128,6 +134,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.process_amplify_action = QAction(QtGui.QIcon(":/icons/icons/volume-2.svg"), "Amplify", self)
         self.process_split_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Split multi track", self)
         self.process_batch_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Batch Process (split,amp,slow,tag)", self)
+        self.process_trim_action = QAction(QtGui.QIcon(":/icons/icons/play.svg"), "Trim", self)
 
     def __clear_clipboard(self) -> None:
         """Clear the clipboard. Returns: None"""
@@ -176,6 +183,21 @@ class TreeViewContextMenuHandler(QWidget):
             self.audacity_path = "C:\\Program Files\\Audacity\\Audacity.exe"
             logger.warning(f"Audacity path not found in registry. Using default path: '{self.audacity_path}'")
 
+    def __setup_media_info_path(self) -> None:
+        """get mediainfo path from registry"""
+
+        self.mediainfo_path = None
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\MediaInfo.exe") as key:
+                self.mediainfo_path = winreg.QueryValueEx(key, "")[0]
+
+        except Exception as e:
+            logger.error(f"Failed to get MediaInfo path from registry: '{e}'")
+
+        if self.mediainfo_path is None:
+            self.mediainfo_path = "C:\\Program Files (x86)\\K-Lite Codec Pack\\Tools\\mediainfo.exe"
+            logger.warning(f"MediaInfo path not found in registry. Using default path: '{self.mediainfo_path}'")
+
     def __add_actions_to_menu(self, menu: QMenu, action_type: str, number_of_selected_items: int, override: bool = False) -> None:
         """Adds actions to the menu based on the number of selected items and the type of action. Returns: None"""
 
@@ -206,6 +228,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.__add_actions_to_menu(submenu, "speed_up", number_of_selected_items)
         self.__add_actions_to_menu(submenu, "amplify", number_of_selected_items)
         self.__add_actions_to_menu(submenu, "split", number_of_selected_items)
+        self.__add_actions_to_menu(submenu, "trim", number_of_selected_items)
 
         self.__add_actions_to_menu(menu, "info", number_of_selected_items)
         self.__add_actions_to_menu(menu, "new_folder", number_of_selected_items)
@@ -295,6 +318,15 @@ class TreeViewContextMenuHandler(QWidget):
         command = [self.audacity_path] + file_paths
         subprocess.Popen(command, shell=False)
         logger.info(f"Menu Action -> opening file/s in Audacity: done")
+
+    def __do_open_in_media_info(self, tree_view: MyTreeView) -> None:
+        """Opens a file/directory in MediaInfo. Returns: None"""
+
+        file_paths = tree_view.get_selected_files(True)
+        logger.info(f"Menu Action -> Opening file/s in MediaInfo: '{self.mediainfo_path,file_paths}'")
+        command = [self.mediainfo_path] + file_paths
+        subprocess.Popen(command, shell=False)
+        logger.info(f"Menu Action -> opening file/s in MediaInfo: done")
 
     def __do_repackage_dir_by_label(self, tree_view: MyTreeView) -> None:
         """Repackages a directory. Returns: None"""
@@ -509,6 +541,14 @@ class TreeViewContextMenuHandler(QWidget):
         self.update_status("Processing split")
         split_files(tree_view.get_selected_files())
         logger.info("Menu action -> process split : done")
+
+    def __do_process_trim(self, tree_view: MyTreeView) -> None:
+        """Performs a split action. Returns: None"""
+
+        logger.info("Menu action -> process trim")
+        self.update_status("Processing trim")
+        trim_audio_silence(tree_view.get_selected_files())
+        logger.info("Menu action -> process trim : done")
 
 
 if __name__ == "__main__":

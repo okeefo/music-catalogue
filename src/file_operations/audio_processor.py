@@ -40,6 +40,11 @@ def split_files(fq_file_path: List[str]) -> None:
     __batch_process_files(fq_file_path, option="Split")
 
 
+def trim_audio_silence(fq_file_path: List[str]) -> None:
+    """Trims the silience at the begining of the audio file"""
+    __batch_process_files(fq_file_path, option="Trim")
+
+
 def auto_process_files(fq_file_path: List[str]) -> None:
     """Process a list of audio files.  The file will be slowed down, amplified, split and tagged."""
     __batch_process_files(fq_file_path, option="ALL")
@@ -48,13 +53,14 @@ def auto_process_files(fq_file_path: List[str]) -> None:
 def __batch_process_files(fq_files: List[str], option="ALL") -> None:
     """Process a list of audio files.
     The option parameter can be ALL, Slowdown,Amplify, Split or Speed_Up.
-    If ALL, the file will be slowed down, amplified.split and tagged.
+    If ALL, the file will be slowed down, amplified. split and tagged.
     If Slowdown, the file will only be slowed down.
     If Amplify, the file will only be amplified.
     If Split, the file will, be split and tagged.
     If Speed_Up, the file will only be speed up.
+    If Trim, the file will be trimmed.
     """
-    
+
     progress_parts = 4 if option == "ALL" else 1
     num = (len(fq_files) * progress_parts) + 2
     progress_bar = ProgressBarHelper(num, "Processing..", min_files=1)
@@ -95,7 +101,7 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
         # Reduce the speed of the file to 33rpm
         if option in ["ALL", "Slowdown"]:
             progress_bar.increment_with_message(f"{status_msg} Reduce speed to 33rpm")
-            result = __reduce_recording_speed(fq_file_path, release, maintain_tags, option=="Slowdown")
+            result = __reduce_recording_speed(fq_file_path, release, maintain_tags, option == "Slowdown")
             if (not result) or option == "Slowdown":
                 continue
 
@@ -110,6 +116,11 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
         if option == "Speed_Up":
             progress_bar.increment_with_message(f"{status_msg} increasing speed up to 45rpm")
             __increase_speed_of_file_from_33_45rpm(fq_file_path, release, maintain_tags)
+            continue
+
+        if option == "Trim":
+            progress_bar.increment_with_message(f"{status_msg} trimming")
+            __trim_the_silence(fq_file_path, release, progress_bar)
             continue
 
         # Split the file into individual tracks
@@ -130,7 +141,7 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
 
 def __reduce_recording_speed(source_file: str, release: ReleaseFacade, maintain_tags=False, skip_speed_check=False) -> Tuple[bool, str]:
     """Reduce the speed of the file by a ration of 45rpm -> 33rpm."""
-    
+
     if maintain_tags:
         tags, cover_art = audio_tag_helper.get_tags_and_cover_art(source_file)
 
@@ -156,9 +167,9 @@ def __split_audio_file(fq_audio_file: str, release: ReleaseFacade, progress_bar:
     If the number of tracks in the release does not match the number of tracks in the audio file after X attempts, exit the loop.
     Implemented a binary search approach here to find the correct silence threshold."""
 
-    msg  = f"{release.get_id()} - Comparing number of tracks in release and audio file:"
+    msg = f"{release.get_id()} - Comparing number of tracks in release and audio file:"
     logger.info(msg)
-    if progress_bar is not None:    
+    if progress_bar is not None:
         progress_bar.update_progress_bar_text(msg)
 
     number_of_tracks = release.get_number_of_tracks()
@@ -181,16 +192,15 @@ def __split_audio_file(fq_audio_file: str, release: ReleaseFacade, progress_bar:
         else:
             high_thresh = silence_thresh  # Adjust the high threshold if there are too many chunks
 
-        msg =f"{release.get_id()} - Number of tracks in release {number_of_tracks} does not match number found in audio file {number_of_chunks}.  Adjusting silence threshold to {silence_thresh}..."
+        msg = f"{release.get_id()} - Number of tracks in release {number_of_tracks} does not match number found in audio file {number_of_chunks}.  Adjusting silence threshold to {silence_thresh}..."
         logger.error(msg)
-        if progress_bar is not None:    
+        if progress_bar is not None:
             progress_bar.update_progress_bar_text(msg)
-    
 
-    msg=f"{release.get_id()} - Could not split audio file into tracks after maximum attempts.  Exiting..."
+    msg = f"{release.get_id()} - Could not split audio file into tracks after maximum attempts.  Exiting..."
     logger.error(msg)
     progress_bar.update_progress_bar_text(msg)
-    
+
     return []
 
 
@@ -259,6 +269,23 @@ def __increase_speed_of_file_from_33_45rpm(source_file: str, release_id: str, ma
     command_mask = ["soundstretch.exe", "{source}", "{target}", "-rate=35.001"]
     result = __execute_and_rename("Speeding up", source_file, command_mask, release_id)
 
+    if result and maintain_tags:
+        audio_tag_helper.write_tags(source_file, tags)
+        audio_tag_helper.write_cover_art(source_file, cover_art)
+
+    return result
+
+
+def __trim_the_silence(source_file: str, release_id: str, maintain_tags=False) -> bool:
+    """Trims the silence at the beginning of an audio file using SoX."""
+    logger.info(f"{release_id} - Trimming the silence at the beginning of the audio file")
+    if maintain_tags:
+        tags, cover_art = audio_tag_helper.get_tags_and_cover_art(source_file)
+
+
+    silence_threshold = -25
+    command = ["sox.exe", "{source}", "{target}", "silence", "-l", "1", "0.1", f"{silence_threshold}d"]
+    result = __execute_and_rename("Trim", source_file, command, release_id)
     if result and maintain_tags:
         audio_tag_helper.write_tags(source_file, tags)
         audio_tag_helper.write_cover_art(source_file, cover_art)
@@ -338,7 +365,6 @@ def __get_recorded_speed(filename: str, release: ReleaseFacade) -> str:
 
 
 def __get_release(release_id) -> ReleaseFacade:
-
     release_id = int(release_id[1:]) if release_id.startswith("r") else int(release_id)
 
     try:
@@ -354,7 +380,6 @@ def __get_release(release_id) -> ReleaseFacade:
 
 
 def __get_release_id(file_path) -> str:
-
     if match := re.search(r"r(\d{6,10})", file_path):
         release_id = match[1]
         logger.info(f"{release_id} - Found release id in file name: {file_path}")
@@ -407,5 +432,4 @@ def __normalise_file_path(fq_file_path: str) -> Tuple[str, str, str]:
 
 
 if __name__ == "__main__":
-
     print("Error: must run main_window.py")

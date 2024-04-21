@@ -57,6 +57,9 @@ Music Catalogue is packed with features that simplify the organisation of a musi
 * **Track Playback**: Listen to your tracks directly from the application.
 * **Tag and Artwork Display**: View track tags and artwork.
 * **File Management**: Easily manage your music files with two file explorers.
+* **Trim**: Remove silence from the start of the track - (experimental/beta testing)
+* **Discogs Integration**: Find release IDs on Discogs.
+* **3rd Party**: Opens files in Audacity for editing, Mp3Tag, VLC Player and MediaInfo - you must have these installed.
 
 ## Installation
 This is a python application and requires a python environment.  It runs only on windows.  It has been tested on windows 11 and 10.  It should run on windows 7 and 8.
@@ -78,8 +81,12 @@ The application has been tested with python 3.10.4.  It should work with python 
 
 ## Upcoming features:
 
+* TRIM - remove silence from the start and end of the track - in progress
+  * Currently implemented as a separate process.  It will be integrated into the main process once more testing has completed.
+  * I added this because the beat grid editor in Engine DJ is rubbish and i couldn't move the to the first bar to the start of the track
+  * The Trim process is a bit harsh, I want to give a few a ms before the start of the track but SOX doesn't seem to be able to do this.
+  * I can have written some code to do this but not keen to commit this yet. It does work well though and I'll probably get back to the DB work ;)
 * Database options - scan the music collection and create a database of the music collection  - in progress.
-
 * Configuration manager to make it easier to update the config file - change the defaults
 
 
