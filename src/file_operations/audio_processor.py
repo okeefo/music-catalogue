@@ -1,4 +1,8 @@
-import re, os, sys, subprocess, tempfile, stat
+import os
+import re
+import subprocess
+import sys
+import tempfile
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -130,9 +134,9 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
             if option == "Split":
                 continue
 
-        # Tag the files and rename them
-        progress_bar.update_progress_bar_text(f"{status_msg} tagging files")
-        auto_tag_files(tracks, root_dir)
+            # Tag the files and rename them
+            progress_bar.update_progress_bar_text(f"{status_msg} tagging files")
+            auto_tag_files(tracks, root_dir)
 
         logger.info(f"{release.get_id()} - Processing complete for file {file_name}")
 
@@ -282,8 +286,8 @@ def __trim_the_silence(source_file: str, release_id: str, maintain_tags=False) -
     if maintain_tags:
         tags, cover_art = audio_tag_helper.get_tags_and_cover_art(source_file)
 
-
-    silence_threshold = -25
+    # TODO: make this a configurable property
+    silence_threshold = -35
     command = ["sox.exe", "{source}", "{target}", "silence", "-l", "1", "0.1", f"{silence_threshold}d"]
     result = __execute_and_rename("Trim", source_file, command, release_id)
     if result and maintain_tags:
@@ -394,7 +398,7 @@ def __get_release_id(file_path) -> str:
     return None
 
 
-def __execute_system_command(command: List, action: str, release_id: str) -> Tuple[bool, str]:
+def __execute_system_command(command: List, action: str, release_id: str) -> bool:
     logger.info(f"{release_id} - {action} - {command}")
     try:
         result = subprocess.run(command, capture_output=True, text=True)

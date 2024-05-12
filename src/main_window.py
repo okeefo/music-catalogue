@@ -38,6 +38,7 @@ from ui.custom_image_label import ImageLabel
 from ui.custom_tree_view import MyTreeView
 from ui.custom_line_edit import MyLineEdit
 from ui.settings_dialogue import SettingsDialog
+from ui.db_dialogue import DatabaseDialog
 
 # Set logger instance
 from log_config import get_logger
@@ -236,6 +237,12 @@ class MainWindow(QMainWindow):
         self.but_settings.setToolTipDuration(1000)
         self.but_settings.setShortcut("Ctrl+S")
 
+        self.but_db = self.findChild(QPushButton, "but_db")
+        self.but_db.clicked.connect(lambda: self.on_db_button_clicked())
+        self.but_db.setToolTip("[Ctrl+D] Open the database dialog")
+        self.but_db.setToolTipDuration(1000)
+        self.but_db.setShortcut("Ctrl+D")
+
     def __setup_window_size(self) -> None:
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
         self.resize(
@@ -397,19 +404,22 @@ class MainWindow(QMainWindow):
 
         self.tree_view_cm_handler.show_menu(tree_view, index, position, other_tree)
 
-    def on_move_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
+    @staticmethod
+    def on_move_button_clicked(from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Move files from the source directory to the target directory. Returns: None"""
         logger.info(f"Moving files from '{from_tree.get_root_dir()}' to '{to_tree.get_root_dir()}'")
         selected_files = from_tree.get_selected_files(True)
         ask_and_move_files(selected_files, from_tree.get_root_dir(), to_tree.get_root_dir())
 
-    def on_copy_button_clicked(self, from_tree: MyTreeView, to_tree: MyTreeView) -> None:
+    @staticmethod
+    def on_copy_button_clicked(from_tree: MyTreeView, to_tree: MyTreeView) -> None:
         """Copy files from the source directory to the target directory. Returns: None"""
         logger.info(f"Copying files from '{from_tree.get_root_dir()}' to '{to_tree.get_root_dir()}'")
         selected_files = from_tree.get_selected_files(True)
         ask_and_copy_files(selected_files, to_tree.get_root_dir())
 
-    def on_restore_button_clicked(self) -> None:
+    @staticmethod
+    def on_restore_button_clicked() -> None:
         """Restore files from the recycle bin. Returns: None"""
 
         r = list(winshell.recycle_bin())  # this lists the original path of all the all items in the recycling bin
@@ -421,7 +431,8 @@ class MainWindow(QMainWindow):
         """Handles the tree view click event. Returns: None"""
         self.display_id3_tags_when_an_item_is_selected(item, tree_view)
 
-    def on_tree_double_clicked(self, index: QModelIndex, tree_view: MyTreeView, info_bar: MyLineEdit) -> None:
+    @staticmethod
+    def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, info_bar: MyLineEdit) -> None:
         """Handles the tree view double click event. Returns: None"""
         tree_view.on_tree_double_clicked(index)
         info_bar.setText(tree_view.get_root_dir())
@@ -435,13 +446,20 @@ class MainWindow(QMainWindow):
         else:
             tree_view.change_dir(os.path.normpath(path_info_bar.text()))
 
-    def on_settings_button_clicked(self) -> None:
+    @staticmethod
+    def on_settings_button_clicked() -> None:
         """Handles the settings button click event. Returns: None"""
         logger.info("Opening the settings dialog")
         dialog = SettingsDialog().exec_()
 
+    @staticmethod
+    def on_db_button_clicked() -> None:
+        """Handles the database button click event. Returns: None"""
+        logger.info("Opening the database dialog")
+        DatabaseDialog().show()
 
-    def go_up_dir_level(self, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
+    @staticmethod
+    def go_up_dir_level(tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
 
         tree_view.go_up_one_dir_level()
         path_bar.setText(tree_view.get_root_dir())

@@ -87,17 +87,37 @@ def setup_database():
     c.execute("INSERT OR IGNORE INTO media_types (format) VALUES ('VINYL')")
 
     c.execute('''
-        CREATE TABLE IF NOT EXISTS Media
+        CREATE TABLE IF NOT EXISTS _vinyl_copies
         (
-            id INTEGER PRIMARY KEY,
-            format INTEGER,
-            location TEXT,
-            release_id INTEGER,
-            track_number INTEGER,
-            FOREIGN KEY(format) REFERENCES media_types(id),
-            FOREIGN KEY(release_id) REFERENCES release(release_id)
+            release_id INTEGER PRIMARY KEY,
+            copies INTEGER
         )
     ''')
+
+    # create table for digital media. This table will store the digital media files that are associated with a release
+    # colums: release_id, track name, track_artist, track_number, file_path, file_name, file_location, file_size, media_type
+    # create an index of release_id, create another index of artist, create another index of track name
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS digital_media
+        (
+            release_id INTEGER,
+            track_name TEXT,
+            track_artist TEXT,
+            track_number INTEGER,
+            file_path TEXT,
+            file_name TEXT,
+            file_location TEXT,
+            file_size INTEGER,
+            media_type INTEGER,
+            FOREIGN KEY(release_id) REFERENCES release(release_id),
+            PRIMARY KEY(release_id, track_number)
+        )
+    ''')
+    c.execute("CREATE INDEX IF NOT EXISTS idx_release_id ON digital_media(release_id)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_artist ON digital_media(track_artist)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_track_name ON digital_media(track_name)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_media_type ON digital_media(media_type)")
+
 
     # Commit the changes
     conn.commit()

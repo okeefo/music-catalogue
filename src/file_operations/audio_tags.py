@@ -1,11 +1,12 @@
 from pathlib import Path
-from log_config import get_logger
+from src.log_config import get_logger
 import taglib
 from mutagen.wave import WAVE
 from mutagen.id3 import ID3, APIC, ID3NoHeaderError
+from mutagen.flac import FLAC, Picture
 from mutagen import File
 
-AUDIO_EXTENSIONS = [".mp3", ".wav"]
+AUDIO_EXTENSIONS = [".mp3", ".wav",".flac"]
 logger = get_logger(__name__)
 
 
@@ -80,11 +81,18 @@ class AudioTagHelper:
                 return [] if filedata.tags is None else filedata.tags.getall("APIC")
             except Exception:
                 return []
-        try:
-            filedata = ID3(absolute_path_filename)
-            return filedata.getall("APIC")
-        except ID3NoHeaderError:
-            return []
+        elif path.suffix == ".flac":
+            try:
+                filedata = FLAC(absolute_path_filename)
+                return filedata.pictures
+            except Exception:
+                return []
+        else:
+            try:
+                filedata = ID3(absolute_path_filename)
+                return filedata.getall("APIC")
+            except ID3NoHeaderError:
+                return []
         
     # Given a collection of cover art, a List[APIC] data and a fully qualified filename, write the cover art to the file, using mutagen
     def write_cover_art(self, absolute_path_filename: str, cover_art: list[APIC]) -> None:
@@ -127,10 +135,15 @@ class AudioTagHelper:
 
     def log_tag_key_values(self, file_path: str) -> None:
 
-        audio = File(file_path)
+        #if the file ends with .flac
+        if file_path.endswith(".flac"):
+            audio = FLAC(file_path)
+        else:
+            audio = File(file_path)
+
         for key, value in audio.items():
-            # if th ekey starts with APIC
-            if key.startswith("APIC"):
+            # if the key starts with APIC
+            if key.startswith("APIC") or key.startswith("PICTURE"):
                 logger.info(f"{key} - {value.pprint()} type={value.type} des={value.desc} mime={value.mime} enc={value.encoding}")
             else:
                 logger.info(f"{key}  - {value} ")

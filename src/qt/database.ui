@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Music Manager  - Catalog v1 - DB Controller</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/icons/icons/headphones.svg</normaloff>:/icons/icons/headphones.svg</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true">
@@ -86,8 +90,17 @@ QGroupBox::title {
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_4">
+    <property name="leftMargin">
+     <number>15</number>
+    </property>
+    <property name="topMargin">
+     <number>20</number>
+    </property>
+    <property name="rightMargin">
+     <number>15</number>
+    </property>
     <item row="0" column="0">
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QGroupBox" name="gBox_release">
       <property name="title">
        <string>Release</string>
       </property>
@@ -143,7 +156,7 @@ QGroupBox::title {
      </widget>
     </item>
     <item row="0" column="1">
-     <widget class="QGroupBox" name="groupBox_3">
+     <widget class="QGroupBox" name="gBox_Tracks">
       <property name="title">
        <string>Tracks</string>
       </property>
@@ -199,7 +212,7 @@ QGroupBox::title {
      </widget>
     </item>
     <item row="1" column="0" colspan="2">
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QGroupBox" name="gBox_media">
       <property name="title">
        <string>Media </string>
       </property>
@@ -264,6 +277,9 @@ QGroupBox::title {
      <width>2082</width>
      <height>26</height>
     </rect>
+   </property>
+   <property name="nativeMenuBar">
+    <bool>true</bool>
    </property>
    <widget class="QMenu" name="menuMenu">
     <property name="title">
