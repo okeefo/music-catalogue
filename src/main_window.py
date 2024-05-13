@@ -38,13 +38,12 @@ from ui.custom_image_label import ImageLabel
 from ui.custom_tree_view import MyTreeView
 from ui.custom_line_edit import MyLineEdit
 from ui.settings_dialogue import SettingsDialog
-from ui.db_dialogue import DatabaseDialog
+from ui.db_window import DatabaseWindow
 
 # Set logger instance
 from log_config import get_logger
 
 logger = get_logger("mc.main_window")
-
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -60,6 +59,7 @@ CONFIG_LAST_SOURCE_DIRECTORY = "last_source_directory"
 INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to install the K-Lite Codec Pack. You can download it from the official website:<br><a href="https://www.codecguide.com/download_kl.htm">https://www.codecguide.com/download_kl.htm</a>'
 # Create a dictionary that maps picture type numbers to descriptions
 PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not key.startswith("_")}
+
 
 # TODO: database integration - in progress
 # TODO: fix the artwork display
@@ -194,7 +194,7 @@ class MainWindow(QMainWindow):
         self.but_repackage_src.setToolTip("[Ctrl+R] Repackage the source directory -> target directory")
         self.but_repackage_src.setToolTipDuration(1000)
         self.but_repackage_src.setShortcut("Ctrl+R")
-        
+
         self.but_repackage_tar = self.findChild(QPushButton, "butt_repackage_target")
         self.but_repackage_tar.clicked.connect(lambda: self.on_repackage_button_clicked(self.tree_target, self.tree_source))
         self.but_repackage_tar.setToolTip("[Ctrl+Shift+R] Repackage the target directory -> source directory")
@@ -452,11 +452,11 @@ class MainWindow(QMainWindow):
         logger.info("Opening the settings dialog")
         dialog = SettingsDialog().exec_()
 
-    @staticmethod
-    def on_db_button_clicked() -> None:
+    def on_db_button_clicked(self) -> None:
         """Handles the database button click event. Returns: None"""
         logger.info("Opening the database dialog")
-        DatabaseDialog().show()
+        source_path = self.tree_source.get_root_dir()  # get the path from the source treeview
+        DatabaseWindow(source_path).show()
 
     @staticmethod
     def go_up_dir_level(tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
@@ -632,7 +632,6 @@ class MainWindow(QMainWindow):
             else:
                 label.setText(value)
 
-   
     def get_labels(self, tree_view: QTreeView, label_type: str) -> Union[list, dict]:
         """Returns a list or dictionary of source or target labels based on label_type."""
         source, target = self.label_cache.get(label_type, (None, None))
@@ -683,6 +682,7 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
 
     import sys
+
     try:
         # Create an instance of MainWindow
         main_window = MainWindow(app)
@@ -697,7 +697,7 @@ if __name__ == "__main__":
         logger.exception("Unhandled exception: %s", e)
         logger.error(traceback.format_exc())
         raise
-    
+
     finally:
         logger.info("Application exited")
         app.quit()
