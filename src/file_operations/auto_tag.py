@@ -355,7 +355,7 @@ def __derive_new_file_name(mask: str, tags: dict) -> str:
 
 
 tag_mapping = {
-    "catalognumber": AudioTagHelper.CATALOG_NUMBER,
+    "catalognumber": AudioTagHelper.CATALOGNUMBER,
     "publisher": AudioTagHelper.LABEL,
     "album": AudioTagHelper.ALBUM,
     "discnumber": AudioTagHelper.DISC_NUMBER,
@@ -401,7 +401,7 @@ def __add_tags(song: Union[WAVE.tags, ID3], track_info: TrackInfo) -> Union[WAVE
     song.add(TALB(encoding=3, text=track_info.album_name))
     song.add(TPE1(encoding=3, text=track_info.artist))
     song.add(TPE2(encoding=3, text=track_info.album_artist))
-    song.add(TXXX(encoding=3, desc=AudioTagHelper.CATALOG_NUMBER, text=track_info.catalog_number))
+    song.add(TXXX(encoding=3, desc=AudioTagHelper.CATALOGNUMBER, text=track_info.catalog_number))
     song.add(TXXX(encoding=3, desc=AudioTagHelper.DISCOGS_RELEASE_ID, text=track_info.discogs_id))
     song.add(TXXX(encoding=3, desc=AudioTagHelper.COUNTRY, text=track_info.country))
     song.add(TXXX(encoding=3, desc=AudioTagHelper.STYLE, text=track_info.styles))
@@ -415,9 +415,11 @@ def __add_tags(song: Union[WAVE.tags, ID3], track_info: TrackInfo) -> Union[WAVE
     return song
 
 
-def __get_cover_art_from_discogs(release_raw: Release) -> bytes:
+def __get_cover_art_from_discogs(release_raw: Release) -> bytes | None:
 
     image_list = release_raw.images
+    if image_list is None:
+        return None
 
     if len(image_list) > 0:
 
@@ -436,12 +438,15 @@ def __get_cover_art_from_discogs(release_raw: Release) -> bytes:
     return None
 
 
-def __add_cover_art(song: Union[WAVE.tags, ID3], art_work, full_path: Path) -> None:
+def __add_cover_art(song: Union[WAVE.tags, ID3], art_work: bytes, full_path: Path) -> None:
     """Add cover art to the file, either a WAVE or ID3 object"""
 
     try:
-        logger.info(f"Adding cover art to file: {full_path}")
-        song.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Front Cover", data=art_work))
+        if art_work is None:
+            logger.info(f"Skipping __add_cover_art, artwork none for file: {full_path}")
+        else:
+            logger.info(f"Adding cover art to file: {full_path}")
+            song.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Front Cover", data=art_work))
 
     except Exception as e:
         logger.exception(f"Failed to add cover art to file: {full_path} : {e}")

@@ -262,7 +262,7 @@ class MainWindow(QMainWindow):
             AudioTagHelper.LABEL,
             AudioTagHelper.DISC_NUMBER,
             AudioTagHelper.TRACK_NUMBER,
-            AudioTagHelper.CATALOG_NUMBER,
+            AudioTagHelper.CATALOGNUMBER,
             AudioTagHelper.DISCOGS_RELEASE_ID,
             AudioTagHelper.URL,
             AudioTagHelper.ALBUM_ARTIST,
@@ -549,7 +549,7 @@ class MainWindow(QMainWindow):
             label.setText("")
 
     def display_id3_tags_when_an_item_is_selected(self, item: QModelIndex, tree_view: QTreeView) -> None:
-        """ " Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
+        """"Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
 
         absolute_filename = tree_view.model().filePath(item)
 
@@ -619,18 +619,30 @@ class MainWindow(QMainWindow):
 
     def _display_id3_tags(self, absolute_file_path: str, tree_view: QTreeView) -> None:
         """Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
+
         labels = self.get_labels(tree_view, "id3")
 
         # Get the ID3 tags for the selected file from AudioTags
         audio_tags = self.audio_tags.get_tags(absolute_file_path)
 
         for label, tag in zip(labels, self.id3_tags):
-            value = audio_tags[tag][0] if tag in audio_tags else ""
-
-            if tag == "URL":
+            value = self.get_tag_value(tag, audio_tags)
+            if tag == AudioTagHelper.URL:
                 label.setText(f'<a href="{value}">{value}</a>')
             else:
                 label.setText(value)
+
+    @staticmethod
+    def get_tag_value(tag, audio_tags):
+        """Helper function to get the tag value, including alternative tag names for catalog number."""
+        if tag in audio_tags:
+            return audio_tags[tag][0]
+        if tag == AudioTagHelper.CATALOGNUMBER:
+            if AudioTagHelper.CATALOG_NUMBER in audio_tags:
+                return audio_tags[AudioTagHelper.CATALOG_NUMBER][0]
+            if AudioTagHelper.CATALOGID in audio_tags:
+                return audio_tags[AudioTagHelper.CATALOGID][0]
+        return ""
 
     def get_labels(self, tree_view: QTreeView, label_type: str) -> Union[list, dict]:
         """Returns a list or dictionary of source or target labels based on label_type."""

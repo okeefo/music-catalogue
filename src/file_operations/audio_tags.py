@@ -116,14 +116,13 @@ class AudioTagHelper:
         except Exception:
             logger.exception(f"Could not write cover art to file: '{absolute_path_filename}'")
 
-
     TITLE = "TITLE"
     ARTIST = "ARTIST"
     ALBUM = "ALBUM"
     LABEL = "LABEL"
     DISC_NUMBER = "DISCNUMBER"
     TRACK_NUMBER = "TRACKNUMBER"
-    CATALOG_NUMBER = "CATALOGNUMBER"
+    CATALOGNUMBER = "CATALOGNUMBER"
     DISCOGS_RELEASE_ID = "DISCOGS_RELEASE_ID"
     URL = "URL"
     ALBUM_ARTIST = "ALBUMARTIST"
@@ -132,6 +131,9 @@ class AudioTagHelper:
     MEDIA = "MEDIA"
     STYLE = "STYLE"
     COUNTRY = "COUNTRY"
+
+    CATALOG_NUMBER = "CATALOG_NUMBER"
+    CATALOGID = "CATALOGID"
 
     def log_tag_key_values(self, file_path: str) -> None:
 

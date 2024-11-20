@@ -75,7 +75,10 @@ pip install pytaglib
 pip install send2trash
 pip install discogs_client
 pip install pydub
-
+pip install PyQt5
+pip install pydantic
+pip install qtpy
+pip install pydantic
 
 The application has been tested with python 3.10.4.  It should work with python 3.10 and later. 
 
