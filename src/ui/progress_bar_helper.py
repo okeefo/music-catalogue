@@ -54,7 +54,7 @@ class ProgressBarHelper:
             return
 
         self.progress_bar.setValue(self.max)
-        x = 5
+        x = 2
         while x > 0:
             self.progress_bar.setLabelText(f"Processing complete.\n This dialog will close in {x} seconds. \n\n Or press click cancel to exit")
             QApplication.processEvents()

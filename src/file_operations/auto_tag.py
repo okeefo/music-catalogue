@@ -8,7 +8,7 @@ from discogs_client.models import Release, Track
 from pydantic import BaseModel
 from typing import List, Optional
 from mutagen.wave import WAVE
-from mutagen.id3 import ID3, ID3NoHeaderError, WXXX, ID3, TIT2, APIC, TALB, TPE1, TPE2, TXXX, TDRC, TPOS, TCON, TPUB, TMED, TRCK, COMM
+from mutagen.id3 import ID3, ID3NoHeaderError, WXXX, ID3, TIT2, APIC, TALB, TPE1, TPE2, TXXX, TYER, TPOS, TCON, TPUB, TMED, TRCK, COMM
 from file_operations.audio_tags import AudioTagHelper, AUDIO_EXTENSIONS
 from ui.progress_bar_helper import ProgressBarHelper
 from ui.custom_messagebox import show_message_box, ButtonType, convert_response_to_string
@@ -405,7 +405,7 @@ def __add_tags(song: Union[WAVE.tags, ID3], track_info: TrackInfo) -> Union[WAVE
     song.add(TXXX(encoding=3, desc=AudioTagHelper.DISCOGS_RELEASE_ID, text=track_info.discogs_id))
     song.add(TXXX(encoding=3, desc=AudioTagHelper.COUNTRY, text=track_info.country))
     song.add(TXXX(encoding=3, desc=AudioTagHelper.STYLE, text=track_info.styles))
-    song.add(TDRC(encoding=3, text=track_info.year))
+    song.add(TYER(encoding=3, text=track_info.year))
     song.add(TPOS(encoding=3, text=track_info.disc_number))
     song.add(TRCK(encoding=3, text=track_info.track_number))
     song.add(TCON(encoding=3, text=track_info.genres))
