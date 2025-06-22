@@ -1,11 +1,13 @@
-import traceback
 import configparser
 import os
-import winshell
-import qt.resources_rcc
-from path_helper import get_absolute_path_config
+import traceback
+from typing import Dict, Union, cast
 
+import winshell
 from PyQt5 import uic, QtGui
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QPoint
+from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtWidgets import (
     QStackedWidget,
     QApplication,
@@ -19,29 +21,21 @@ from PyQt5.QtWidgets import (
     QCompleter,
     QFileSystemModel,
 )
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QPoint
-from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtMultimedia import QMediaPlayer
-
-from enum import Enum
 from mutagen.id3 import PictureType
-from typing import Dict
-from typing import Union
 
-from file_operations.audio_tags import AudioTagHelper
-from file_operations.audio_tags import PictureTypeDescription
-from file_operations.repackage_dir import repackage_dir_by_label
+from file_operations.audio_tags import AudioTagHelper, PictureTypeDescription
 from file_operations.file_utils import ask_and_move_files, ask_and_copy_files
-from ui.recycle import RestoreDialog
-from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
-from ui.custom_image_label import ImageLabel
-from ui.custom_tree_view import MyTreeView
-from ui.custom_line_edit import MyLineEdit
-from ui.settings_dialogue import SettingsDialog
-from ui.db_window import DatabaseWindow
-
+from file_operations.repackage_dir import repackage_dir_by_label
 # Set logger instance
 from log_config import get_logger
+from path_helper import get_absolute_path_config
+from ui.custom_image_label import ImageLabel
+from ui.custom_line_edit import MyLineEdit
+from ui.custom_tree_view import MyTreeView
+from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
+from ui.db_window import DatabaseWindow
+from ui.recycle import RestoreDialog
+from ui.settings_dialogue import SettingsDialog
 
 logger = get_logger("mc.main_window")
 
@@ -72,6 +66,7 @@ class MainWindow(QMainWindow):
     def __init__(self, application):
         """Initialize the main window."""
         super().__init__()
+        self.animation = None
         self.application = application
 
         # Set up instance variables
@@ -121,7 +116,7 @@ class MainWindow(QMainWindow):
 
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
-        self.player.mediaStatusChanged.connect(self.handle_media_status_changed)
+        self.player.mediaStatusChanged.connect(self.handle_media_status_changed)  # type: ignore[attr-defined]
 
     def __setup_config(self) -> None:
         """Sets up the configuration by reading the config.ini file and adding missing sections if necessary. Returns: None"""
@@ -179,7 +174,7 @@ class MainWindow(QMainWindow):
         # toggle menu
         self.frame_left_menu.setMinimumWidth(0)
         self.but_toggle = self.findChild(QPushButton, "but_toggle")
-        self.but_toggle.clicked.connect(lambda: self.toggleMenu())
+        self.but_toggle.clicked.connect(lambda: self.toggle_menu())
         self.but_toggle.setToolTip("Open Menu")
         self.but_toggle.setToolTipDuration(1000)
         self.but_toggle.setIcon(self.icon_menu)
@@ -363,8 +358,8 @@ class MainWindow(QMainWindow):
     def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit) -> None:
         tree_view.setup_tree_view(last_dir)
         tree_view.set_single_click_handler(self.on_tree_clicked)
-        tree_view.set_double_click_handler(lambda index, tree_view, _: self.on_tree_double_clicked(index, tree_view, path_bar))
-        tree_view.set_custom_context_menu(self.onContextMenuRequested)
+        tree_view.set_double_click_handler(lambda index, clicked_tree, _: self.on_tree_double_clicked(index, clicked_tree, path_bar))
+        tree_view.set_custom_context_menu(self.on_context_menu_requested)
 
     def __setup_exit(self) -> None:
         """Sets up the exit button. Returns: None"""
@@ -376,7 +371,7 @@ class MainWindow(QMainWindow):
         self.but_exit.clicked.connect(self.confirm_exit)
         self.but_exit_2.clicked.connect(self.confirm_exit)
 
-        icon = self.style().standardIcon(QStyle.SP_DialogCloseButton)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogCloseButton)
         mf_exit.setIcon(icon)
         self.but_exit.setIcon(icon)
         mf_exit.setShortcut("Ctrl+Q")
@@ -393,7 +388,7 @@ class MainWindow(QMainWindow):
         self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_info_bar_source))
         self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_info_bar_target))
 
-    def onContextMenuRequested(self, tree_view: MyTreeView, position: QPoint):
+    def on_context_menu_requested(self, tree_view: MyTreeView, position: QPoint):
 
         index = tree_view.indexAt(position)
 
@@ -450,7 +445,7 @@ class MainWindow(QMainWindow):
     def on_settings_button_clicked() -> None:
         """Handles the settings button click event. Returns: None"""
         logger.info("Opening the settings dialog")
-        dialog = SettingsDialog().exec_()
+        SettingsDialog().exec_()
 
     def on_db_button_clicked(self) -> None:
         """Handles the database button click event. Returns: None"""
@@ -511,20 +506,20 @@ class MainWindow(QMainWindow):
         """Set up the repackage button. Returns: None"""
         self.repackage(tree_source, tree_target)
 
-    def _display_and_log_error(self, e) -> None:
+    def _display_and_log_error(self, err: Exception) -> None:
         """Displays the error message and logs the error to the log file. Returns: None"""
         logger.error(traceback.format_exc())
-        QMessageBox.critical(self, "Error", str(e))
+        QMessageBox.critical(self, "Error", str(err))
 
-    def update_status(self, text) -> None:
+    def update_status(self, text: str) -> None:
         """Update the text in lbl_stat."""
         self.lbl_stat.setText(text)
 
-    def update_statusbar(self, text) -> None:
+    def update_statusbar(self, text: str) -> None:
         """Update the text in the status bar."""
         self.statusbar.showMessage(text)
 
-    def prompt_yes_no(self, title, message) -> int:
+    def prompt_yes_no(self, title: str, message: str) -> int:
         """Displays a yes/no prompt to the user. Returns: QMessageBox.Yes or QMessageBox.No"""
         return QMessageBox.question(
             self,
@@ -543,15 +538,17 @@ class MainWindow(QMainWindow):
         self.clear_labels(src.values())
         self.clear_labels(tar.values())
 
-    def clear_labels(self, labels) -> None:
+    @staticmethod
+    def clear_labels(labels) -> None:
         """Clears label tags . Returns: None"""
         for label in labels:
             label.setText("")
 
     def display_id3_tags_when_an_item_is_selected(self, item: QModelIndex, tree_view: QTreeView) -> None:
-        """"Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
+        """Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
 
-        absolute_filename = tree_view.model().filePath(item)
+        model = cast(QFileSystemModel, tree_view.model())
+        absolute_filename = model.filePath(item)
 
         if not self.audio_tags.isSupportedAudioFile(absolute_filename):
             return
@@ -575,12 +572,12 @@ class MainWindow(QMainWindow):
             # Add the cover art images to the QStackedWidget
         for image in cover_art_images:
             pixmap = QPixmap()
-            pixmap.loadFromData(image.data)
+            pixmap.loadFromData(image.data)  # type: ignore[attr-defined]
             label = ImageLabel(pixmap, image)
             stacked_widget.addWidget(label)
 
         # Store the sizes of the images in bytes in a list
-        self.image_sizes = [len(image.data) for image in cover_art_images]
+        self.image_sizes = [len(image.data) for image in cover_art_images]  # type: ignore[attr-defined]
 
         label_map = self.get_labels(tree_view, "artwork")
         page_number_label = label_map.get("page")
@@ -605,17 +602,17 @@ class MainWindow(QMainWindow):
 
         # Update the resolution label
         resolution = f"{pixmap.width()}x{pixmap.height()}"
-        label_map.get("res").setText(resolution)
+        label_map.get("res").setText(resolution)  # type: ignore[attr-defined]
 
         # Update the size label
         current_index = stacked_widget.currentIndex()
         if current_index > 0:
             size = self.image_sizes[current_index] / 1024  # size in KB
-            label_map.get("size").setText(f"{size:.2f} KB")
+            label_map.get("size").setText(f"{size:.2f} KB")  # type: ignore[attr-defined]
 
         label_map.get("art").setText(PictureTypeDescription.get_description(widget.image.type))
-        label_map.get("mime").setText(widget.image.mime)
-        label_map.get("desc").setText(widget.image.desc)
+        label_map.get("mime").setText(widget.image.mime)  # type: ignore[attr-defined]
+        label_map.get("desc").setText(widget.image.desc)  # type: ignore[attr-defined]
 
     def _display_id3_tags(self, absolute_file_path: str, tree_view: QTreeView) -> None:
         """Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
@@ -660,16 +657,16 @@ class MainWindow(QMainWindow):
         repackage_dir_by_label(source_dir, target_dir)
         logger.info("Repackaging finished...")
 
-    def toggleMenu(self) -> None:
+    def toggle_menu(self) -> None:
         """Toggles the left menu. Returns: None"""
         width = self.frame_left_menu.width()
-        maxExtend = 100
+        max_extend = 100
 
-        widthExtended = maxExtend if width == 0 else 0
+        width_extended = max_extend if width == 0 else 0
         self.animation = QPropertyAnimation(self.frame_left_menu, b"minimumWidth")
         self.animation.setDuration(400)
         self.animation.setStartValue(width)
-        self.animation.setEndValue(widthExtended)
+        self.animation.setEndValue(width_extended)
         self.animation.setEasingCurve(QEasingCurve.InOutQuart)
         self.animation.start()
 
@@ -680,15 +677,16 @@ class MainWindow(QMainWindow):
         self.but_toggle.setToolTip(tooltip)
         self.but_toggle.setToolTipDuration(1000 if width <= 0 else 0)
 
-    def handle_media_status_changed(self, status):
+    @staticmethod
+    def handle_media_status_changed(status):
         """Handles the media status changed event."""
         if status == QMediaPlayer.InvalidMedia:
-            msgBox = QMessageBox()
-            msgBox.setIcon(QMessageBox.Warning)
-            msgBox.setWindowTitle("Error")
-            msgBox.setText(INVALID_MEDIA_ERROR_MSG)
-            msgBox.setTextFormat(Qt.RichText)
-            msgBox.exec()
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Warning)
+            msg_box.setWindowTitle("Error")
+            msg_box.setText(INVALID_MEDIA_ERROR_MSG)
+            msg_box.setTextFormat(Qt.RichText)
+            msg_box.exec()
 
 
 if __name__ == "__main__":
