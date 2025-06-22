@@ -695,6 +695,7 @@ if __name__ == "__main__":
 
     import sys
 
+    exit_code = 0
     try:
         # Create an instance of MainWindow
         main_window = MainWindow(app)
@@ -708,9 +709,9 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception("Unhandled exception: %s", e)
         logger.error(traceback.format_exc())
-        raise
+        exit_code = 1
 
     finally:
         logger.info("Application exited")
         app.quit()
-        sys.exit(0)
+    sys.exit(exit_code)

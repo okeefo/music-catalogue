@@ -2,8 +2,8 @@ import os
 
 from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
-from PyQt5.QtGui import QPixmap, QKeySequence
-from typing import List
+from PyQt5.QtGui import QPixmap
+from typing import List, cast
 from ui.custom_image_label import pop_up_image_dialogue
 from log_config import get_logger
 
@@ -84,7 +84,7 @@ class FileSystemModel(QFileSystemModel):
             return True
 
         return False
-    
+
     def data(self, index, role=Qt.DisplayRole):
         if index.column() == 1 and role == Qt.DisplayRole:
             if size_str := super().data(index, role):
@@ -104,11 +104,11 @@ class FileSystemModel(QFileSystemModel):
 
 class MyTreeView(QTreeView):
     """A TreeView that allows to select multiple items at once."""
-    
+
     def __init__(self, *args, **kwargs):
         super(MyTreeView, self).__init__(*args, **kwargs)
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.setSelectionMode(QTreeView.ExtendedSelection)
+        self.setFocusPolicy( Qt.FocusPolicy(Qt.StrongFocus))
+        self.setSelectionMode(QAbstractItemView.SelectionMode(QTreeView.ExtendedSelection))
 
     def mousePressEvent(self, event):
         """Select multiple items on mouse click."""
@@ -117,13 +117,13 @@ class MyTreeView(QTreeView):
             if index.isValid():
                 self.setCurrentIndex(index)
                 if QApplication.keyboardModifiers() == Qt.ControlModifier:
-                    self.selectionModel().select(index, QItemSelectionModel.Toggle)
+                    self.selectionModel().select(index, QItemSelectionModel.SelectionFlag(QItemSelectionModel.Toggle))
                 else:
-                    self.selectionModel().select(index, QItemSelectionModel.Select)
+                    self.selectionModel().select(index, QItemSelectionModel.SelectionFlag(QItemSelectionModel.Select))
         elif event.button() == Qt.RightButton:
             if index.isValid() and not self.selectionModel().isSelected(index):
                 self.setCurrentIndex(index)
-                self.selectionModel().select(index, QItemSelectionModel.Select)
+                self.selectionModel().select(index, QItemSelectionModel.SelectionFlag(QItemSelectionModel.Select))
         super().mousePressEvent(event)
 
     def setup_tree_view(self, last_dir) -> None:
@@ -135,8 +135,8 @@ class MyTreeView(QTreeView):
 
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setDragDropMode(QAbstractItemView.InternalMove)
-        self.setDefaultDropAction(Qt.MoveAction)
+        self.setDragDropMode(QAbstractItemView.DragDropMode(QAbstractItemView.InternalMove))
+        self.setDefaultDropAction(Qt.DropAction(Qt.MoveAction))
 
     def set_dir_as(self, last_dir) -> None:
         model = FileSystemModel()
@@ -147,12 +147,12 @@ class MyTreeView(QTreeView):
     def set_single_click_handler(self, single_click_fn) -> None:
         self.clicked.connect(lambda index: single_click_fn(index, self))
 
-    def set_double_click_handler(self, double_click_fn, object=None) -> None:
-        self.doubleClicked.connect(lambda index: double_click_fn(index, self, object))
+    def set_double_click_handler(self, double_click_fn, item=None) -> None:
+        self.doubleClicked.connect(lambda index: double_click_fn(index, self, item))
 
     def set_custom_context_menu(self, context_menu_fn) -> None:
         # Enable custom context menu
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setContextMenuPolicy( Qt.ContextMenuPolicy(Qt.CustomContextMenu))
         self.customContextMenuRequested.connect(lambda position: context_menu_fn(self, position))
 
     def resize_columns(self) -> None:
@@ -163,7 +163,7 @@ class MyTreeView(QTreeView):
     def __handle_tree_double_click_dir(self, path: str) -> None:
         """Handles the tree view double click event for directories. Returns: None"""
 
-        model = self.model()
+        model = cast(QFileSystemModel, self.model())
         self.__set_root_index_of_tree_view(path)
         self.__set_root_path_for_tree_view(model, path)
 
@@ -172,7 +172,7 @@ class MyTreeView(QTreeView):
     def on_tree_double_clicked(self, index: QModelIndex) -> None:
         """Handles the tree view double click event. Returns: None"""
 
-        model = self.model()
+        model = cast(QFileSystemModel, self.model())
         path = model.filePath(index)
 
         if model.isDir(index):
@@ -187,13 +187,13 @@ class MyTreeView(QTreeView):
 
         model.setRootPath(absolute_path)
         self.setModel(model)
-        self.sortByColumn(0, Qt.AscendingOrder)
+        self.sortByColumn(0, Qt.SortOrder(Qt.AscendingOrder))
 
     def __set_root_index_of_tree_view(self, directory) -> None:
         """Sets the root index of the tree view."""
 
-        model = self.model()
-        self.setRootIndex(model.index(directory))
+        model = cast(QFileSystemModel, self.model())
+        self.setRootIndex(model.index(self, directory))
         self.resize_columns()
         with contextlib.suppress(TypeError):
             model.directoryLoaded.disconnect()
@@ -201,7 +201,7 @@ class MyTreeView(QTreeView):
     def go_up_one_dir_level(self) -> None:
         """Goes up one directory level."""
 
-        model = self.model()
+        model = cast(QFileSystemModel, self.model())
         current_root_path = model.filePath(self.rootIndex())
         directory = QDir(current_root_path)
         if directory.cdUp():
@@ -215,16 +215,17 @@ class MyTreeView(QTreeView):
         self.set_dir_as(directory)
         self.resize_columns()
         self.clearSelection()
-        self.setCurrentIndex(self.model().index(directory))
-        self.selectionModel().select(self.model().index(directory), QItemSelectionModel.Select)
-        self.selectionModel().setCurrentIndex(self.model().index(directory), QItemSelectionModel.Select)
+        self.setCurrentIndex(self.model().index(self, directory))
+        self.selectionModel().select(self.model().index(self, directory), QItemSelectionModel.SelectionFlag(QItemSelectionModel.Select))
+        self.selectionModel().setCurrentIndex(self.model().index(self, directory), QItemSelectionModel.SelectionFlag(QItemSelectionModel.Select))
 
     def get_selected_file_names_relative_to_the_root(self) -> List[str]:
         """Returns a list of the selected files (inc) in the tree view."""
 
         selected_indexes = self.selectionModel().selectedRows()
-        root_path = self.model().rootPath()
-        return [os.path.relpath(self.model().filePath(i), root_path) for i in selected_indexes]
+        model = cast(QFileSystemModel, self.model())
+        root_path = model.rootPath()
+        return [os.path.relpath(model.filePath(i), root_path) for i in selected_indexes]
 
     def get_selected_files(self, default_all=False) -> List[str]:
         """Returns a list of selected file paths from the tree view, if there are no selected files and defaultAll=true, returns all files."""
@@ -232,14 +233,16 @@ class MyTreeView(QTreeView):
         if len(self.selectionModel().selectedRows()) == 0 and default_all == True:
             self.selectAll()
 
+        model = cast(QFileSystemModel, self.model())
         selected_indexes = self.selectionModel().selectedRows()
-        selected_file_paths = [self.model().filePath(i) for i in selected_indexes]
+        selected_file_paths = [model.filePath(i) for i in selected_indexes]
         return [os.path.normpath(i) for i in selected_file_paths]
 
     def get_root_dir(self) -> str:
         """Returns the root directory of the tree view."""
 
-        return os.path.normpath(self.model().rootPath())
+        model = cast(QFileSystemModel, self.model())
+        return os.path.normpath(model.rootPath())
 
     def keyPressEvent(self, event):
         super().keyPressEvent(event)
