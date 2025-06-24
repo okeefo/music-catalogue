@@ -1,5 +1,6 @@
 import contextlib
 import os
+import random
 from typing import List, cast
 
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
@@ -9,12 +10,14 @@ from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView
 
 from log_config import get_logger
 from ui.custom_image_label import pop_up_image_dialogue
-
+from ui.custom_waveform_widget import WaveformWidget
+from file_operations.audio_tags import AudioTagHelper
 # create logger
 logger = get_logger(__name__)
 
 
 class FileSystemModel(QFileSystemModel):
+
     def flags(self, index):
         default_flags = super().flags(index)
         if index.isValid():
@@ -108,6 +111,10 @@ class MyTreeView(QTreeView):
         super(MyTreeView, self).__init__(*args, **kwargs)
         self.setFocusPolicy(Qt.FocusPolicy(Qt.StrongFocus))
         self.setSelectionMode(QAbstractItemView.SelectionMode(QTreeView.ExtendedSelection))
+        self.audio_helper = AudioTagHelper()
+
+    def set_waveform_callback(self, callback):
+        self._waveform_callback = callback
 
     def mousePressEvent(self, event):
         """Select multiple items on mouse click."""
@@ -166,8 +173,6 @@ class MyTreeView(QTreeView):
         self.__set_root_index_of_tree_view(path)
         self.__set_root_path_for_tree_view(model, path)
 
-        model.directoryLoaded.connect(lambda: self.__set_root_index_of_tree_view(path))
-
     def on_tree_double_clicked(self, index: QModelIndex) -> None:
         """Handles the tree view double click event. Returns: None"""
 
@@ -180,6 +185,19 @@ class MyTreeView(QTreeView):
         elif os.path.isfile(path) and path.lower().endswith((".jpg", ".png", ".jpeg")):
             pixmap = QPixmap(path)
             pop_up_image_dialogue(path, pixmap)
+
+
+        elif os.path.isfile(path):
+
+            logger.info(f"Tree View {self.objectName()} Double clicked on file: {path}")
+            if self.audio_helper.isSupportedAudioFile(path):
+                logger.info("file is a supported audio file, calling waveform callback")
+                if hasattr(self, "_waveform_callback") and self._waveform_callback:
+                    self._waveform_callback(path)
+                else:
+                    logger.warning("Waveform callback not set")
+            else:
+                logger.info("file is not a supported audio file, clearing waveform data")
 
     def __set_root_path_for_tree_view(self, model: QFileSystemModel, absolute_path: str):
         """Sets the root path for the given tree view."""

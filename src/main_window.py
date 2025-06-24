@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMessageBox,
     QCompleter,
-    QFileSystemModel,
+    QFileSystemModel, QSlider,
 )
 from mutagen.id3 import PictureType
 
@@ -33,6 +33,7 @@ from ui.custom_image_label import ImageLabel
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
 from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
+from ui.custom_waveform_widget import WaveformWidget
 from ui.db_window import DatabaseWindow
 from ui.recycle import RestoreDialog
 from ui.settings_dialogue import SettingsDialog
@@ -98,6 +99,7 @@ class MainWindow(QMainWindow):
         self.__setup_open_dir_browsers()
         self.__setup_copy_dir_view()
         self.__setup_path_info_bar()
+        self.__setup_wave_form_widget()
         self.__setup_tree_widgets()
         self.__setup_id3_tags()
         self.__setup_label_cache()
@@ -105,8 +107,8 @@ class MainWindow(QMainWindow):
         self.__clear_labels()
         self.__setup_action_buttons()
         self.__setup_menu_buttons()
-
         self.__setup_dir_up_buttons()
+        self.__setup_slider()
 
     #  self.__setup_mp3tag_path()
 
@@ -259,7 +261,7 @@ class MainWindow(QMainWindow):
             AudioTagHelper.TRACK_NUMBER,
             AudioTagHelper.CATALOGNUMBER,
             AudioTagHelper.DISCOGS_RELEASE_ID,
-            AudioTagHelper.URL,
+            # AudioTagHelper.URL,
             AudioTagHelper.ALBUM_ARTIST,
             AudioTagHelper.YEAR,
             AudioTagHelper.GENRE,
@@ -354,6 +356,9 @@ class MainWindow(QMainWindow):
         self.tree_target = self.findChild(MyTreeView, "tree_target")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
         self.__set_tree_actions(self.tree_target, last_dir, self.path_info_bar_target)
+        if self.waveform_widget:
+            self.tree_source.set_waveform_callback(self.waveform_widget.load_waveform_from_file)
+            self.tree_target.set_waveform_callback(self.waveform_widget.load_waveform_from_file)
 
     def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit) -> None:
         tree_view.setup_tree_view(last_dir)
@@ -387,6 +392,42 @@ class MainWindow(QMainWindow):
         """Sets up the functionality of the path up buttons. Returns: None"""
         self.findChild(QPushButton, "but_source_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_source, self.path_info_bar_source))
         self.findChild(QPushButton, "but_target_up").clicked.connect(lambda: self.go_up_dir_level(self.tree_target, self.path_info_bar_target))
+
+    def __setup_wave_form_widget(self) -> None:
+        """Sets up the waveform widget. Returns: None"""
+        self.waveform_widget = self.findChild(WaveformWidget, "waveform_widget")
+        if not self.waveform_widget:
+            logger.fatal("WaveformWidget not found in the UI")
+            sys.exit(1)
+            return
+
+        # Set the media player for the waveform widget
+#        self.waveform_widget.set_media_player(self.player)
+
+    def __setup_slider(self) -> None:
+        """Sets up the slider for the waveform widget. Returns: None"""
+        self.slider = self.findChild(QSlider, "slider_waveform")
+        if self.slider is None:
+            logger.error("Slider 'slider_waveform' not found in the UI")
+            sys.exit(1)
+        if not hasattr(self, "waveform_widget") or self.waveform_widget is None:
+            logger.error("WaveformWidget is not initialized before setting slider")
+            sys.exit(1)
+
+        self.slider.setMinimum(0)
+        self.slider.setMaximum(1000)  # Increase for finer granularity
+        self.slider.setSingleStep(1)  # Smallest possible step
+        self.waveform_widget.set_slider(self.slider)
+        self.slider.valueChanged.connect(self.on_slider_moved)
+
+    def on_slider_moved(self, value):
+        # Map slider value to waveform position
+        min_val, max_val = self.slider.minimum(), self.slider.maximum()
+        if max_val == min_val:
+            rel_pos = 0.0
+        else:
+            rel_pos = (value - min_val) / (max_val - min_val)
+        self.waveform_widget.set_needle_position(rel_pos)
 
     def on_context_menu_requested(self, tree_view: MyTreeView, position: QPoint):
 
