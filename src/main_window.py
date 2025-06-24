@@ -278,7 +278,7 @@ class MainWindow(QMainWindow):
             self.lbl_src_track,
             self.lbl_src_catalog,
             self.lbl_src_discogs_id,
-            self.lbl_src_website,
+
             self.lbl_src_album_artist,
             self.lbl_src_date,
             self.lbl_src_genre,
@@ -296,7 +296,7 @@ class MainWindow(QMainWindow):
             self.lbl_tar_track,
             self.lbl_tar_catalog,
             self.lbl_tar_discogs_id,
-            self.lbl_tar_website,
+
             self.lbl_tar_album_artist,
             self.lbl_tar_date,
             self.lbl_tar_genre,
@@ -621,11 +621,13 @@ class MainWindow(QMainWindow):
 
         # Get the ID3 tags for the selected file from AudioTags
         audio_tags = self.audio_tags.get_tags(absolute_file_path)
+        url = audio_tags.get(AudioTagHelper.URL, [""])[0]  # Get the URL if present
 
         for label, tag in zip(labels, self.id3_tags):
             value = self.get_tag_value(tag, audio_tags)
-            if tag == AudioTagHelper.URL:
-                label.setText(f'<a href="{value}">{value}</a>')
+            if tag == AudioTagHelper.DISCOGS_RELEASE_ID and url:
+                label.setText(f'<a href="{url}">{value}</a>')
+                label.setOpenExternalLinks(True)
             else:
                 label.setText(value)
 

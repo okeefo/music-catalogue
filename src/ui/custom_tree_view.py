@@ -1,15 +1,14 @@
+import contextlib
 import os
+from typing import List, cast
 
-from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
 from PyQt5.QtGui import QPixmap
-from typing import List, cast
-from ui.custom_image_label import pop_up_image_dialogue
-from log_config import get_logger
-
-import contextlib
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView
 
+from log_config import get_logger
+from ui.custom_image_label import pop_up_image_dialogue
 
 # create logger
 logger = get_logger(__name__)
@@ -95,10 +94,10 @@ class FileSystemModel(QFileSystemModel):
                 size *= 1024
                 if size < 1024:
                     return f'{size:.2f} KB'
-                elif size < 1024**2:
+                elif size < 1024 ** 2:
                     return f'{size / 1024:.2f} MB'
                 else:
-                    return f'{size / 1024**2:.2f} GB'
+                    return f'{size / 1024 ** 2:.2f} GB'
         return super().data(index, role)
 
 
@@ -107,7 +106,7 @@ class MyTreeView(QTreeView):
 
     def __init__(self, *args, **kwargs):
         super(MyTreeView, self).__init__(*args, **kwargs)
-        self.setFocusPolicy( Qt.FocusPolicy(Qt.StrongFocus))
+        self.setFocusPolicy(Qt.FocusPolicy(Qt.StrongFocus))
         self.setSelectionMode(QAbstractItemView.SelectionMode(QTreeView.ExtendedSelection))
 
     def mousePressEvent(self, event):
@@ -152,7 +151,7 @@ class MyTreeView(QTreeView):
 
     def set_custom_context_menu(self, context_menu_fn) -> None:
         # Enable custom context menu
-        self.setContextMenuPolicy( Qt.ContextMenuPolicy(Qt.CustomContextMenu))
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy(Qt.CustomContextMenu))
         self.customContextMenuRequested.connect(lambda position: context_menu_fn(self, position))
 
     def resize_columns(self) -> None:
@@ -193,7 +192,7 @@ class MyTreeView(QTreeView):
         """Sets the root index of the tree view."""
 
         model = cast(QFileSystemModel, self.model())
-        self.setRootIndex(model.index(self, directory))
+        self.setRootIndex(model.index(directory))
         self.resize_columns()
         with contextlib.suppress(TypeError):
             model.directoryLoaded.disconnect()
@@ -215,9 +214,9 @@ class MyTreeView(QTreeView):
         self.set_dir_as(directory)
         self.resize_columns()
         self.clearSelection()
-        self.setCurrentIndex(self.model().index(self, directory))
-        self.selectionModel().select(self.model().index(self, directory), QItemSelectionModel.SelectionFlag(QItemSelectionModel.Select))
-        self.selectionModel().setCurrentIndex(self.model().index(self, directory), QItemSelectionModel.SelectionFlag(QItemSelectionModel.Select))
+        self.setCurrentIndex(self.model().index(directory))
+        self.selectionModel().select(self.model().index(directory), QItemSelectionModel.SelectionFlag(QItemSelectionModel.Select))
+        self.selectionModel().setCurrentIndex(self.model().index(directory), QItemSelectionModel.SelectionFlag(QItemSelectionModel.Select))
 
     def get_selected_file_names_relative_to_the_root(self) -> List[str]:
         """Returns a list of the selected files (inc) in the tree view."""
