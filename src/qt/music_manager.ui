@@ -484,7 +484,7 @@ QPushButton::pressed
               </item>
               <item>
                <layout class="QGridLayout" name="gridLayout_3">
-                <item row="1" column="0">
+                <item row="1" column="1">
                  <widget class="QSlider" name="slider_waveform">
                   <property name="styleSheet">
                    <string notr="true">QSlider::groove:horizontal {
@@ -515,13 +515,42 @@ QSlider::handle:horizontal {
                   </property>
                  </widget>
                 </item>
-                <item row="0" column="0">
+                <item row="1" column="0">
+                 <widget class="QLabel" name="lbl_current">
+                  <property name="minimumSize">
+                   <size>
+                    <width>60</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>00:00:00</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0" colspan="4">
                  <widget class="WaveformWidget" name="waveform_widget" native="true">
                   <property name="minimumSize">
                    <size>
                     <width>0</width>
                     <height>70</height>
                    </size>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="2">
+                 <widget class="QLabel" name="lbl_end">
+                  <property name="minimumSize">
+                   <size>
+                    <width>60</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>00:00:00</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                   </property>
                  </widget>
                 </item>
@@ -844,6 +873,9 @@ QPushButton::pressed
                 </property>
                 <property name="title">
                  <string>Controls</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
                 </property>
                 <property name="checkable">
                  <bool>false</bool>

@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPainter, QColor, QPen
+import file_operations.audio_waveform_analyzer as analyzer
 import random
 
 # create logger
@@ -81,7 +82,10 @@ class WaveformWidget(QWidget):
     def load_waveform_from_file(self, path):
         # For now, generate random data
 
-        waveform_data = [random.uniform(0.1, 1.0) for _ in range(1000)]
-        self.set_waveform(waveform_data)
+        logger.info(f"Loading waveform from file: {path}")
+        track_data = analyzer.analyze_audio_file(path, num_samples=5000)
+
+
+        self.set_waveform(track_data.waveform)
         self.set_progress(0.0)
         # Optionally, store the path if needed
