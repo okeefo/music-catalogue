@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPainter, QColor, QPen
 import file_operations.audio_waveform_analyzer as analyzer
-import random
 
 # create logger
 from log_config import get_logger
@@ -14,9 +13,12 @@ class WaveformWidget(QWidget):
     Emits seekRequested(float) when user clicks to seek.
     """
     seekRequested = pyqtSignal(float)  # Emits a float between 0.0 and 1.0
+    durationChanged = pyqtSignal(str)  # Signal to send formatted duration
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._file_path = None
+        self._slider = None
         self.waveform = []  # List of floats (normalized 0-1)
         self.progress = 0.0  # 0.0=start, 1.0=end
 
@@ -37,11 +39,10 @@ class WaveformWidget(QWidget):
         return len(self.waveform)
 
     def paintEvent(self, event):
-        logger.info("Painting waveform.")
         if not self.waveform:
-            logger.warning("No waveform data to paint.")
             return
 
+        logger.info("Painting waveform.")
         painter = QPainter(self)
         w, h = self.width(), self.height()
         mid = h // 2
@@ -87,5 +88,24 @@ class WaveformWidget(QWidget):
 
 
         self.set_waveform(track_data.waveform)
+        self.set_duration(track_data.duration)
         self.set_progress(0.0)
         # Optionally, store the path if needed
+        self._file_path = path
+        logger.info(f"Waveform loaded with {len(self.waveform)} samples from {path}")
+
+    def set_duration(self, duration: float) -> None:
+        """ Set the duration of the audio track."""
+        self._duration = duration
+        formatted = self._format_duration(duration)
+        self.durationChanged.emit(formatted)
+        logger.info(f"Duration set to {formatted}")
+
+    def _format_duration(self, duration: float) -> str:
+        # Assuming duration is in seconds.
+        total_sec = int(duration)
+        ms = int((duration - total_sec) * 100)
+        h = total_sec // 3600
+        m = (total_sec % 3600) // 60
+        s = total_sec % 60
+        return f"{h:02d}:{m:02d}:{s:02d}.{ms:02d}"

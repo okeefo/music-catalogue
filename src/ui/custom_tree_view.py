@@ -2,10 +2,9 @@ import contextlib
 import os
 from typing import List, cast
 
-from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex, QTimer
+from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView
+from PyQt5.QtWidgets import QApplication, QTreeView, QFileSystemModel, QAbstractItemView, QLabel
 
 from file_operations.audio_tags import AudioTagHelper
 from log_config import get_logger
@@ -67,23 +66,20 @@ class FileSystemModel(QFileSystemModel):
 
     def setData(self, index, value, role=Qt.EditRole):
         if index.isValid() and role == Qt.EditRole:
-            # Get the file path at the index
+            # Sanitize the new file name by extracting only the basename
+            sanitized_value = os.path.basename(value)
             file_path = self.filePath(index)
-
-            # Get the directory of the file
             dir_path = os.path.dirname(file_path)
-
-            # Create the new file path
-            new_file_path = os.path.join(dir_path, value)
+            new_file_path = os.path.join(dir_path, sanitized_value)
 
             # Rename the file or directory
-            os.rename(file_path, new_file_path)
-
-            # Emit the dataChanged signal
-            self.dataChanged.emit(index, index)
-
-            return True
-
+            try:
+                os.rename(file_path, new_file_path)
+                # Emit the dataChanged signal
+                self.dataChanged.emit(index, index)
+                return True
+            except Exception as e:
+                logger.error("Failed to rename: %s", e)
         return False
 
     def data(self, index, role=Qt.DisplayRole):
@@ -174,7 +170,7 @@ class MyTreeView(QTreeView):
         self.__set_root_path_for_tree_view(model, path)
         model.directoryLoaded.connect(self.resize_columns)
 
-    def on_tree_double_clicked(self, index: QModelIndex) -> None:
+    def on_tree_double_clicked(self, index: QModelIndex, artist: QLabel, title: QLabel, update_status: QLabel) -> None:
         """Handles the tree view double click event. Returns: None"""
 
         model = cast(QFileSystemModel, self.model())
@@ -195,6 +191,7 @@ class MyTreeView(QTreeView):
                 logger.info("file is a supported audio file, calling waveform callback")
                 if hasattr(self, "_waveform_callback") and self._waveform_callback:
                     self._waveform_callback(path)
+                    update_status(f"Loaded: {artist.text()} - {title.text()}")
                 else:
                     logger.warning("Waveform callback not set")
             else:
