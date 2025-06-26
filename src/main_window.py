@@ -399,10 +399,6 @@ class MainWindow(QMainWindow):
         if not self.waveform_widget:
             logger.fatal("WaveformWidget not found in the UI")
             sys.exit(1)
-            return
-
-        # Set the media player for the waveform widget
-#        self.waveform_widget.set_media_player(self.player)
 
     def __setup_slider(self) -> None:
         """Sets up the slider for the waveform widget. Returns: None"""

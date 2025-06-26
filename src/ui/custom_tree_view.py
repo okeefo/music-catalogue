@@ -1,17 +1,16 @@
 import contextlib
 import os
-import random
 from typing import List, cast
 
-from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
+from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex, QTimer
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QTreeView, QFileSystemModel, QAbstractItemView
 
+from file_operations.audio_tags import AudioTagHelper
 from log_config import get_logger
 from ui.custom_image_label import pop_up_image_dialogue
-from ui.custom_waveform_widget import WaveformWidget
-from file_operations.audio_tags import AudioTagHelper
+
 # create logger
 logger = get_logger(__name__)
 
@@ -163,6 +162,7 @@ class MyTreeView(QTreeView):
 
     def resize_columns(self) -> None:
         """Resize the first column of the tree view to fit the longest filename. Returns: None"""
+        logger.info("Resizing columns for tree view %s", self.objectName())
         for column in range(self.model().columnCount()):
             self.resizeColumnToContents(column)
 
@@ -172,6 +172,7 @@ class MyTreeView(QTreeView):
         model = cast(QFileSystemModel, self.model())
         self.__set_root_index_of_tree_view(path)
         self.__set_root_path_for_tree_view(model, path)
+        model.directoryLoaded.connect(self.resize_columns)
 
     def on_tree_double_clicked(self, index: QModelIndex) -> None:
         """Handles the tree view double click event. Returns: None"""
@@ -211,7 +212,6 @@ class MyTreeView(QTreeView):
 
         model = cast(QFileSystemModel, self.model())
         self.setRootIndex(model.index(directory))
-        self.resize_columns()
         with contextlib.suppress(TypeError):
             model.directoryLoaded.disconnect()
 
