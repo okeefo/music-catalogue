@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtGui import QPainter, QColor, QPen
 import file_operations.audio_waveform_analyzer as analyzer
 
@@ -17,12 +17,14 @@ class WaveformWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._file_path = None
+        self.track_path = None
         self.artist = None
         self.title = None
         self._slider = None
         self.waveform = []  # List of floats (normalized 0-1)
         self.progress = 0.0  # 0.0=start, 1.0=end
+        self.waveform_loaded = False
+        self.duration = 0.0  # Duration in seconds
 
     def set_slider(self, slider):
         self._slider = slider
@@ -43,8 +45,6 @@ class WaveformWidget(QWidget):
     def paintEvent(self, event):
         if not self.waveform:
             return
-
-        logger.info("Painting waveform.")
         painter = QPainter(self)
         w, h = self.width(), self.height()
         mid = h // 2
@@ -83,24 +83,25 @@ class WaveformWidget(QWidget):
         self.update()  # Triggers a repaint to show the new needle position
 
     def load_waveform_from_file(self, path, artist: str = None, track_name: str = None) -> None:
-        # For now, generate random data
+        logger.info(f"Loading waveform from file asynchronously: {path}")
+        self.worker = WaveformWorker(path)
+        self.worker.waveformLoaded.connect(lambda waveform, duration: self.on_waveform_loaded(waveform, duration, path, artist, track_name))
+        self.worker.start()
 
-        logger.info(f"Loading waveform from file: {path}")
-        track_data = analyzer.analyze_audio_file(path, num_samples=5000)
+    def on_waveform_loaded(self, waveform, duration, path, artist, track_name):
 
-
-        self.set_waveform(track_data.waveform)
-        self.set_duration(track_data.duration)
+        self.set_waveform(waveform)
+        self.set_duration(duration)
         self.set_progress(0.0)
-        # Optionally, store the path if needed
-        self._file_path = path
+        self.track_path = path
         self.artist = artist
         self.title = track_name
+        self.waveform_loaded = True
         logger.info(f"Waveform loaded with {len(self.waveform)} samples from {path}")
 
     def set_duration(self, duration: float) -> None:
         """ Set the duration of the audio track."""
-        self._duration = duration
+        self.duration = duration
         formatted = self._format_duration(duration)
         self.durationChanged.emit(formatted)
         logger.info(f"Duration set to {formatted}")
@@ -113,3 +114,15 @@ class WaveformWidget(QWidget):
         m = (total_sec % 3600) // 60
         s = total_sec % 60
         return f"{h:02d}:{m:02d}:{s:02d}.{ms:02d}"
+
+class WaveformWorker(QThread):
+    waveformLoaded = pyqtSignal(object, float)  # waveform data and duration
+
+    def __init__(self, path, num_samples=5000):
+        super().__init__()
+        self.path = path
+        self.num_samples = num_samples
+
+    def run(self):
+        track_data = analyzer.analyze_audio_file(self.path, num_samples=self.num_samples)
+        self.waveformLoaded.emit(track_data.waveform, track_data.duration)

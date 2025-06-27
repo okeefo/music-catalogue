@@ -1,6 +1,6 @@
 import contextlib
 import os
-from typing import List, cast
+from typing import List, cast, Callable
 
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
 from PyQt5.QtGui import QPixmap
@@ -104,12 +104,18 @@ class MyTreeView(QTreeView):
 
     def __init__(self, *args, **kwargs):
         super(MyTreeView, self).__init__(*args, **kwargs)
+        self._waveform_callback = None
+        self._player_callback = None
         self.setFocusPolicy(Qt.FocusPolicy(Qt.StrongFocus))
         self.setSelectionMode(QAbstractItemView.SelectionMode(QTreeView.ExtendedSelection))
         self.audio_helper = AudioTagHelper()
 
     def set_waveform_callback(self, callback):
         self._waveform_callback = callback
+
+    def set_player_callback(self, callback):
+        self._player_callback = callback
+
 
     def mousePressEvent(self, event):
         """Select multiple items on mouse click."""
@@ -170,7 +176,7 @@ class MyTreeView(QTreeView):
         self.__set_root_path_for_tree_view(model, path)
         model.directoryLoaded.connect(self.resize_columns)
 
-    def on_tree_double_clicked(self, index: QModelIndex, artist: QLabel, title: QLabel, update_status: QLabel) -> None:
+    def on_tree_double_clicked(self, index: QModelIndex, artist: QLabel, title: QLabel, update_status: Callable[[str], None]) -> None:
         """Handles the tree view double click event. Returns: None"""
 
         model = cast(QFileSystemModel, self.model())
@@ -191,6 +197,7 @@ class MyTreeView(QTreeView):
                 logger.info("file is a supported audio file, calling waveform callback")
                 if hasattr(self, "_waveform_callback") and self._waveform_callback:
                     self._waveform_callback(path, artist.text(), title.text())
+                    self._player_callback(path)
                     update_status(f"Loaded: {artist.text()} - {title.text()}")
                 else:
                     logger.warning("Waveform callback not set")

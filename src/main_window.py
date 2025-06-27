@@ -6,7 +6,7 @@ from typing import Dict, Union, cast
 import winshell
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QPoint, QUrl
-from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtGui import QFont, QPixmap, QIcon
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtWidgets import (
     QStackedWidget,
@@ -168,12 +168,19 @@ class MainWindow(QMainWindow):
     def __setup_icons(self) -> None:
         """Set up the icons. Returns: None"""
 
-        self.icon_left = QtGui.QIcon(":/icons/icons/chevrons-left.svg")
-        self.icon_right = QtGui.QIcon(":/icons/icons/chevrons-right.svg")
-        self.icon_menu = QtGui.QIcon(":/icons/icons/menu.svg")
-        self.icon_repackage = QtGui.QIcon(":/icons/icons/package.svg")
-        self.icon_move = QtGui.QIcon(":/icons/icons/move.svg")
-        self.icon_exit = QtGui.QIcon(":/icons/icons/log-out.svg")
+        self.icon_left = QIcon("icons/icons/chevrons-left.svg")
+        self.icon_right = QIcon(":/icons/icons/chevrons-right.svg")
+        self.icon_menu = QIcon(":/icons/icons/menu.svg")
+        self.icon_repackage = QIcon(":/icons/icons/package.svg")
+        self.icon_move = QIcon(":/icons/icons/move.svg")
+        self.icon_exit = QIcon(":/icons/icons/log-out.svg")
+
+        self.icon_play_off = QIcon("src/qt/icons/media/Farm-Fresh_control_play.png")
+        self.icon_play_on = QIcon("src/qt/icons/media/Fatcow-Farm-Fresh-Control-play-blue.32.png")
+        self.icon_stop_off = QIcon("src/qt/icons/media/Fatcow-Farm-Fresh-Control-stop.32.png")
+        self.icon_stop_on = QIcon("src/qt/icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png")
+        self.icon_pause = QIcon("src/qt/icons/media/Fatcow-Farm-Fresh-Control-pause-blue.32.png")
+
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
@@ -245,12 +252,14 @@ class MainWindow(QMainWindow):
         self.but_db.setShortcut("Ctrl+D")
 
         self.butt_play = self.findChild(QPushButton, "butt_play")
+        self.butt_play.setIcon(self.icon_play_off)
         self.butt_play.clicked.connect(lambda: self.on_play_button_clicked())
         self.butt_play.setToolTip("Play the loaded audio file")
         self.butt_play.setToolTipDuration(1000)
         # self.but_db.setShortcut("Ctrl+D")
 
         self.butt_stop = self.findChild(QPushButton, "butt_stop")
+        self.butt_stop.setIcon(self.icon_stop_off)
         self.butt_stop.clicked.connect(lambda: self.on_stop_button_clicked())
         self.butt_stop.setToolTip("Stop playing the loaded audio file")
         self.butt_stop.setToolTipDuration(1000)
@@ -372,9 +381,11 @@ class MainWindow(QMainWindow):
         self.tree_target = self.findChild(MyTreeView, "tree_target")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
         self.__set_tree_actions(self.tree_target, last_dir, self.path_info_bar_target, self.lbl_tar_artist, self.lbl_tar_title)
-        if self.waveform_widget:
-            self.tree_source.set_waveform_callback(self.waveform_widget.load_waveform_from_file)
-            self.tree_target.set_waveform_callback(self.waveform_widget.load_waveform_from_file)
+        self.tree_source.set_waveform_callback(self.waveform_widget.load_waveform_from_file)
+        self.tree_target.set_waveform_callback(self.waveform_widget.load_waveform_from_file)
+        self.tree_source.set_player_callback(self.load_media_player)
+        self.tree_target.set_player_callback(self.load_media_player)
+
 
     def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit, artist: QLabel, title: QLabel) -> None:
         tree_view.setup_tree_view(last_dir)
@@ -437,7 +448,7 @@ class MainWindow(QMainWindow):
         # Compute relative position from slider value and seek media player
         max_val = self.slider.maximum()
         rel_pos = self.slider.value() / max_val if max_val else 0.0
-        total_ms = self.waveform_widget._duration * 1000
+        total_ms = self.waveform_widget.duration * 1000
         new_position = int(rel_pos * total_ms)
         self.player.setPosition(new_position)
 
@@ -451,7 +462,7 @@ class MainWindow(QMainWindow):
         self.waveform_widget.set_needle_position(rel_pos)
 
         # Calculate current time based on the waveform widget duration
-        duration = self.waveform_widget._duration  # duration in seconds
+        duration = self.waveform_widget.duration  # duration in seconds
         current_time = rel_pos * duration
         self.lbl_current.setText(self.format_time(current_time))
 
@@ -762,7 +773,9 @@ class MainWindow(QMainWindow):
         if self._user_is_sliding:
             return
         # Convert duration (seconds) to ms before calculating progress
-        total_ms = self.waveform_widget._duration * 1000
+        total_ms = self.waveform_widget.duration * 1000
+        if total_ms == 0:
+            return
         rel_pos = min(max(position / total_ms, 0.0), 1.0)
         self.waveform_widget.set_needle_position(rel_pos)
         self.slider.blockSignals(True)
@@ -772,21 +785,32 @@ class MainWindow(QMainWindow):
         current_seconds = position / 1000.0
         self.lbl_current.setText(self.format_time(current_seconds))
 
-    def on_play_button_clicked(self) -> None:
-        # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
-        logger.info("Play button clicked")
+    def load_media_player(self, path: str) -> None:
+        self.player.setMedia(QMediaContent(QUrl.fromLocalFile(path)))
 
-        # Load the media from the waveform widget file if needed, e.g.
-        if hasattr(self.waveform_widget, '_file_path') and self.waveform_widget._file_path:
-            logger.info(f"Loading media from waveform widget file: {self.waveform_widget._file_path}")
-            self.player.setMedia(QMediaContent(QUrl.fromLocalFile(self.waveform_widget._file_path)))
-        else:
-            logger.error("No media file loaded in the waveform widget.")
-            QMessageBox.critical(self, "Error", "No media file loaded in the waveform widget.")
+    def on_play_button_clicked(self) -> None:
+
+        if not self.waveform_widget.waveform_loaded:
             return
 
+        # if the stop icon is off turn it on
+        self.butt_stop.setIcon(self.icon_stop_on)
+
+        # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
+        logger.info("Play button clicked")
+        if self.player.state() == QMediaPlayer.PlayingState:
+            self.player.pause()
+            self.butt_play.setIcon(self.icon_play_on)
+            self.update_status(f"Paused: {self.waveform_widget.artist} - {self.waveform_widget.title}")
+            return
+
+        logger.info(f"Loading media from waveform widget file: {self.waveform_widget.track_path}")
+
         self.player.play()
+        # When audio starts playing, show blue pause icon.
+        self.butt_play.setIcon(self.icon_pause)
         self.update_status(f"Playing {self.waveform_widget.artist} - {self.waveform_widget.title}")
+
 
     def on_stop_button_clicked(self) -> None:
         # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
@@ -794,7 +818,8 @@ class MainWindow(QMainWindow):
 
         # Load the media from the waveform widget file if needed, e.g.
         self.player.stop()
-        self.player.setMedia(QMediaContent())
+        self.butt_play.setIcon(self.icon_play_off)
+        self.butt_stop.setIcon(self.icon_stop_off)
         self.update_status(f"{self.waveform_widget.artist} - {self.waveform_widget.title}")
 
     def format_time(self, seconds: float) -> str:
