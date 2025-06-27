@@ -5,9 +5,9 @@ from typing import Dict, Union, cast
 
 import winshell
 from PyQt5 import uic, QtGui
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QPoint
+from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, Qt, QDir, QModelIndex, QPoint, QUrl
 from PyQt5.QtGui import QFont, QPixmap
-from PyQt5.QtMultimedia import QMediaPlayer
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtWidgets import (
     QStackedWidget,
     QApplication,
@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QCompleter,
     QFileSystemModel, QSlider,
+    QLabel,
 )
 from mutagen.id3 import PictureType
 
@@ -74,7 +75,9 @@ class MainWindow(QMainWindow):
         self.config = configparser.ConfigParser()
         self.id3_tags = []
         self.audio_tags = AudioTagHelper()
-        self.player = QMediaPlayer()
+        self.player = QMediaPlayer(self)
+        self.player.setNotifyInterval(50)
+        self._user_is_sliding = False
 
         # set up config
         self.__setup_config()
@@ -119,6 +122,7 @@ class MainWindow(QMainWindow):
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
         self.player.mediaStatusChanged.connect(self.handle_media_status_changed)  # type: ignore[attr-defined]
+        self.player.positionChanged.connect(self.on_player_position_changed)  # type: ignore[attr-defined]
 
     def __setup_config(self) -> None:
         """Sets up the configuration by reading the config.ini file and adding missing sections if necessary. Returns: None"""
@@ -240,6 +244,18 @@ class MainWindow(QMainWindow):
         self.but_db.setToolTipDuration(1000)
         self.but_db.setShortcut("Ctrl+D")
 
+        self.butt_play = self.findChild(QPushButton, "butt_play")
+        self.butt_play.clicked.connect(lambda: self.on_play_button_clicked())
+        self.butt_play.setToolTip("Play the loaded audio file")
+        self.butt_play.setToolTipDuration(1000)
+        # self.but_db.setShortcut("Ctrl+D")
+
+        self.butt_stop = self.findChild(QPushButton, "butt_stop")
+        self.butt_stop.clicked.connect(lambda: self.on_stop_button_clicked())
+        self.butt_stop.setToolTip("Stop playing the loaded audio file")
+        self.butt_stop.setToolTipDuration(1000)
+        # self.but_db.setShortcut("Ctrl+D")
+
     def __setup_window_size(self) -> None:
         """Sets up the size of the main window based on the configuration settings. Returns: None"""
         self.resize(
@@ -352,18 +368,18 @@ class MainWindow(QMainWindow):
 
         self.tree_source = self.findChild(MyTreeView, "tree_source")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY]
-        self.__set_tree_actions(self.tree_source, last_dir, self.path_info_bar_source)
+        self.__set_tree_actions(self.tree_source, last_dir, self.path_info_bar_source, self.lbl_src_artist, self.lbl_src_title)
         self.tree_target = self.findChild(MyTreeView, "tree_target")
         last_dir = self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY]
-        self.__set_tree_actions(self.tree_target, last_dir, self.path_info_bar_target)
+        self.__set_tree_actions(self.tree_target, last_dir, self.path_info_bar_target, self.lbl_tar_artist, self.lbl_tar_title)
         if self.waveform_widget:
             self.tree_source.set_waveform_callback(self.waveform_widget.load_waveform_from_file)
             self.tree_target.set_waveform_callback(self.waveform_widget.load_waveform_from_file)
 
-    def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit) -> None:
+    def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit, artist: QLabel, title: QLabel) -> None:
         tree_view.setup_tree_view(last_dir)
         tree_view.set_single_click_handler(self.on_tree_clicked)
-        tree_view.set_double_click_handler(lambda index, clicked_tree, _: self.on_tree_double_clicked(index, clicked_tree, path_bar))
+        tree_view.set_double_click_handler(lambda index, clicked_tree, _: self.on_tree_double_clicked(index, clicked_tree, path_bar, artist, title, self.update_status))
         tree_view.set_custom_context_menu(self.on_context_menu_requested)
 
     def __setup_exit(self) -> None:
@@ -399,31 +415,45 @@ class MainWindow(QMainWindow):
         if not self.waveform_widget:
             logger.fatal("WaveformWidget not found in the UI")
             sys.exit(1)
+        # Connect the duration signal to update the label in the main window.
+        self.waveform_widget.durationChanged.connect(self.update_duration_label)
 
     def __setup_slider(self) -> None:
         """Sets up the slider for the waveform widget. Returns: None"""
         self.slider = self.findChild(QSlider, "slider_waveform")
-        if self.slider is None:
-            logger.error("Slider 'slider_waveform' not found in the UI")
-            sys.exit(1)
-        if not hasattr(self, "waveform_widget") or self.waveform_widget is None:
-            logger.error("WaveformWidget is not initialized before setting slider")
-            sys.exit(1)
-
         self.slider.setMinimum(0)
         self.slider.setMaximum(1000)  # Increase for finer granularity
-        self.slider.setSingleStep(1)  # Smallest possible step
+        #self.slider.setSingleStep(1)  # Smallest possible step
         self.waveform_widget.set_slider(self.slider)
         self.slider.valueChanged.connect(self.on_slider_moved)
+        self.slider.sliderPressed.connect(self.on_slider_pressed)
+        self.slider.sliderReleased.connect(self.on_slider_released)
+
+    def on_slider_pressed(self) -> None:
+        self._user_is_sliding = True
+
+    def on_slider_released(self) -> None:
+        self._user_is_sliding = False
+        # Compute relative position from slider value and seek media player
+        max_val = self.slider.maximum()
+        rel_pos = self.slider.value() / max_val if max_val else 0.0
+        total_ms = self.waveform_widget._duration * 1000
+        new_position = int(rel_pos * total_ms)
+        self.player.setPosition(new_position)
+
+    def update_duration_label(self, formatted_duration: str) -> None:
+        self.lbl_duration.setText(formatted_duration)
 
     def on_slider_moved(self, value):
         # Map slider value to waveform position
-        min_val, max_val = self.slider.minimum(), self.slider.maximum()
-        if max_val == min_val:
-            rel_pos = 0.0
-        else:
-            rel_pos = (value - min_val) / (max_val - min_val)
+        max_val = self.slider.maximum()
+        rel_pos = value / max_val if max_val else 0.0
         self.waveform_widget.set_needle_position(rel_pos)
+
+        # Calculate current time based on the waveform widget duration
+        duration = self.waveform_widget._duration  # duration in seconds
+        current_time = rel_pos * duration
+        self.lbl_current.setText(self.format_time(current_time))
 
     def on_context_menu_requested(self, tree_view: MyTreeView, position: QPoint):
 
@@ -464,10 +494,11 @@ class MainWindow(QMainWindow):
         self.display_id3_tags_when_an_item_is_selected(item, tree_view)
 
     @staticmethod
-    def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, info_bar: MyLineEdit) -> None:
+    def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, info_bar: MyLineEdit, artist: QLabel, title: QLabel, update_stats: QLabel) -> None:
         """Handles the tree view double click event. Returns: None"""
-        tree_view.on_tree_double_clicked(index)
+        tree_view.on_tree_double_clicked(index, artist, title, update_stats)
         info_bar.setText(tree_view.get_root_dir())
+
 
     def on_path_info_bar_return_pressed(self, tree_view: MyTreeView, path_info_bar: MyLineEdit) -> None:
         """Handles the directory when the return key is pressed. Returns: None"""
@@ -727,6 +758,52 @@ class MainWindow(QMainWindow):
             msg_box.setTextFormat(Qt.RichText)
             msg_box.exec()
 
+    def on_player_position_changed(self, position: int) -> None:
+        if self._user_is_sliding:
+            return
+        # Convert duration (seconds) to ms before calculating progress
+        total_ms = self.waveform_widget._duration * 1000
+        rel_pos = min(max(position / total_ms, 0.0), 1.0)
+        self.waveform_widget.set_needle_position(rel_pos)
+        self.slider.blockSignals(True)
+        self.slider.setValue(int(rel_pos * self.slider.maximum()))
+        self.slider.blockSignals(False)
+        # Update current time label
+        current_seconds = position / 1000.0
+        self.lbl_current.setText(self.format_time(current_seconds))
+
+    def on_play_button_clicked(self) -> None:
+        # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
+        logger.info("Play button clicked")
+
+        # Load the media from the waveform widget file if needed, e.g.
+        if hasattr(self.waveform_widget, '_file_path') and self.waveform_widget._file_path:
+            logger.info(f"Loading media from waveform widget file: {self.waveform_widget._file_path}")
+            self.player.setMedia(QMediaContent(QUrl.fromLocalFile(self.waveform_widget._file_path)))
+        else:
+            logger.error("No media file loaded in the waveform widget.")
+            QMessageBox.critical(self, "Error", "No media file loaded in the waveform widget.")
+            return
+
+        self.player.play()
+        self.update_status(f"Playing {self.waveform_widget.artist} - {self.waveform_widget.title}")
+
+    def on_stop_button_clicked(self) -> None:
+        # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
+        logger.info("Play button clicked")
+
+        # Load the media from the waveform widget file if needed, e.g.
+        self.player.stop()
+        self.player.setMedia(QMediaContent())
+        self.update_status(f"{self.waveform_widget.artist} - {self.waveform_widget.title}")
+
+    def format_time(self, seconds: float) -> str:
+        total_sec = int(seconds)
+        ms = int((seconds - total_sec) * 100)
+        h = total_sec // 3600
+        m = (total_sec % 3600) // 60
+        s = total_sec % 60
+        return f"{h:02d}:{m:02d}:{s:02d}.{ms:02d}"
 
 if __name__ == "__main__":
 

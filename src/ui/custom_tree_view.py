@@ -190,7 +190,7 @@ class MyTreeView(QTreeView):
             if self.audio_helper.isSupportedAudioFile(path):
                 logger.info("file is a supported audio file, calling waveform callback")
                 if hasattr(self, "_waveform_callback") and self._waveform_callback:
-                    self._waveform_callback(path)
+                    self._waveform_callback(path, artist.text(), title.text())
                     update_status(f"Loaded: {artist.text()} - {title.text()}")
                 else:
                     logger.warning("Waveform callback not set")

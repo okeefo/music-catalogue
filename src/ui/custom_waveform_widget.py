@@ -18,6 +18,8 @@ class WaveformWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._file_path = None
+        self.artist = None
+        self.title = None
         self._slider = None
         self.waveform = []  # List of floats (normalized 0-1)
         self.progress = 0.0  # 0.0=start, 1.0=end
@@ -80,7 +82,7 @@ class WaveformWidget(QWidget):
         self.progress = max(0.0, min(1.0, pos))
         self.update()  # Triggers a repaint to show the new needle position
 
-    def load_waveform_from_file(self, path):
+    def load_waveform_from_file(self, path, artist: str = None, track_name: str = None) -> None:
         # For now, generate random data
 
         logger.info(f"Loading waveform from file: {path}")
@@ -92,6 +94,8 @@ class WaveformWidget(QWidget):
         self.set_progress(0.0)
         # Optionally, store the path if needed
         self._file_path = path
+        self.artist = artist
+        self.title = track_name
         logger.info(f"Waveform loaded with {len(self.waveform)} samples from {path}")
 
     def set_duration(self, duration: float) -> None:
