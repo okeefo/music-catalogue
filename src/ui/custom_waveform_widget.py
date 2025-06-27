@@ -1,11 +1,13 @@
-from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtGui import QPainter, QColor, QPen
-import file_operations.audio_waveform_analyzer as analyzer
+from PyQt5.QtWidgets import QWidget
 
+import file_operations.audio_waveform_analyzer as analyzer
 # create logger
 from log_config import get_logger
+
 logger = get_logger(__name__)
+
 
 class WaveformWidget(QWidget):
     """
@@ -25,6 +27,15 @@ class WaveformWidget(QWidget):
         self.progress = 0.0  # 0.0=start, 1.0=end
         self.waveform_loaded = False
         self.duration = 0.0  # Duration in seconds
+        self.player = None  # Placeholder for media player instance
+
+    def set_player(self, player):
+        """
+        Set the media player instance to control playback.
+        Args:
+            player: Media player instance that has a setPosition method.
+        """
+        self.player = player
 
     def set_slider(self, slider):
         self._slider = slider
@@ -114,6 +125,23 @@ class WaveformWidget(QWidget):
         m = (total_sec % 3600) // 60
         s = total_sec % 60
         return f"{h:02d}:{m:02d}:{s:02d}.{ms:02d}"
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            # Get x position relative to the widget width
+            x = event.pos().x()
+            width = self.width()
+            rel_pos = x / width if width else 0.0
+
+            # Update the needle position on the waveform
+            self.set_needle_position(rel_pos)
+
+            # Calculate new media position in milliseconds
+            total_ms = self.duration * 1000
+            new_position = int(rel_pos * total_ms)
+            # Call a callback or directly update the media player if available
+            self.player.setPosition(new_position)
+
 
 class WaveformWorker(QThread):
     waveformLoaded = pyqtSignal(object, float)  # waveform data and duration

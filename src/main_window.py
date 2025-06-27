@@ -423,11 +423,8 @@ class MainWindow(QMainWindow):
     def __setup_wave_form_widget(self) -> None:
         """Sets up the waveform widget. Returns: None"""
         self.waveform_widget = self.findChild(WaveformWidget, "waveform_widget")
-        if not self.waveform_widget:
-            logger.fatal("WaveformWidget not found in the UI")
-            sys.exit(1)
-        # Connect the duration signal to update the label in the main window.
         self.waveform_widget.durationChanged.connect(self.update_duration_label)
+        self.waveform_widget.set_player(self.player)
 
     def __setup_slider(self) -> None:
         """Sets up the slider for the waveform widget. Returns: None"""
