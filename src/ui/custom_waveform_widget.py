@@ -78,12 +78,6 @@ class WaveformWidget(QWidget):
         painter.setPen(QPen(Qt.red, 2))
         painter.drawLine(needle_x, 0, needle_x, h)
 
-    def mousePressEvent(self, event):
-        if self.waveform and self.width() > 0:
-            pos = event.x() / self.width()
-            pos = max(0.0, min(1.0, pos))
-            self.seekRequested.emit(pos)
-
     def set_needle_position(self, pos):
         """
         Set the current needle position (e.g., playback head) in the waveform.
