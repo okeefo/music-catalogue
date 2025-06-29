@@ -28,11 +28,10 @@ logger = get_logger(__name__)
 
 class TreeViewContextMenuHandler(QWidget):
 
-    def __init__(self, player: QMediaPlayer, update_status: callable):
+    def __init__(self, player: QMediaPlayer):
         """Initialise the TreeViewContextMenuHandler."""
         super().__init__()
         self.player = player
-        self.update_status = update_status
         self.__setup_mp3tag_path()
         self.__setup_menu_actions()
         self.__setup_vlc_path()
@@ -251,7 +250,7 @@ class TreeViewContextMenuHandler(QWidget):
         return menu
 
     def show_menu(self, tree_view: QTreeView, index: QModelIndex, position: QPoint, other_tree_view: MyTreeView) -> None:
-        """Displays a context menu when right clicking on a tree view. Returns: None"""
+        """Displays a context menu when right-clicking on a tree view. Returns: None"""
 
         logger.info("Showing context menu...")
         file_path = tree_view.model().filePath(index)
@@ -276,7 +275,6 @@ class TreeViewContextMenuHandler(QWidget):
 
         logger.info("Menu action - delete")
         result = delete_files(tree_view.get_selected_files())
-        self.update_status(result)
         logger.info("Menu action - delete : done")
 
     def __do_open_in_mp3tag(self, tree_vew: MyTreeView) -> None:
@@ -335,7 +333,6 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"Menu Action -> repackage dir by label : '{directory}'")
         repackage_dir_by_label(directory, directory)
         logger.info("Menu Action -> repackage dir by label : done")
-        self.update_status(f"Repackaged directory by label : '{directory}'")
 
     def __do_repackage_selected_items_by_label(self, tree_view: MyTreeView) -> None:
         """Repackages selected items by label. Returns: None"""
@@ -343,7 +340,6 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info("Menu Action -> repackage selected items by label")
         repackage_files_by_label(tree_view.get_selected_file_names_relative_to_the_root(), tree_view.get_root_dir(), tree_view.get_root_dir())
         logger.info("Menu Action -> repackage selected items by label : done")
-        self.update_status("Repackaged selected items by label")
 
     def __do_move_selected_items(self, tree_view: MyTreeView, dest_path: str) -> None:
         """Moves selected items to a destination path. Returns: None"""
@@ -351,7 +347,6 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"Menu Action -> move selected items : '{dest_path}'")
         ask_and_move_files(tree_view.get_selected_file_names_relative_to_the_root(), tree_view.get_root_dir(), dest_path)
         logger.info("Menu Action -> move selected items : done")
-        self.update_status(f"Moved selected items to '{dest_path}'")
 
     def __do_move_all(self, tree_view: MyTreeView, dest_path: str) -> None:
         """Moves all items to a destination path. Returns: None"""
@@ -360,7 +355,6 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"Menu Action -> move all items : from '{from_dir}' to '{dest_path}'")
         ask_and_move_files(os.listdir(from_dir), from_dir, dest_path)
         logger.info("Menu Action -> move all items : done")
-        self.update_status(f"Moved all items to '{dest_path}'")
 
     def __do_play_media(self, tree_view: MyTreeView) -> None:
         """Plays a file. Returns: None"""
@@ -368,7 +362,6 @@ class TreeViewContextMenuHandler(QWidget):
         selected_file = tree_view.get_selected_files()[0]
         logger.info(f"Menu action -> play file :Playing: '{selected_file}'")
         self.play_file(selected_file)
-        self.update_status(f"Playing: '{selected_file}'")
         logger.info(f"media status: '{self.player.mediaStatus()}'")
         logger.info("Menu action -> play file : done")
 
@@ -390,7 +383,6 @@ class TreeViewContextMenuHandler(QWidget):
     def __log_media_update(self, status_action, menu_action):
         """Logs the media status and updates the status bar. Returns: None"""
 
-        self.update_status(f"{status_action} media player")
         logger.info(f"Media status: '{self.player.mediaStatus()}'")
         logger.info(f"Menu action -> {menu_action}: done")
 
@@ -411,7 +403,6 @@ class TreeViewContextMenuHandler(QWidget):
 
         logger.info("Menu action -> info dir")
         root_dir = tree_view.get_root_dir()
-        self.update_status(f"Showing info for all items in directory {root_dir}")
         display_results([root_dir], True)
         logger.info("Menu action -> info dir : done")
 
@@ -419,7 +410,6 @@ class TreeViewContextMenuHandler(QWidget):
         """Shows info for selected items. Returns: None"""
 
         logger.info("Menu action -> info selected items")
-        self.update_status("Showing info for selected items")
         display_results(tree_view.get_selected_files())
         logger.info("Menu action -> info selected items : done")
 
@@ -447,7 +437,6 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"Menu action -> copy selected items to destination: '{dest_path}'")
         ask_and_copy_files(tree_view.get_selected_files(), dest_path)
         logger.info("Menu action -> copy selected items to destination : done")
-        self.update_status(f"Copied selected items to '{dest_path}'")
 
     def __do_rename_file(self, tree_view: MyTreeView) -> None:
         """Renames a file. Returns: None"""
@@ -464,7 +453,6 @@ class TreeViewContextMenuHandler(QWidget):
         """Auto tags all files in a directory. Returns: None"""
 
         logger.info("Menu action -> auto tag dir")
-        self.update_status("Auto tagging directory")
         auto_tag_files(os.listdir(tree_view.get_root_dir()), tree_view.get_root_dir())
         logger.info("Menu action -> auto tag dir : done")
 
@@ -472,7 +460,6 @@ class TreeViewContextMenuHandler(QWidget):
         """Auto tags selected items. Returns: None"""
 
         logger.info("Menu action -> auto tag selected items")
-        self.update_status("Auto tagging selected items")
         auto_tag_files(tree_view.get_selected_files(), tree_view.get_root_dir())
         logger.info("Menu action -> auto tag selected items : done")
 
@@ -480,7 +467,6 @@ class TreeViewContextMenuHandler(QWidget):
         """Tags the filename of selected items. Returns: None"""
 
         logger.info("Menu action -> tag filename selected items")
-        self.update_status("Tagging filename of selected items")
         tag_filename(tree_view.get_selected_files(), tree_view.get_root_dir())
         logger.info("Menu action -> tag filename selected items : done")
 
@@ -488,7 +474,6 @@ class TreeViewContextMenuHandler(QWidget):
         """Tags the filename of all items in a directory. Returns: None"""
 
         logger.info("Menu action -> tag filename dir")
-        self.update_status("Tagging filename of all items in directory")
         tag_filename(os.listdir(tree_view.get_root_dir()), tree_view.get_root_dir())
         logger.info("Menu action -> tag filename dir : done")
 
@@ -507,7 +492,6 @@ class TreeViewContextMenuHandler(QWidget):
 
         logger.info("Menu action -> amplify")
         amplify_files(tree_view.get_selected_files())
-        self.update_status("Amplifying selected items")
         logger.info("Menu action -> amplify : done")
 
     def __do_process_batch(self, tree_view: MyTreeView) -> None:
@@ -515,7 +499,6 @@ class TreeViewContextMenuHandler(QWidget):
 
         logger.info("Menu action -> process batch")
         auto_process_files(tree_view.get_selected_files())
-        self.update_status("Processing batch")
         logger.info("Menu action -> process batch : done")
 
     def __do_process_slowdown(self, tree_view: MyTreeView) -> None:
@@ -523,7 +506,6 @@ class TreeViewContextMenuHandler(QWidget):
 
         logger.info("Menu action -> process slowdown")
         slowdown_files_45_33(tree_view.get_selected_files())
-        self.update_status("Processing slowdown")
         logger.info("Menu action -> process slowdown : done")
 
     def __do_process_speed_up(self, tree_view: MyTreeView) -> None:
@@ -531,14 +513,12 @@ class TreeViewContextMenuHandler(QWidget):
 
         logger.info("Menu action -> process speed up")
         speed_up_files_33_45rpm(tree_view.get_selected_files())
-        self.update_status("Processing speed up")
         logger.info("Menu action -> process speed up : done")
 
     def __do_process_split(self, tree_view: MyTreeView) -> None:
         """Performs a split action. Returns: None"""
 
         logger.info("Menu action -> process split")
-        self.update_status("Processing split")
         split_files(tree_view.get_selected_files())
         logger.info("Menu action -> process split : done")
 
@@ -546,7 +526,6 @@ class TreeViewContextMenuHandler(QWidget):
         """Performs a split action. Returns: None"""
 
         logger.info("Menu action -> process trim")
-        self.update_status("Processing trim")
         trim_audio_silence(tree_view.get_selected_files())
         logger.info("Menu action -> process trim : done")
 

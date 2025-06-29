@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>2142</width>
-    <height>1066</height>
+    <height>1360</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -442,68 +442,184 @@ QPushButton::pressed
              <number>0</number>
             </property>
             <item>
-             <widget class="QLabel" name="lbl_stat">
-              <property name="font">
-               <font>
-                <weight>75</weight>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>lbl_stat</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
+             <layout class="QHBoxLayout" name="horizontalLayout_15"/>
             </item>
             <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_5">
+             <layout class="QHBoxLayout" name="horizontalLayout_16">
               <item>
-               <widget class="QPushButton" name="but_toggle">
-                <property name="minimumSize">
-                 <size>
-                  <width>50</width>
-                  <height>0</height>
-                 </size>
+               <widget class="QGroupBox" name="groupBox">
+                <property name="title">
+                 <string>PLayer A</string>
                 </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>50</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="toolTip">
-                 <string/>
-                </property>
-                <property name="toolTipDuration">
-                 <number>5000</number>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">*{border:none;
-	text-align: middle;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="icon">
-                 <iconset resource="resources.qrc">
-                  <normaloff>:/icons/icons/menu.svg</normaloff>:/icons/icons/menu.svg</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>40</width>
-                  <height>40</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <layout class="QGridLayout" name="gridLayout_3">
-                <item row="1" column="1">
-                 <widget class="QSlider" name="slider_waveform">
-                  <property name="styleSheet">
-                   <string notr="true">QSlider::groove:horizontal {
+                <layout class="QGridLayout" name="gridLayout_13">
+                 <item row="0" column="0">
+                  <layout class="QGridLayout" name="gridLayout_12">
+                   <item row="0" column="1">
+                    <widget class="QLabel" name="lbl_info_a">
+                     <property name="font">
+                      <font>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>lbl_stat_a</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="2">
+                    <layout class="QHBoxLayout" name="horizontalLayout_20">
+                     <item>
+                      <widget class="QPushButton" name="butt_stop_a">
+                       <property name="maximumSize">
+                        <size>
+                         <width>35</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="styleSheet">
+                        <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="resources.qrc">
+                         <normaloff>:/media/icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png</normaloff>:/media/icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="butt_play_a">
+                       <property name="maximumSize">
+                        <size>
+                         <width>35</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="styleSheet">
+                        <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="resources.qrc">
+                         <normaloff>:/media/icons/media/Farm-Fresh_control_play.png</normaloff>
+                         <normalon>:/media/icons/media/Farm-Fresh_control_play.png</normalon>:/media/icons/media/Farm-Fresh_control_play.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item row="0" column="0" rowspan="2">
+                    <widget class="QWidget" name="wdgt_cover_a" native="true"/>
+                   </item>
+                   <item row="1" column="1">
+                    <widget class="WaveformWidget" name="wdgt_wave_a" native="true">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>50</height>
+                      </size>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="QSlider" name="slider_a">
+                     <property name="styleSheet">
+                      <string notr="true">QSlider::groove:horizontal {
     border: 1px solid #999999;
     height: 3px;
     background: #eee;
@@ -525,52 +641,283 @@ QSlider::handle:horizontal {
     margin: -6px 0; /* centers the handle on the groove */
     border-radius: 6px; /* half of width/height for a circle */
 }</string>
-                  </property>
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                 </widget>
-                </item>
-                <item row="1" column="0">
-                 <widget class="QLabel" name="lbl_current">
-                  <property name="minimumSize">
-                   <size>
-                    <width>60</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>00:00:00</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="0" column="0" colspan="4">
-                 <widget class="WaveformWidget" name="waveform_widget" native="true">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>70</height>
-                   </size>
-                  </property>
-                 </widget>
-                </item>
-                <item row="1" column="2">
-                 <widget class="QLabel" name="lbl_duration">
-                  <property name="minimumSize">
-                   <size>
-                    <width>80</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>00:00:00.000</string>
-                  </property>
-                  <property name="alignment">
-                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
+                     </property>
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="2">
+                    <widget class="QLabel" name="lbl_duration_a">
+                     <property name="minimumSize">
+                      <size>
+                       <width>80</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>00:00:00.000</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="lbl_current_a">
+                     <property name="minimumSize">
+                      <size>
+                       <width>60</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>00:00:00</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QGroupBox" name="groupBox_2">
+                <property name="title">
+                 <string>Player B</string>
+                </property>
+                <layout class="QGridLayout" name="gridLayout_11">
+                 <item row="2" column="0">
+                  <layout class="QGridLayout" name="gridLayout_10">
+                   <item row="0" column="1">
+                    <widget class="QLabel" name="lbl_info_b">
+                     <property name="font">
+                      <font>
+                       <weight>75</weight>
+                       <bold>true</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>lbl_stat_a</string>
+                     </property>
+                     <property name="alignment">
+                      <set>Qt::AlignCenter</set>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <layout class="QHBoxLayout" name="horizontalLayout_19">
+                     <item>
+                      <widget class="QPushButton" name="butt_play_b">
+                       <property name="maximumSize">
+                        <size>
+                         <width>35</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="styleSheet">
+                        <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="resources.qrc">
+                         <normaloff>:/media/icons/media/Farm-Fresh_control_play.png</normaloff>:/media/icons/media/Farm-Fresh_control_play.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="butt_stop_b">
+                       <property name="maximumSize">
+                        <size>
+                         <width>35</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="styleSheet">
+                        <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="resources.qrc">
+                         <normaloff>:/media/icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png</normaloff>:/media/icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item row="2" column="1">
+                    <widget class="WaveformWidget" name="wdgt_wave_b" native="true">
+                     <property name="minimumSize">
+                      <size>
+                       <width>0</width>
+                       <height>50</height>
+                      </size>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="2">
+                    <widget class="QWidget" name="wdgt_cover_b" native="true"/>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="lbl_current_b">
+                     <property name="minimumSize">
+                      <size>
+                       <width>80</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>00:00:00.00</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="1">
+                    <widget class="QSlider" name="slider_b">
+                     <property name="styleSheet">
+                      <string notr="true">QSlider::groove:horizontal {
+    border: 1px solid #999999;
+    height: 3px;
+    background: #eee;
+    border-radius: 3px;
+}
+QSlider::sub-page:horizontal {
+    background: blue;
+    border-radius: 3px;
+}
+QSlider::add-page:horizontal {
+    background: orange;
+    border-radius: 3px;
+}
+QSlider::handle:horizontal {
+    background:rgb(120, 180, 180);
+    border: 1px solid #5c5c5c;
+    width: 12px;
+    height: 12px;
+    margin: -6px 0; /* centers the handle on the groove */
+    border-radius: 6px; /* half of width/height for a circle */
+}</string>
+                     </property>
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="2">
+                    <widget class="QLabel" name="lbl_duration_b">
+                     <property name="minimumSize">
+                      <size>
+                       <width>80</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="text">
+                      <string>00:00:00.00</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <layout class="QGridLayout" name="gridLayout_3"/>
               </item>
              </layout>
             </item>
@@ -939,278 +1286,7 @@ QPushButton::pressed
                     <item>
                      <layout class="QVBoxLayout" name="verticalLayout_13">
                       <item>
-                       <spacer name="verticalSpacer_2">
-                        <property name="orientation">
-                         <enum>Qt::Vertical</enum>
-                        </property>
-                        <property name="sizeHint" stdset="0">
-                         <size>
-                          <width>20</width>
-                          <height>10</height>
-                         </size>
-                        </property>
-                       </spacer>
-                      </item>
-                      <item>
-                       <layout class="QGridLayout" name="gridLayout_4">
-                        <item row="0" column="1">
-                         <widget class="QPushButton" name="butt_stop">
-                          <property name="maximumSize">
-                           <size>
-                            <width>35</width>
-                            <height>16777215</height>
-                           </size>
-                          </property>
-                          <property name="styleSheet">
-                           <string notr="true">/*-----QPushButton-----*/
-QPushButton
-{
-/**	background-color:  rgb(92, 106, 106);
-	color: #ffffff;
-**/	
-   border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-}
-
-QPushButton::disabled
-{
-	background-color: #404040;
-	color: #656565;
-	border-color: #051a39;
-
-}
-
-
-QPushButton::hover
-{
-	background-color: lightgrey;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}
-
-
-QPushButton::pressed
-{
-	background-color: rgb(125, 155, 143);
-	color: #ffffff;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}</string>
-                          </property>
-                          <property name="text">
-                           <string/>
-                          </property>
-                          <property name="icon">
-                           <iconset resource="resources.qrc">
-                            <normaloff>:/media/icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png</normaloff>:/media/icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png</iconset>
-                          </property>
-                         </widget>
-                        </item>
-                        <item row="0" column="0">
-                         <widget class="QPushButton" name="butt_play">
-                          <property name="maximumSize">
-                           <size>
-                            <width>35</width>
-                            <height>16777215</height>
-                           </size>
-                          </property>
-                          <property name="styleSheet">
-                           <string notr="true">/*-----QPushButton-----*/
-QPushButton
-{
-/**	background-color:  rgb(92, 106, 106);
-	color: #ffffff;
-**/	
-   border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-}
-
-QPushButton::disabled
-{
-	background-color: #404040;
-	color: #656565;
-	border-color: #051a39;
-
-}
-
-
-QPushButton::hover
-{
-	background-color: lightgrey;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}
-
-
-QPushButton::pressed
-{
-	background-color: rgb(125, 155, 143);
-	color: #ffffff;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}</string>
-                          </property>
-                          <property name="text">
-                           <string/>
-                          </property>
-                          <property name="icon">
-                           <iconset resource="resources.qrc">
-                            <normaloff>:/media/icons/media/Farm-Fresh_control_play.png</normaloff>:/media/icons/media/Farm-Fresh_control_play.png</iconset>
-                          </property>
-                         </widget>
-                        </item>
-                        <item row="1" column="1">
-                         <widget class="QPushButton" name="pushButton_3">
-                          <property name="maximumSize">
-                           <size>
-                            <width>35</width>
-                            <height>16777215</height>
-                           </size>
-                          </property>
-                          <property name="styleSheet">
-                           <string notr="true">/*-----QPushButton-----*/
-QPushButton
-{
-/**	background-color:  rgb(92, 106, 106);
-	color: #ffffff;
-**/	
-   border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-}
-
-QPushButton::disabled
-{
-	background-color: #404040;
-	color: #656565;
-	border-color: #051a39;
-
-}
-
-
-QPushButton::hover
-{
-	background-color: lightgrey;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}
-
-
-QPushButton::pressed
-{
-	background-color: rgb(125, 155, 143);
-	color: #ffffff;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}</string>
-                          </property>
-                          <property name="text">
-                           <string/>
-                          </property>
-                          <property name="icon">
-                           <iconset resource="resources.qrc">
-                            <normaloff>:/media/icons/media/Fatcow-Farm-Fresh-Control-pause.32.png</normaloff>
-                            <normalon>:/media/icons/media/Fatcow-Farm-Fresh-Control-pause-blue.32.png</normalon>:/media/icons/media/Fatcow-Farm-Fresh-Control-pause.32.png</iconset>
-                          </property>
-                         </widget>
-                        </item>
-                        <item row="1" column="0">
-                         <widget class="QPushButton" name="pushButton_4">
-                          <property name="maximumSize">
-                           <size>
-                            <width>35</width>
-                            <height>16777215</height>
-                           </size>
-                          </property>
-                          <property name="styleSheet">
-                           <string notr="true">/*-----QPushButton-----*/
-QPushButton
-{
-/**	background-color:  rgb(92, 106, 106);
-	color: #ffffff;
-**/	
-   border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-}
-
-QPushButton::disabled
-{
-	background-color: #404040;
-	color: #656565;
-	border-color: #051a39;
-
-}
-
-
-QPushButton::hover
-{
-	background-color: lightgrey;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}
-
-
-QPushButton::pressed
-{
-	background-color: rgb(125, 155, 143);
-	color: #ffffff;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}</string>
-                          </property>
-                          <property name="text">
-                           <string/>
-                          </property>
-                          <property name="icon">
-                           <iconset resource="resources.qrc">
-                            <normaloff>:/media/icons/media/control-start-icon.png</normaloff>:/media/icons/media/control-start-icon.png</iconset>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
+                       <layout class="QGridLayout" name="gridLayout_4"/>
                       </item>
                       <item>
                        <spacer name="verticalSpacer_10">
@@ -1716,6 +1792,95 @@ QPushButton::pressed
                        </spacer>
                       </item>
                       <item>
+                       <widget class="QPushButton" name="but_toggle">
+                        <property name="minimumSize">
+                         <size>
+                          <width>0</width>
+                          <height>35</height>
+                         </size>
+                        </property>
+                        <property name="toolTip">
+                         <string/>
+                        </property>
+                        <property name="toolTipDuration">
+                         <number>5000</number>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                        </property>
+                        <property name="text">
+                         <string>Options</string>
+                        </property>
+                        <property name="icon">
+                         <iconset resource="resources.qrc">
+                          <normaloff>:/icons/icons/menu.svg</normaloff>:/icons/icons/menu.svg</iconset>
+                        </property>
+                        <property name="iconSize">
+                         <size>
+                          <width>30</width>
+                          <height>40</height>
+                         </size>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <spacer name="verticalSpacer_9">
+                        <property name="orientation">
+                         <enum>Qt::Vertical</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>20</width>
+                          <height>40</height>
+                         </size>
+                        </property>
+                       </spacer>
+                      </item>
+                      <item>
                        <widget class="QPushButton" name="but_restore">
                         <property name="minimumSize">
                          <size>
@@ -1791,14 +1956,14 @@ QPushButton::pressed
                        </widget>
                       </item>
                       <item>
-                       <spacer name="verticalSpacer_9">
+                       <spacer name="verticalSpacer_2">
                         <property name="orientation">
                          <enum>Qt::Vertical</enum>
                         </property>
                         <property name="sizeHint" stdset="0">
                          <size>
                           <width>20</width>
-                          <height>40</height>
+                          <height>10</height>
                          </size>
                         </property>
                        </spacer>
