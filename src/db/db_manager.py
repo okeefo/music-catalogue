@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import configparser
-from src.log_config import get_logger
+from log_config import get_logger
 
 logger = get_logger(__name__)
 

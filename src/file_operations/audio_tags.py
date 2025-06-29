@@ -1,5 +1,5 @@
 from pathlib import Path
-from src.log_config import get_logger
+from log_config import get_logger
 import taglib
 from mutagen.wave import WAVE
 from mutagen.id3 import ID3, APIC, ID3NoHeaderError

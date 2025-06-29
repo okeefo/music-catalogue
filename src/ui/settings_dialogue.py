@@ -1,7 +1,7 @@
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog
-from src.log_config import get_logger
+from log_config import get_logger
 import configparser
 
 logger = get_logger(__name__)

@@ -9,18 +9,18 @@ from PyQt5.QtCore import QUrl, QPoint, QModelIndex
 
 from typing import List
 
-from src.ui.custom_tree_view import MyTreeView
-from src.file_operations.file_utils import ask_and_move_files, delete_files, ask_and_copy_files
-from src.file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
-from src.file_operations.files_system_info import display_results
-from src.file_operations.auto_tag import auto_tag_files, tag_filename
-from src.file_operations.audio_tags import AudioTagHelper
-from src.file_operations.audio_processor import slowdown_files_45_33, amplify_files, split_files, auto_process_files, speed_up_files_33_45rpm, trim_audio_silence
+from ui.custom_tree_view import MyTreeView
+from file_operations.file_utils import ask_and_move_files, delete_files, ask_and_copy_files
+from file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
+from file_operations.files_system_info import display_results
+from file_operations.auto_tag import auto_tag_files, tag_filename
+from file_operations.audio_tags import AudioTagHelper
+from file_operations.audio_processor import slowdown_files_45_33, amplify_files, split_files, auto_process_files, speed_up_files_33_45rpm, trim_audio_silence
 
-import src.qt.resources_rcc
+import qt.resources_rcc
 
 # create logger
-from src.log_config import get_logger
+from log_config import get_logger
 from tkinter import messagebox
 
 logger = get_logger(__name__)
