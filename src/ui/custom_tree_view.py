@@ -1,9 +1,9 @@
 import contextlib
-import os
+import os, time
 from typing import List, cast, Callable
 
 from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QApplication, QTreeView, QFileSystemModel, QAbstractItemView, QLabel
 
 from file_operations.audio_tags import AudioTagHelper
@@ -86,16 +86,16 @@ class FileSystemModel(QFileSystemModel):
         if index.column() == 1 and role == Qt.DisplayRole:
             if size_str := super().data(index, role):
                 # Remove unit from the string and convert to float
-                size_str = size_str.replace(',', '')  # Remove comma
+                size_str = size_str.replace(",", "")  # Remove comma
                 size = float(size_str.split()[0])
                 # Convert size from MiB to KB
                 size *= 1024
                 if size < 1024:
-                    return f'{size:.2f} KB'
-                elif size < 1024 ** 2:
-                    return f'{size / 1024:.2f} MB'
+                    return f"{size:.2f} KB"
+                elif size < 1024**2:
+                    return f"{size / 1024:.2f} MB"
                 else:
-                    return f'{size / 1024 ** 2:.2f} GB'
+                    return f"{size / 1024 ** 2:.2f} GB"
         return super().data(index, role)
 
 
@@ -109,9 +109,12 @@ class MyTreeView(QTreeView):
         self.setSelectionMode(QAbstractItemView.SelectionMode(QTreeView.ExtendedSelection))
         self.audio_helper = AudioTagHelper()
 
+        self._search_mode = False
+        self._search_results = []
+        self._search_model = None
+
     def set_callback_load_media(self, callback):
         self.media_player_callback = callback
-
 
     def mousePressEvent(self, event):
         """Select multiple items on mouse click."""
@@ -172,8 +175,10 @@ class MyTreeView(QTreeView):
         self.__set_root_path_for_tree_view(model, path)
         model.directoryLoaded.connect(self.resize_columns)
 
-    def on_tree_double_clicked(self, index: QModelIndex, artist: QLabel, title: QLabel ) -> None:
+    def on_tree_double_clicked(self, index: QModelIndex, artist: QLabel, title: QLabel) -> None:
         """Handles the tree view double click event. Returns: None"""
+
+        start_time = time.perf_counter()
 
         model = cast(QFileSystemModel, self.model())
         path = model.filePath(index)
@@ -191,6 +196,9 @@ class MyTreeView(QTreeView):
         elif self.audio_helper.isSupportedAudioFile(path):
             logger.info("file is a supported audio file, calling waveform callback")
             self.media_player_callback(path, artist.text(), title.text())
+
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"on_tree_double_clicked took {elapsed:.4f} seconds")
 
     def __set_root_path_for_tree_view(self, model: QFileSystemModel, absolute_path: str):
         """Sets the root path for the given tree view."""
@@ -250,6 +258,12 @@ class MyTreeView(QTreeView):
     def get_root_dir(self) -> str:
         """Returns the root directory of the tree view."""
 
+        if self.is_search_mode():
+            # In search mode, return the parent directory of the first search result, or an empty string
+            if self._search_results:
+                return os.path.dirname(self._search_results[0])
+            else:
+                return ""
         model = cast(QFileSystemModel, self.model())
         return os.path.normpath(model.rootPath())
 
@@ -262,3 +276,41 @@ class MyTreeView(QTreeView):
                 # Create a new index that points to the first column of the current row
                 first_column_index = self.model().index(index.row(), 0, index.parent())
                 self.edit(first_column_index)
+
+    def show_search_results(self, paths):
+        """Display only the search result paths in the tree view."""
+        self._search_mode = True
+        self._search_results = paths
+
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["Search Results"])
+        for path in paths:
+            item = QStandardItem(path)
+            item.setData(path, Qt.UserRole)
+            model.appendRow(item)
+        self.setModel(model)
+        self._search_model = model
+
+    def clear_search_results(self):
+        """Restore the normal file system model."""
+        self._search_mode = False
+        self._search_results = []
+        self._search_model = None
+
+    def is_search_mode(self):
+        return self._search_mode
+
+    def get_selected_search_path(self):
+        if not self._search_mode:
+            return None
+        index = self.currentIndex()
+        if not index.isValid():
+            return None
+        return index.data(Qt.UserRole)
+    
+    def get_absolute_path(self, index: QModelIndex) -> str:
+        model = self.model()
+        if hasattr(model, "filePath"):
+            return model.filePath(index)
+        else:
+            return index.data(Qt.UserRole)

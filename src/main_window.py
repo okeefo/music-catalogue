@@ -19,13 +19,15 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMessageBox,
     QCompleter,
-    QFileSystemModel, QLabel,
+    QFileSystemModel,
+    QLabel,
 )
 from mutagen.id3 import PictureType
 
 from file_operations.audio_tags import AudioTagHelper, PictureTypeDescription
 from file_operations.file_utils import ask_and_move_files, ask_and_copy_files
 from file_operations.repackage_dir import repackage_dir_by_label
+
 # Set logger instance
 from log_config import get_logger
 from path_helper import get_absolute_path_config
@@ -61,6 +63,7 @@ PICTURE_TYPES = {value: key for key, value in vars(PictureType).items() if not k
 # TODO: add a settings dialog
 # TODO: complete settings management - create a config manager
 
+
 class MainWindow(QMainWindow):
     """Main window class for the application."""
 
@@ -75,7 +78,6 @@ class MainWindow(QMainWindow):
         self.id3_tags = []
         self.audio_tags = AudioTagHelper()
         self.player = QMediaPlayer(self)
-        #self.player.setNotifyInterval(50)
         self._user_is_sliding = False
 
         # set up config
@@ -109,21 +111,14 @@ class MainWindow(QMainWindow):
         self.__setup_menu_buttons()
         self.__setup_dir_up_buttons()
 
-    #  self.__setup_mp3tag_path()
-
     def __setup_context_menus(self):
         """Set up the context menus for the tree views. Returns: None"""
         self.tree_view_cm_handler = TreeViewContextMenuHandler(self.player)
 
     def __setup_decks(self) -> None:
         """Sets up the media players. Returns: None"""
-        self.player_a = MediaPlayerController(self, self.slider_a, self.wdgt_wave_a, self.butt_play_a, self.butt_stop_a, self.lbl_current_a, self.lbl_duration_a,
-                                              self.lbl_info_a, self.wdgt_cover_a)
-        self.player_b = MediaPlayerController(self, self.slider_b, self.wdgt_wave_b, self.butt_play_b, self.butt_stop_b, self.lbl_current_b, self.lbl_duration_b,
-                                              self.lbl_info_b, self.wdgt_cover_b)
-
-    #        self.player.mediaStatusChanged.connect(self.handle_media_status_changed)  # type: ignore[attr-defined]
-    #        self.player.positionChanged.connect(self.on_player_position_changed)  # type: ignore[attr-defined]
+        self.player_a = MediaPlayerController(self, self.slider_a, self.wdgt_wave_a, self.butt_play_a, self.butt_stop_a, self.lbl_current_a, self.lbl_duration_a, self.lbl_info_a, self.wdgt_cover_a)
+        self.player_b = MediaPlayerController(self, self.slider_b, self.wdgt_wave_b, self.butt_play_b, self.butt_stop_b, self.lbl_current_b, self.lbl_duration_b, self.lbl_info_b, self.wdgt_cover_b)
 
     def __setup_config(self) -> None:
         """Sets up the configuration by reading the config.ini file and adding missing sections if necessary. Returns: None"""
@@ -161,10 +156,15 @@ class MainWindow(QMainWindow):
         self.path_info_bar_target = self.findChild(MyLineEdit, "path_target")
         self.path_info_bar_target.setCompleter(completer)
 
+        self.path_info_bar_source.searchRequested.connect(lambda query: self.on_search_requested(query, self.tree_source))
+        self.path_info_bar_target.searchRequested.connect(lambda query: self.on_search_requested(query, self.tree_target))
+
         self.path_info_bar_source.returnPressed.connect(lambda: self.on_path_info_bar_return_pressed(self.tree_source, self.path_info_bar_source))
         self.path_info_bar_target.returnPressed.connect(lambda: self.on_path_info_bar_return_pressed(self.tree_target, self.path_info_bar_target))
+      
         self.path_info_bar_source.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_SOURCE_DIRECTORY])
         self.path_info_bar_target.setText(self.config[CONFIG_SECTION_DIRECTORIES][CONFIG_LAST_TARGET_DIRECTORY])
+
 
     def __setup_icons(self) -> None:
         """Set up the icons. Returns: None"""
@@ -285,7 +285,6 @@ class MainWindow(QMainWindow):
             self.lbl_src_track,
             self.lbl_src_catalog,
             self.lbl_src_discogs_id,
-
             self.lbl_src_album_artist,
             self.lbl_src_date,
             self.lbl_src_genre,
@@ -303,7 +302,6 @@ class MainWindow(QMainWindow):
             self.lbl_tar_track,
             self.lbl_tar_catalog,
             self.lbl_tar_discogs_id,
-
             self.lbl_tar_album_artist,
             self.lbl_tar_date,
             self.lbl_tar_genre,
@@ -364,7 +362,14 @@ class MainWindow(QMainWindow):
         self.tree_source.set_callback_load_media(self.player_a.load_media)
         self.tree_target.set_callback_load_media(self.player_b.load_media)
 
-    def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit, artist: QLabel, title: QLabel,) -> None:
+    def __set_tree_actions(
+        self,
+        tree_view: MyTreeView,
+        last_dir: str,
+        path_bar: MyLineEdit,
+        artist: QLabel,
+        title: QLabel,
+    ) -> None:
         tree_view.setup_tree_view(last_dir)
         tree_view.set_single_click_handler(self.on_tree_clicked)
         tree_view.set_double_click_handler(lambda index, clicked_tree, _: self.on_tree_double_clicked(index, clicked_tree, path_bar, artist, title))
@@ -438,12 +443,37 @@ class MainWindow(QMainWindow):
     @staticmethod
     def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, info_bar: MyLineEdit, artist: QLabel, title: QLabel) -> None:
         """Handles the tree view double click event. Returns: None"""
+        if tree_view.is_search_mode():
+            path = index.data(Qt.UserRole)
+            if path:
+                if os.path.isdir(path):
+                    tree_view.clear_search_results()
+                    tree_view.change_dir(path)
+                    info_bar.setText(path)
+                else:
+                    # For files, set root to parent directory and select the file
+                    parent_dir = os.path.dirname(path)
+                    tree_view.clear_search_results()
+                    tree_view.change_dir(parent_dir)
+                    info_bar.setText(parent_dir)
+                    # Optionally, select the file in the tree view
+            return
+
         tree_view.on_tree_double_clicked(index, artist, title)
         info_bar.setText(tree_view.get_root_dir())
 
     def on_path_info_bar_return_pressed(self, tree_view: MyTreeView, path_info_bar: MyLineEdit) -> None:
         """Handles the directory when the return key is pressed. Returns: None"""
 
+        logger.debug(f"Path info bar return pressed with text: {path_info_bar.text()}")
+        
+        text = path_info_bar.text()
+        if text.startswith(":"):
+            # Remove the colon and trigger search
+            query = text[1:]
+            self.on_search_requested(query, tree_view)
+            return
+        
         if not os.path.isdir(path_info_bar.text()):
             QMessageBox.critical(self, "Error", "Directory doesn't exist")
             path_info_bar.setText(tree_view.get_root_dir())
@@ -552,8 +582,7 @@ class MainWindow(QMainWindow):
     def display_id3_tags_when_an_item_is_selected(self, item: QModelIndex, tree_view: QTreeView) -> None:
         """Displays the ID3 tags for the selected audio file in the source tree. Returns: None"""
 
-        model = cast(QFileSystemModel, tree_view.model())
-        absolute_filename = model.filePath(item)
+        absolute_filename =tree_view.get_absolute_path(item)
 
         if not self.audio_tags.isSupportedAudioFile(absolute_filename):
             return
@@ -684,6 +713,20 @@ class MainWindow(QMainWindow):
         self.but_toggle.setToolTip(tooltip)
         self.but_toggle.setToolTipDuration(1000 if width <= 0 else 0)
 
+    def on_search_requested(self, query: str, tree_view: MyTreeView):
+        """Search for files/dirs matching the query in the current root dir and display them in the tree view."""
+        import os
+
+        root_dir = tree_view.get_root_dir()
+        matches = []
+        for root, dirs, files in os.walk(root_dir):
+            for name in dirs + files:
+                if query.lower() in name.lower():
+                    matches.append(os.path.join(root, name))
+
+        logger.info(f"Search for '{query}' found: {len(matches)} matches in '{root_dir}'")
+      
+        tree_view.show_search_results(matches)
 
 
 if __name__ == "__main__":
