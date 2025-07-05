@@ -140,7 +140,7 @@ class WaveformWidget(QWidget):
 class WaveformWorker(QThread):
     waveformLoaded = pyqtSignal(object, float)  # waveform data and duration
 
-    def __init__(self, path, num_samples=5000):
+    def __init__(self, path, num_samples=2500):
         super().__init__()
         self.path = path
         self.num_samples = num_samples

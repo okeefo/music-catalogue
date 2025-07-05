@@ -118,12 +118,9 @@ class MainWindow(QMainWindow):
     def __setup_decks(self) -> None:
         """Sets up the media players. Returns: None"""
         self.player_a = MediaPlayerController(self, self.slider_a, self.wdgt_wave_a, self.butt_play_a, self.butt_stop_a, self.lbl_current_a, self.lbl_duration_a,
-                                              self.lbl_info_a, self.wdgt_cover_a)
+                                              self.lbl_info_a, self.lbl_cover_a)
         self.player_b = MediaPlayerController(self, self.slider_b, self.wdgt_wave_b, self.butt_play_b, self.butt_stop_b, self.lbl_current_b, self.lbl_duration_b,
-                                              self.lbl_info_b, self.wdgt_cover_b)
-
-    #        self.player.mediaStatusChanged.connect(self.handle_media_status_changed)  # type: ignore[attr-defined]
-    #        self.player.positionChanged.connect(self.on_player_position_changed)  # type: ignore[attr-defined]
+                                              self.lbl_info_b, self.lbl_cover_b)
 
     def __setup_config(self) -> None:
         """Sets up the configuration by reading the config.ini file and adding missing sections if necessary. Returns: None"""
@@ -190,59 +187,47 @@ class MainWindow(QMainWindow):
 
     def __setup_action_buttons(self) -> None:
         """Set up the action buttons. Returns: None"""
-        # repackage button
-        self.but_repackage_src = self.findChild(QPushButton, "butt_repackage_source")
-        self.but_repackage_src.clicked.connect(lambda: self.on_repackage_button_clicked(self.tree_source, self.tree_target))
-        self.but_repackage_src.setToolTip("[Ctrl+R] Repackage the source directory -> target directory")
-        self.but_repackage_src.setToolTipDuration(1000)
-        self.but_repackage_src.setShortcut("Ctrl+R")
-
-        self.but_repackage_tar = self.findChild(QPushButton, "butt_repackage_target")
-        self.but_repackage_tar.clicked.connect(lambda: self.on_repackage_button_clicked(self.tree_target, self.tree_source))
-        self.but_repackage_tar.setToolTip("[Ctrl+Shift+R] Repackage the target directory -> source directory")
-        self.but_repackage_tar.setToolTipDuration(1000)
-        self.but_repackage_tar.setShortcut("Ctrl+R")
-
+        toolTipDuration = 10000
         self.but_restore = self.findChild(QPushButton, "but_restore")
         self.but_restore.clicked.connect(lambda: self.on_restore_button_clicked())
         self.but_restore.setToolTip("[Ctrl+T] Restore from the recycle bin")
-        self.but_restore.setToolTipDuration(1000)
+        self.but_restore.setToolTipDuration(toolTipDuration)
         self.but_restore.setShortcut("Ctrl+T")
 
         self.but_move_to_target = self.findChild(QPushButton, "but_move_to_target")
         self.but_move_to_target.clicked.connect(lambda: self.on_move_button_clicked(self.tree_source, self.tree_target))
         self.but_move_to_target.setToolTip("[Ctrl+M] Move the select items in the source directory -> target directory")
-        self.but_move_to_target.setToolTipDuration(1000)
+        self.but_move_to_target.setToolTipDuration(toolTipDuration)
         self.but_move_to_target.setShortcut("Ctrl+M")
 
         self.but_move_to_source = self.findChild(QPushButton, "but_move_to_source")
         self.but_move_to_source.clicked.connect(lambda: self.on_move_button_clicked(self.tree_target, self.tree_source))
         self.but_move_to_source.setToolTip("[Ctrl+shift+M] Move the select items in the target directory -> source directory")
-        self.but_move_to_source.setToolTipDuration(1000)
+        self.but_move_to_source.setToolTipDuration(toolTipDuration)
         self.but_move_to_source.setShortcut("Ctrl+shift+M")
 
         self.but_copy_to_target = self.findChild(QPushButton, "but_copy_to_target")
         self.but_copy_to_target.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_source, self.tree_target))
         self.but_copy_to_target.setToolTip("[Ctrl+P] Copy the select items in the source directory -> target directory")
-        self.but_copy_to_target.setToolTipDuration(1000)
+        self.but_copy_to_target.setToolTipDuration(toolTipDuration)
         self.but_copy_to_target.setShortcut("Ctrl+P")
 
         self.but_copy_to_source = self.findChild(QPushButton, "but_copy_to_source")
         self.but_copy_to_source.clicked.connect(lambda: self.on_copy_button_clicked(self.tree_target, self.tree_source))
         self.but_copy_to_source.setToolTip("[Ctrl+shift+C] Copy the select items in the target directory -> target directory")
-        self.but_copy_to_source.setToolTipDuration(1000)
+        self.but_copy_to_source.setToolTipDuration(toolTipDuration)
         self.but_copy_to_source.setShortcut("Ctrl+shift+C")
 
         self.but_settings = self.findChild(QPushButton, "but_settings")
         self.but_settings.clicked.connect(lambda: self.on_settings_button_clicked())
         self.but_settings.setToolTip("[Ctrl+S] Open the settings dialog")
-        self.but_settings.setToolTipDuration(1000)
+        self.but_settings.setToolTipDuration(toolTipDuration)
         self.but_settings.setShortcut("Ctrl+S")
 
         self.but_db = self.findChild(QPushButton, "but_db")
         self.but_db.clicked.connect(lambda: self.on_db_button_clicked())
         self.but_db.setToolTip("[Ctrl+D] Open the database dialog")
-        self.but_db.setToolTipDuration(1000)
+        self.but_db.setToolTipDuration(toolTipDuration)
         self.but_db.setShortcut("Ctrl+D")
 
     def __setup_window_size(self) -> None:

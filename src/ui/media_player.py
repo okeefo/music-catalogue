@@ -1,17 +1,22 @@
 from PyQt5.QtCore import QUrl, Qt
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtWidgets import (
     QWidget, QSlider, QPushButton, QLabel, QMessageBox,
 )
 
+from ui.custom_waveform_widget import WaveformWidget
+
+from file_operations.audio_tags import AudioTagHelper, PictureTypeDescription
+
 # Set logger instance
 from log_config import get_logger
-from ui.custom_waveform_widget import WaveformWidget
 
 logger = get_logger(__name__)
 
 INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to install the K-Lite Codec Pack. You can download it from the official website:<br><a href="https://www.codecguide.com/download_kl.htm">https://www.codecguide.com/download_kl.htm</a>'
+
+
 class MediaPlayerController(QWidget):
     # create a placeholder for the Parent - which is the main window
     parent = None
@@ -26,15 +31,16 @@ class MediaPlayerController(QWidget):
             lbl_current: QLabel,
             lbl_duration: QLabel,
             lbl_info: QLabel,
-            wdgt_cover_art: QWidget
+            lbl_cover_art: QWidget
     ) -> None:
         super().__init__(parent)
         self.parent = parent
+        self.audio_tags = AudioTagHelper()
         self.setObjectName("MediaPlayerController")
 
         self.lbl_current = lbl_current
         self.lbl_duration = lbl_duration
-        self.wdgt_cover_art = wdgt_cover_art
+        self.wdgt_cover_art = lbl_cover_art
         self.info_bar = lbl_info
         self.info_bar.setText("No audio file loaded")
 
@@ -123,9 +129,11 @@ class MediaPlayerController(QWidget):
         self.lbl_current.setText(self.format_time(current_time))
 
     def load_media(self, path: str, artist: str, title: str) -> None:
+        self.set_cover_art(path)
         self.player.setMedia(QMediaContent(QUrl.fromLocalFile(path)))
         self.waveform_widget.load_waveform_from_file(path, artist, title)
         self.on_stop_button_clicked()
+
 
     def on_player_position_changed(self, position: int) -> None:
         if self._user_is_sliding:
@@ -165,7 +173,6 @@ class MediaPlayerController(QWidget):
         self.butt_play.setIcon(self.icon_pause)
         self.info_bar.setText(f"Playing {self.waveform_widget.artist} - {self.waveform_widget.title}")
 
-
     def on_stop_button_clicked(self) -> None:
         # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
         logger.info("Play button clicked")
@@ -195,3 +202,17 @@ class MediaPlayerController(QWidget):
         m = (total_sec % 3600) // 60
         s = total_sec % 60
         return f"{h:02d}:{m:02d}:{s:02d}.{ms:02d}"
+
+    def set_cover_art(self, path: str) -> None:
+        """Get the cover art from the media file."""
+        cover_art_images = self.audio_tags.get_cover_art(path)
+        if cover_art_images:
+            pixmap = QPixmap()
+            pixmap.loadFromData(cover_art_images[0].data)  # type: ignore[attr-defined]
+            scaled_pixmap = pixmap.scaled(self.wdgt_cover_art.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.wdgt_cover_art.setPixmap(scaled_pixmap)
+        else:
+            self.wdgt_cover_art.clear_cover_art()
+            logger.warning(f"No cover art found for {path}")
+            self.info_bar.setText("No cover art found for this audio file.")
+
