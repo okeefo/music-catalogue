@@ -1261,7 +1261,7 @@ QSlider::handle:horizontal {
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_2">
               <item>
-               <widget class="QGroupBox" name="groupBox_Sourcetree">
+               <widget class="QGroupBox" name="groupBox_left_tree">
                 <property name="title">
                  <string/>
                 </property>
@@ -1282,7 +1282,7 @@ QSlider::handle:horizontal {
                   <number>10</number>
                  </property>
                  <item>
-                  <widget class="QFrame" name="frame_path_source">
+                  <widget class="QFrame" name="frame_path_left">
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
@@ -1315,7 +1315,7 @@ QSlider::handle:horizontal {
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QPushButton" name="but_copy_source">
+                     <widget class="QPushButton" name="but_copy_left">
                       <property name="toolTip">
                        <string>Set Target Dir = Source</string>
                       </property>
@@ -1382,7 +1382,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_select_source">
+                     <widget class="QPushButton" name="but_select_left">
                       <property name="styleSheet">
                        <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1440,7 +1440,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_source_up">
+                     <widget class="QPushButton" name="but_left_up">
                       <property name="styleSheet">
                        <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1498,7 +1498,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="MyLineEdit" name="path_source">
+                     <widget class="MyLineEdit" name="path_left">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
@@ -1511,7 +1511,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_copy_to_target">
+                     <widget class="QPushButton" name="but_copy_to_right">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
@@ -1586,7 +1586,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_move_to_target">
+                     <widget class="QPushButton" name="but_move_to_right">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
@@ -1663,7 +1663,7 @@ QPushButton::pressed
                   </widget>
                  </item>
                  <item>
-                  <widget class="MyTreeView" name="tree_source">
+                  <widget class="MyTreeView" name="tree_left">
                    <property name="styleSheet">
                     <string notr="true">QLineEdit {
 
@@ -1713,7 +1713,7 @@ QPushButton::pressed
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="groupBox_target_tree">
+               <widget class="QGroupBox" name="groupBox_right_tree">
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
@@ -1737,7 +1737,7 @@ QPushButton::pressed
                   <number>10</number>
                  </property>
                  <item>
-                  <widget class="QFrame" name="frame_path_target">
+                  <widget class="QFrame" name="frame_path_right">
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
@@ -1770,7 +1770,7 @@ QPushButton::pressed
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QPushButton" name="but_copy_to_source">
+                     <widget class="QPushButton" name="but_copy_to_left">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
@@ -1844,7 +1844,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_move_to_source">
+                     <widget class="QPushButton" name="but_move_to_left">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
@@ -1919,7 +1919,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="MyLineEdit" name="path_target">
+                     <widget class="MyLineEdit" name="path_right">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
@@ -1935,7 +1935,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_target_up">
+                     <widget class="QPushButton" name="but_right_up">
                       <property name="styleSheet">
                        <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -1993,7 +1993,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_select_target">
+                     <widget class="QPushButton" name="but_select_right">
                       <property name="enabled">
                        <bool>true</bool>
                       </property>
@@ -2054,7 +2054,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="but_copy_target">
+                     <widget class="QPushButton" name="but_copy_right">
                       <property name="styleSheet">
                        <string notr="true">/*-----QPushButton-----*/
 QPushButton
@@ -2115,7 +2115,7 @@ QPushButton::pressed
                   </widget>
                  </item>
                  <item>
-                  <widget class="MyTreeView" name="tree_target">
+                  <widget class="MyTreeView" name="tree_right">
                    <property name="styleSheet">
                     <string notr="true">QLineEdit {
 
@@ -2174,7 +2174,7 @@ QPushButton::pressed
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout">
               <item>
-               <widget class="QGroupBox" name="gb_id3_source">
+               <widget class="QGroupBox" name="gb_id3_left">
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
@@ -2265,7 +2265,7 @@ QPushButton::pressed
                            </spacer>
                           </item>
                           <item>
-                           <widget class="QLabel" name="label_source_page_num">
+                           <widget class="QLabel" name="label_left_page_num">
                             <property name="maximumSize">
                              <size>
                               <width>50</width>
@@ -2278,7 +2278,7 @@ QPushButton::pressed
                            </widget>
                           </item>
                           <item>
-                           <widget class="QPushButton" name="src_image_prev">
+                           <widget class="QPushButton" name="left_image_prev">
                             <property name="maximumSize">
                              <size>
                               <width>20</width>
@@ -2342,7 +2342,7 @@ QPushButton::pressed
                            </widget>
                           </item>
                           <item>
-                           <widget class="QPushButton" name="src_image_next">
+                           <widget class="QPushButton" name="left_image_next">
                             <property name="maximumSize">
                              <size>
                               <width>20</width>
@@ -2445,14 +2445,14 @@ QPushButton::pressed
                             <number>0</number>
                            </property>
                            <item>
-                            <widget class="QLabel" name="label_source_art_type">
+                            <widget class="QLabel" name="label_left_art_type">
                              <property name="text">
                               <string>Front Cover</string>
                              </property>
                             </widget>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_source_mime">
+                            <widget class="QLabel" name="label_left_mime">
                              <property name="minimumSize">
                               <size>
                                <width>60</width>
@@ -2465,21 +2465,21 @@ QPushButton::pressed
                             </widget>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_source_resolution">
+                            <widget class="QLabel" name="label_left_resolution">
                              <property name="text">
                               <string>800x600</string>
                              </property>
                             </widget>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_source_size">
+                            <widget class="QLabel" name="label_left_size">
                              <property name="text">
                               <string>1345,678KB</string>
                              </property>
                             </widget>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_source_desc">
+                            <widget class="QLabel" name="label_left_desc">
                              <property name="text">
                               <string>rekordbox</string>
                              </property>
@@ -2502,7 +2502,7 @@ QPushButton::pressed
                          </widget>
                         </item>
                         <item row="0" column="0" rowspan="6">
-                         <widget class="QStackedWidget" name="stacked_widget_source">
+                         <widget class="QStackedWidget" name="stacked_widget_left">
                           <property name="currentIndex">
                            <number>1</number>
                           </property>
@@ -2516,7 +2516,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="1" column="5">
-                    <widget class="QLabel" name="lbl_src_track">
+                    <widget class="QLabel" name="lbl_left_track">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2534,7 +2534,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="0" column="5">
-                    <widget class="QLabel" name="lbl_src_side">
+                    <widget class="QLabel" name="lbl_left_side">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2552,7 +2552,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="3" column="5">
-                    <widget class="QLabel" name="lbl_src_discogs_id">
+                    <widget class="QLabel" name="lbl_left_discogs_id">
                      <property name="minimumSize">
                       <size>
                        <width>120</width>
@@ -2636,7 +2636,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="5" column="5">
-                    <widget class="QLabel" name="lbl_src_country">
+                    <widget class="QLabel" name="lbl_left_country">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2648,7 +2648,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="4" column="5">
-                    <widget class="QLabel" name="lbl_src_date">
+                    <widget class="QLabel" name="lbl_left_date">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2660,7 +2660,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="6" column="5">
-                    <widget class="QLabel" name="lbl_src_genre">
+                    <widget class="QLabel" name="lbl_left_genre">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2702,7 +2702,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="4" column="3">
-                    <widget class="QLabel" name="lbl_src_label">
+                    <widget class="QLabel" name="lbl_left_label">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2747,7 +2747,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="3" column="3">
-                    <widget class="QLabel" name="lbl_src_album_artist">
+                    <widget class="QLabel" name="lbl_left_album_artist">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2759,7 +2759,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="2" column="3">
-                    <widget class="QLabel" name="lbl_src_album">
+                    <widget class="QLabel" name="lbl_left_album">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2804,7 +2804,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="2" column="5">
-                    <widget class="QLabel" name="lbl_src_catalog">
+                    <widget class="QLabel" name="lbl_left_catalog">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -2922,7 +2922,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="0" column="3">
-                    <widget class="QLabel" name="lbl_src_title">
+                    <widget class="QLabel" name="lbl_left_title">
                      <property name="minimumSize">
                       <size>
                        <width>450</width>
@@ -2976,7 +2976,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="1" column="3">
-                    <widget class="QLabel" name="lbl_src_artist">
+                    <widget class="QLabel" name="lbl_left_artist">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3048,7 +3048,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="5" column="3">
-                    <widget class="QLabel" name="lbl_src_media">
+                    <widget class="QLabel" name="lbl_left_media">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3072,7 +3072,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="6" column="3">
-                    <widget class="QLabel" name="lbl_src_style">
+                    <widget class="QLabel" name="lbl_left_style">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3089,7 +3089,7 @@ QPushButton::pressed
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="gb_id3_target">
+               <widget class="QGroupBox" name="gb_id3_right">
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
@@ -3124,7 +3124,7 @@ QPushButton::pressed
                  <item>
                   <layout class="QGridLayout" name="gridLayout">
                    <item row="0" column="5">
-                    <widget class="QLabel" name="lbl_tar_side">
+                    <widget class="QLabel" name="lbl_right_side">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3250,7 +3250,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="0" column="3">
-                    <widget class="QLabel" name="lbl_tar_title">
+                    <widget class="QLabel" name="lbl_right_title">
                      <property name="minimumSize">
                       <size>
                        <width>450</width>
@@ -3304,7 +3304,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="4" column="5">
-                    <widget class="QLabel" name="lbl_tar_date">
+                    <widget class="QLabel" name="lbl_right_date">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3316,7 +3316,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="1" column="3">
-                    <widget class="QLabel" name="lbl_tar_artist">
+                    <widget class="QLabel" name="lbl_right_artist">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3358,7 +3358,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="5" column="5">
-                    <widget class="QLabel" name="lbl_tar_country">
+                    <widget class="QLabel" name="lbl_right_country">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3421,7 +3421,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="4" column="3">
-                    <widget class="QLabel" name="lbl_tar_label">
+                    <widget class="QLabel" name="lbl_right_label">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3439,7 +3439,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="5" column="3">
-                    <widget class="QLabel" name="lbl_tar_media">
+                    <widget class="QLabel" name="lbl_right_media">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3451,7 +3451,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="3" column="5">
-                    <widget class="QLabel" name="lbl_tar_discogs_id">
+                    <widget class="QLabel" name="lbl_right_discogs_id">
                      <property name="minimumSize">
                       <size>
                        <width>120</width>
@@ -3502,7 +3502,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="2" column="5">
-                    <widget class="QLabel" name="lbl_tar_catalog">
+                    <widget class="QLabel" name="lbl_right_catalog">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3520,7 +3520,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="1" column="5">
-                    <widget class="QLabel" name="lbl_tar_track">
+                    <widget class="QLabel" name="lbl_right_track">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3538,7 +3538,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="2" column="3">
-                    <widget class="QLabel" name="lbl_tar_album">
+                    <widget class="QLabel" name="lbl_right_album">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3597,7 +3597,7 @@ QPushButton::pressed
                          <number>7</number>
                         </property>
                         <item row="1" column="0" rowspan="3">
-                         <widget class="QStackedWidget" name="stacked_widget_target">
+                         <widget class="QStackedWidget" name="stacked_widget_right">
                           <property name="currentIndex">
                            <number>-1</number>
                           </property>
@@ -3619,7 +3619,7 @@ QPushButton::pressed
                            </spacer>
                           </item>
                           <item>
-                           <widget class="QLabel" name="label_target_page_num">
+                           <widget class="QLabel" name="label_right_page_num">
                             <property name="maximumSize">
                              <size>
                               <width>50</width>
@@ -3632,7 +3632,7 @@ QPushButton::pressed
                            </widget>
                           </item>
                           <item>
-                           <widget class="QPushButton" name="tar_image_prev">
+                           <widget class="QPushButton" name="right_image_prev">
                             <property name="maximumSize">
                              <size>
                               <width>20</width>
@@ -3696,7 +3696,7 @@ QPushButton::pressed
                            </widget>
                           </item>
                           <item>
-                           <widget class="QPushButton" name="tar_image_next">
+                           <widget class="QPushButton" name="right_image_next">
                             <property name="maximumSize">
                              <size>
                               <width>20</width>
@@ -3799,14 +3799,14 @@ QPushButton::pressed
                             <number>0</number>
                            </property>
                            <item>
-                            <widget class="QLabel" name="label_target_art_type">
+                            <widget class="QLabel" name="label_right_art_type">
                              <property name="text">
                               <string>Front Cover</string>
                              </property>
                             </widget>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_target_mime">
+                            <widget class="QLabel" name="label_right_mime">
                              <property name="minimumSize">
                               <size>
                                <width>60</width>
@@ -3819,21 +3819,21 @@ QPushButton::pressed
                             </widget>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_target_size">
+                            <widget class="QLabel" name="label_right_size">
                              <property name="text">
                               <string>1345,678KB</string>
                              </property>
                             </widget>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_target_resolution">
+                            <widget class="QLabel" name="label_right_resolution">
                              <property name="text">
                               <string>800x600</string>
                              </property>
                             </widget>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_target_desc">
+                            <widget class="QLabel" name="label_right_desc">
                              <property name="text">
                               <string>rekordbox</string>
                              </property>
@@ -3928,7 +3928,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="3" column="3">
-                    <widget class="QLabel" name="lbl_tar_album_artist">
+                    <widget class="QLabel" name="lbl_right_album_artist">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3940,7 +3940,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="6" column="3">
-                    <widget class="QLabel" name="lbl_tar_style">
+                    <widget class="QLabel" name="lbl_right_style">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
@@ -3988,7 +3988,7 @@ QPushButton::pressed
                     </widget>
                    </item>
                    <item row="6" column="5">
-                    <widget class="QLabel" name="lbl_tar_genre">
+                    <widget class="QLabel" name="lbl_right_genre">
                      <property name="font">
                       <font>
                        <pointsize>9</pointsize>
