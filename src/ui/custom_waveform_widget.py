@@ -108,7 +108,7 @@ class WaveformWidget(QWidget):
         self.set_progress(0.0)
         self.track_path = path
         self.waveform_loaded = True
-        self.callback_on_loaded(duration, path)
+        self.callback_on_loaded(duration)
 
         logger.info(f"Waveform loaded with {len(self.waveform)} samples from {path}")
 

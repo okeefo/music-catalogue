@@ -1,4 +1,5 @@
 import datetime
+from typing import Dict
 
 from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtGui import QIcon, QPixmap
@@ -143,9 +144,8 @@ class MediaPlayerController(QWidget):
         self.waveform_widget.load_waveform_from_file(self.path)
         self.on_stop_button_clicked()
         self.info_bar.setText(f"Loading {self.artist} - {self.title}")
-        logger.info(f"Load tag data took {self.format_duration_ms(datetime.datetime.now() - self.load_start)} ")
 
-    def on_waveform_loaded(self, duration: float, path: str) -> None:
+    def on_waveform_loaded(self, duration: float) -> None:
         """Callback when the waveform is loaded."""
         logger.info(f"Waveform Loaded took {self.format_duration_ms(datetime.datetime.now() - self.load_start)} ")
         self.waveform_widget.set_duration(duration)

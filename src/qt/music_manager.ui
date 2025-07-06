@@ -421,12 +421,6 @@ QPushButton::pressed
           <property name="spacing">
            <number>2</number>
           </property>
-          <property name="leftMargin">
-           <number>5</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
           <property name="rightMargin">
            <number>5</number>
           </property>
@@ -435,21 +429,6 @@ QPushButton::pressed
           </property>
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_1">
-            <property name="leftMargin">
-             <number>5</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>5</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_15"/>
-            </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_16">
               <item>
@@ -1248,13 +1227,6 @@ QSlider::handle:horizontal {
                  </item>
                 </layout>
                </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_5">
-              <item>
-               <layout class="QGridLayout" name="gridLayout_3"/>
               </item>
              </layout>
             </item>

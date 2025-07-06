@@ -184,6 +184,7 @@ class MainWindow(QMainWindow):
         self.menu_options.setDisabled(False)
         self.menu_options.setToolTip("Options Menu")
         self.menu_options.setToolTipDuration(5000)
+        self.menuBar().raise_()
 
         # toggle menu
         self.frame_left_menu.setMinimumWidth(0)
