@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication, QTreeView, QFileSystemModel, QAbstract
 from file_operations.audio_tags import AudioTagHelper
 from log_config import get_logger
 from ui.custom_image_label import pop_up_image_dialogue
+from ui.media_player import MediaPlayerController
 
 # create logger
 logger = get_logger(__name__)
@@ -104,13 +105,13 @@ class MyTreeView(QTreeView):
 
     def __init__(self, *args, **kwargs):
         super(MyTreeView, self).__init__(*args, **kwargs)
-        self.media_player_callback = None
+        self.media_player = None
         self.setFocusPolicy(Qt.FocusPolicy(Qt.StrongFocus))
         self.setSelectionMode(QAbstractItemView.SelectionMode(QTreeView.ExtendedSelection))
         self.audio_helper = AudioTagHelper()
 
-    def set_callback_load_media(self, callback):
-        self.media_player_callback = callback
+    def set_media_player(self, mediaPlayer: MediaPlayerController ):
+        self.media_player = mediaPlayer
 
 
     def mousePressEvent(self, event):
@@ -172,7 +173,7 @@ class MyTreeView(QTreeView):
         self.__set_root_path_for_tree_view(model, path)
         model.directoryLoaded.connect(self.resize_columns)
 
-    def on_tree_double_clicked(self, index: QModelIndex, artist: QLabel, title: QLabel ) -> None:
+    def on_tree_double_clicked(self, index: QModelIndex) -> None:
         """Handles the tree view double click event. Returns: None"""
 
         model = cast(QFileSystemModel, self.model())
@@ -190,7 +191,7 @@ class MyTreeView(QTreeView):
 
         elif self.audio_helper.isSupportedAudioFile(path):
             logger.info("file is a supported audio file, calling waveform callback")
-            self.media_player_callback(path, artist.text(), title.text())
+            self.media_player.load_media(path)
 
     def __set_root_path_for_tree_view(self, model: QFileSystemModel, absolute_path: str):
         """Sets the root path for the given tree view."""

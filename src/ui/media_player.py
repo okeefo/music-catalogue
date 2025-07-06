@@ -1,3 +1,5 @@
+import datetime
+
 from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
@@ -5,12 +7,10 @@ from PyQt5.QtWidgets import (
     QWidget, QSlider, QPushButton, QLabel, QMessageBox,
 )
 
-from ui.custom_waveform_widget import WaveformWidget
-
-from file_operations.audio_tags import AudioTagHelper, PictureTypeDescription
-
+from file_operations.audio_tags import AudioTagHelper
 # Set logger instance
 from log_config import get_logger
+from ui.custom_waveform_widget import WaveformWidget
 
 logger = get_logger(__name__)
 
@@ -34,6 +34,9 @@ class MediaPlayerController(QWidget):
             lbl_cover_art: QWidget
     ) -> None:
         super().__init__(parent)
+        self.artist = ""
+        self.title = ""
+        self.id3tags = None  # Placeholder for ID3 tags
         self.parent = parent
         self.audio_tags = AudioTagHelper()
         self.setObjectName("MediaPlayerController")
@@ -43,7 +46,7 @@ class MediaPlayerController(QWidget):
         self.wdgt_cover_art = lbl_cover_art
         self.info_bar = lbl_info
         self.info_bar.setText("No audio file loaded")
-
+        self.media_ready = False
         self._user_is_sliding = None
 
         self.__setup_icons()
@@ -100,7 +103,8 @@ class MediaPlayerController(QWidget):
         """Sets up the waveform widget. Returns: None"""
         self.waveform_widget = wave_widget
         self.waveform_widget.durationChanged.connect(self.update_duration_label)
-        self.waveform_widget.set_player(self.player)
+        self.waveform_widget.set_callback_on_seeked(self.player.setPosition)
+        self.waveform_widget.set_callback_on_loaded(self.on_waveform_loaded)
 
     def on_slider_pressed(self) -> None:
         self._user_is_sliding = True
@@ -128,12 +132,29 @@ class MediaPlayerController(QWidget):
         current_time = rel_pos * duration
         self.lbl_current.setText(self.format_time(current_time))
 
-    def load_media(self, path: str, artist: str, title: str) -> None:
-        self.set_cover_art(path)
-        self.player.setMedia(QMediaContent(QUrl.fromLocalFile(path)))
-        self.waveform_widget.load_waveform_from_file(path, artist, title)
+    def load_media(self, path: str) -> None:
+        """Load media from the given path."""
+        self.load_start= datetime.datetime.now()
+        self.media_ready = False
+        self.load_tag_data(path)
+        self.set_cover_art()
+        self.path = path
+        self.player.setMedia(QMediaContent(QUrl.fromLocalFile(self.path)))
+        self.waveform_widget.load_waveform_from_file(self.path)
         self.on_stop_button_clicked()
+        self.info_bar.setText(f"Loading {self.artist} - {self.title}")
+        logger.info(f"Load tag data took {self.format_duration_ms(datetime.datetime.now() - self.load_start)} ")
 
+    def on_waveform_loaded(self, duration: float, path: str) -> None:
+        """Callback when the waveform is loaded."""
+        logger.info(f"Waveform Loaded took {self.format_duration_ms(datetime.datetime.now() - self.load_start)} ")
+        self.waveform_widget.set_duration(duration)
+        self.lbl_duration.setText(self.format_time(duration))
+        self.artist = self.audio_tags.get_artist(self.id3tags)
+        self.title = self.audio_tags.get_title(self.id3tags)
+
+        self.info_bar.setText(f"Loaded {self.artist} - {self.title}")
+        self.media_ready = True
 
     def on_player_position_changed(self, position: int) -> None:
         if self._user_is_sliding:
@@ -152,36 +173,36 @@ class MediaPlayerController(QWidget):
         self.lbl_current.setText(self.format_time(current_seconds))
 
     def on_play_button_clicked(self) -> None:
-        if not self.waveform_widget.waveform_loaded:
+        if not self.media_ready:
             return
 
-        # if the stop icon is off turn it on
         self.butt_stop.setIcon(self.icon_stop_on)
 
         # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
-        logger.info("Play button clicked")
+
         if self.player.state() == QMediaPlayer.PlayingState:
+            logger.info("Pause button clicked")
             self.player.pause()
             self.butt_play.setIcon(self.icon_play_on)
-            self.info_bar.setText(f"Paused: {self.waveform_widget.artist} - {self.waveform_widget.title}")
+            self.info_bar.setText(f"Paused: {self.artist} - {self.title}")
             return
 
-        logger.info(f"Loading media from waveform widget file: {self.waveform_widget.track_path}")
-
+        logger.info("Play button clicked")
         self.player.play()
         # When audio starts playing, show blue pause icon.
         self.butt_play.setIcon(self.icon_pause)
-        self.info_bar.setText(f"Playing {self.waveform_widget.artist} - {self.waveform_widget.title}")
+        self.info_bar.setText(f"Playing {self.artist} - {self.title}")
 
     def on_stop_button_clicked(self) -> None:
         # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
-        logger.info("Play button clicked")
+        logger.info("Stop button clicked")
 
         # Load the media from the waveform widget file if needed, e.g.
         self.player.stop()
         self.butt_play.setIcon(self.icon_play_off)
         self.butt_stop.setIcon(self.icon_stop_off)
-        self.info_bar.setText(f"{self.waveform_widget.artist} - {self.waveform_widget.title}")
+        if  self.media_ready:
+            self.info_bar.setText(f"{self.artist} - {self.title}")
 
     @staticmethod
     def handle_media_status_changed(status):
@@ -203,16 +224,38 @@ class MediaPlayerController(QWidget):
         s = total_sec % 60
         return f"{h:02d}:{m:02d}:{s:02d}.{ms:02d}"
 
-    def set_cover_art(self, path: str) -> None:
+    def set_cover_art(self) -> None:
         """Get the cover art from the media file."""
-        cover_art_images = self.audio_tags.get_cover_art(path)
-        if cover_art_images:
-            pixmap = QPixmap()
-            pixmap.loadFromData(cover_art_images[0].data)  # type: ignore[attr-defined]
-            scaled_pixmap = pixmap.scaled(self.wdgt_cover_art.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.wdgt_cover_art.setPixmap(scaled_pixmap)
+        pixmap = QPixmap()
+        if self.cover_art:
+            pixmap.loadFromData(self.cover_art[0].data)  # type: ignore[attr-defined]
         else:
-            self.wdgt_cover_art.clear_cover_art()
-            logger.warning(f"No cover art found for {path}")
-            self.info_bar.setText("No cover art found for this audio file.")
+            pixmap.load("src/qt/white_label_record.jpg")
 
+        scaled_pixmap = pixmap.scaled(self.wdgt_cover_art.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.wdgt_cover_art.setPixmap(scaled_pixmap)
+
+    def load_tag_data(self, path: str) -> None:
+        """Load the ID3 tags from the media file."""
+        tags: Dict[str, str]
+        cover_art: list[APIC]
+        tags, cover_art = self.audio_tags.get_tags_and_cover_art(path)
+        self.id3tags = tags
+        self.cover_art = cover_art
+
+    def format_duration_ms(self, delta):
+        """Format a timedelta or milliseconds as a human-readable string."""
+        if isinstance(delta, (int, float)):
+            ms = int(delta)
+            seconds, ms = divmod(ms, 1000)
+        else:
+            seconds = int(delta.total_seconds())
+            ms = int(delta.microseconds / 1000)
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        if hours:
+            return f"{hours:d}:{minutes:02d}:{seconds:02d}.{ms:03d}"
+        elif minutes:
+            return f"{minutes:d}:{seconds:02d}.{ms:03d}"
+        else:
+            return f"{seconds:d}.{ms:09d}s"

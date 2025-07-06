@@ -557,13 +557,13 @@ QSlider::handle:horizontal {
                      <property name="minimumSize">
                       <size>
                        <width>75</width>
-                       <height>100</height>
+                       <height>10</height>
                       </size>
                      </property>
                      <property name="maximumSize">
                       <size>
                        <width>75</width>
-                       <height>100</height>
+                       <height>90</height>
                       </size>
                      </property>
                      <property name="text">
@@ -4025,6 +4025,12 @@ QPushButton::pressed
      <height>26</height>
     </rect>
    </property>
+   <property name="toolTip">
+    <string>sksf;sdfsdfsffsd</string>
+   </property>
+   <property name="defaultUp">
+    <bool>false</bool>
+   </property>
    <widget class="QMenu" name="menu_file">
     <property name="title">
      <string>File</string>
@@ -4033,11 +4039,12 @@ QPushButton::pressed
    </widget>
    <widget class="QMenu" name="menu_options">
     <property name="title">
-     <string>Options</string>
+     <string>Options2</string>
     </property>
     <addaction name="mo_settings"/>
     <addaction name="separator"/>
     <addaction name="actionDB_Manager"/>
+    <addaction name="actionRestore_From_Trash"/>
    </widget>
    <addaction name="menu_file"/>
    <addaction name="menu_options"/>
@@ -4065,13 +4072,30 @@ QPushButton::pressed
    </property>
   </action>
   <action name="mo_settings">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/icons/settings.svg</normaloff>:/icons/icons/settings.svg</iconset>
+   </property>
    <property name="text">
     <string>Settings</string>
    </property>
   </action>
   <action name="actionDB_Manager">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/icons/database.svg</normaloff>:/icons/icons/database.svg</iconset>
+   </property>
    <property name="text">
     <string>DB Manager</string>
+   </property>
+  </action>
+  <action name="actionRestore_From_Trash">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/icons/icons/trash-undo.svg</normaloff>:/icons/icons/trash-undo.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Restore From Trash</string>
    </property>
   </action>
  </widget>

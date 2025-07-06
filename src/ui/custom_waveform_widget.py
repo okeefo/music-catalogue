@@ -20,22 +20,30 @@ class WaveformWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.track_path = None
-        self.artist = None
-        self.title = None
         self._slider = None
         self.waveform = []  # List of floats (normalized 0-1)
         self.progress = 0.0  # 0.0=start, 1.0=end
         self.waveform_loaded = False
         self.duration = 0.0  # Duration in seconds
         self.player = None  # Placeholder for media player instance
+        self.callback_on_seeked = None  # Callback when user seeks
+        self.callback_on_loaded = None  # Callback when waveform is loaded
 
-    def set_player(self, player):
+    def set_callback_on_seeked(self, callback):
         """
-        Set the media player instance to control playback.
+        Set a callback function to be called when the user seeks in the waveform.
         Args:
-            player: Media player instance that has a setPosition method.
+            callback (callable): Function to call with the new position (float between 0.0 and 1.0).
         """
-        self.player = player
+        self.callback_on_seeked = callback
+
+    def set_callback_on_loaded(self, callback):
+        """
+        Set a callback function to be called when the waveform is loaded.
+        Args:
+            callback (callable): Function to call with the waveform data and duration.
+        """
+        self.callback_on_loaded = callback
 
     def set_slider(self, slider):
         self._slider = slider
@@ -87,21 +95,21 @@ class WaveformWidget(QWidget):
         self.progress = max(0.0, min(1.0, pos))
         self.update()  # Triggers a repaint to show the new needle position
 
-    def load_waveform_from_file(self, path, artist: str = None, track_name: str = None) -> None:
+    def load_waveform_from_file(self, path) -> None:
         logger.info(f"Loading waveform from file asynchronously: {path}")
         self.worker = WaveformWorker(path)
-        self.worker.waveformLoaded.connect(lambda waveform, duration: self.on_waveform_loaded(waveform, duration, path, artist, track_name))
+        self.worker.waveformLoaded.connect(lambda waveform, duration: self.on_waveform_loaded(waveform, duration, path))
         self.worker.start()
 
-    def on_waveform_loaded(self, waveform, duration, path, artist, track_name):
+    def on_waveform_loaded(self, waveform, duration, path):
 
         self.set_waveform(waveform)
         self.set_duration(duration)
         self.set_progress(0.0)
         self.track_path = path
-        self.artist = artist
-        self.title = track_name
         self.waveform_loaded = True
+        self.callback_on_loaded(duration, path)
+
         logger.info(f"Waveform loaded with {len(self.waveform)} samples from {path}")
 
     def set_duration(self, duration: float) -> None:
@@ -134,7 +142,7 @@ class WaveformWidget(QWidget):
             total_ms = self.duration * 1000
             new_position = int(rel_pos * total_ms)
             # Call a callback or directly update the media player if available
-            self.player.setPosition(new_position)
+            self.callback_on_seeked(new_position)
 
 
 class WaveformWorker(QThread):

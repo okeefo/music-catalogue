@@ -95,8 +95,8 @@ class DatabaseWindow(QMainWindow):
         self.but_frame3_hide.clicked.connect(self.show_hide_frame_3)
 
     def __setup_icons(self):
-        self.icon_left = QtGui.QIcon(":/icons/icons/chevrons-left.svg")
-        self.icon_right = QtGui.QIcon(":/icons/icons/chevrons-right.svg")
+        self.icon_left = QtGui.QIcon("/src/qt/icons/chevrons-left.svg")
+        self.icon_right = QtGui.QIcon("/src/qt/icons/chevrons-right.svg")
 
     @staticmethod
     def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:

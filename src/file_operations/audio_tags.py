@@ -161,6 +161,13 @@ class AudioTagHelper:
             return ""
 
         return tags[self.TITLE][0].strip() if self.TITLE in tags else ""
+
+    def get_artist(self, tags: dict) -> str:
+
+        if tags is None:
+            return ""
+
+        return tags[self.ARTIST][0].strip() if self.ARTIST in tags else ""
     
     def get_disc_number(self, tags: dict) -> str:
         

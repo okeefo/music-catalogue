@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMessageBox,
     QCompleter,
-    QFileSystemModel, QLabel,
+    QFileSystemModel, QMenu,
 )
 from mutagen.id3 import PictureType
 
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
 
     def __setup_ui(self):
         """Set up the user interface. Returns: None"""
-        # Sets up the user interface of the main window.
+
         self.__setup_icons()
         self.__setup_decks()
         self.__setup_context_menus()
@@ -170,21 +170,27 @@ class MainWindow(QMainWindow):
     def __setup_icons(self) -> None:
         """Set up the icons. Returns: None"""
 
-        self.icon_left = QIcon("icons/icons/chevrons-left.svg")
-        self.icon_right = QIcon(":/icons/icons/chevrons-right.svg")
-        self.icon_menu = QIcon(":/icons/icons/menu.svg")
-        self.icon_repackage = QIcon(":/icons/icons/package.svg")
-        self.icon_move = QIcon(":/icons/icons/move.svg")
-        self.icon_exit = QIcon(":/icons/icons/log-out.svg")
+        self.icon_left = QIcon("src/qt/icons/chevrons-left.svg")
+        self.icon_right = QIcon("src/qt/icons/chevrons-right.svg")
+        self.icon_menu = QIcon("src/qt/icons/menu.svg")
+        self.icon_repackage = QIcon("src/qt/icons/package.svg")
+        self.icon_move = QIcon("src/qt/icons/move.svg")
+        self.icon_exit = QIcon("src/qt/icons/log-out.svg")
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
+        self.menubar.setDisabled(False)
+        self.menu_options = self.findChild(QMenu, "menu_options")
+        self.menu_options.setDisabled(False)
+        self.menu_options.setToolTip("Options Menu")
+        self.menu_options.setToolTipDuration(5000)
+
         # toggle menu
         self.frame_left_menu.setMinimumWidth(0)
         self.but_toggle = self.findChild(QPushButton, "but_toggle")
         self.but_toggle.clicked.connect(lambda: self.toggle_menu())
         self.but_toggle.setToolTip("Open Menu")
-        self.but_toggle.setToolTipDuration(1000)
+        self.but_toggle.setToolTipDuration(5000)
         self.but_toggle.setIcon(self.icon_menu)
         self.but_toggle.setShortcut("Ctrl+M")
         self.but_exit.setIcon(QtGui.QIcon(self.icon_exit.pixmap(40, 40)))
@@ -347,19 +353,20 @@ class MainWindow(QMainWindow):
     def __setup_tree_widgets(self) -> None:
         """Populates the id3_tags list with the names of the supported ID3 tags. Returns: None"""
 
-        self.tree_left = self.findChild(MyTreeView, "tree_left")
         last_dir = self.config.get(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_LEFT_DIRECTORY, fallback=self.default_path)
-        self.__set_tree_actions(self.tree_left, last_dir, self.path_info_bar_left, self.lbl_left_artist, self.lbl_left_title)
-        self.tree_right = self.findChild(MyTreeView, "tree_right")
-        last_dir = self.config.get(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_RIGHT_DIRECTORY, fallback=self.default_path)
-        self.__set_tree_actions(self.tree_right, last_dir, self.path_info_bar_right, self.lbl_right_artist, self.lbl_right_title)
-        self.tree_left.set_callback_load_media(self.player_a.load_media)
-        self.tree_right.set_callback_load_media(self.player_b.load_media)
+        self.tree_left = self.findChild(MyTreeView, "tree_left")
+        self.tree_left.set_media_player(self.player_a)
+        self.__set_tree_actions(self.tree_left, last_dir, self.path_info_bar_left)
 
-    def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit, artist: QLabel, title: QLabel, ) -> None:
+        last_dir = self.config.get(CONFIG_SECTION_DIRECTORIES, CONFIG_LAST_RIGHT_DIRECTORY, fallback=self.default_path)
+        self.tree_right = self.findChild(MyTreeView, "tree_right")
+        self.tree_right.set_media_player(self.player_b)
+        self.__set_tree_actions(self.tree_right, last_dir, self.path_info_bar_right)
+
+    def __set_tree_actions(self, tree_view: MyTreeView, last_dir: str, path_bar: MyLineEdit) -> None:
         tree_view.setup_tree_view(last_dir)
         tree_view.set_single_click_handler(self.on_tree_clicked)
-        tree_view.set_double_click_handler(lambda index, clicked_tree, _: self.on_tree_double_clicked(index, clicked_tree, path_bar, artist, title))
+        tree_view.set_double_click_handler(lambda index, clicked_tree, _: self.on_tree_double_clicked(index, clicked_tree, path_bar))
         tree_view.set_custom_context_menu(self.on_context_menu_requested)
 
     def __setup_exit(self) -> None:
@@ -428,9 +435,9 @@ class MainWindow(QMainWindow):
         self.display_id3_tags_when_an_item_is_selected(item, tree_view)
 
     @staticmethod
-    def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, info_bar: MyLineEdit, artist: QLabel, title: QLabel) -> None:
+    def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, info_bar: MyLineEdit) -> None:
         """Handles the tree view double click event. Returns: None"""
-        tree_view.on_tree_double_clicked(index, artist, title)
+        tree_view.on_tree_double_clicked(index)
         info_bar.setText(tree_view.get_root_dir())
 
     def on_path_info_bar_return_pressed(self, tree_view: MyTreeView, path_info_bar: MyLineEdit) -> None:
@@ -683,13 +690,8 @@ if __name__ == "__main__":
 
     exit_code = 0
     try:
-        # Create an instance of MainWindow
-        main_window = MainWindow(app)
-
-        # Display the main window
+        main_window = MainWindow(app)  # All QWidget creation after QApplication
         main_window.show()
-
-        # Start the application event loop
         app.exec_()
 
     except Exception as e:
