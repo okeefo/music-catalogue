@@ -1,56 +1,56 @@
 import os
 
-from PyQt5 import uic
 from PyQt5.QtCore import Qt, QDir, QModelIndex
-from PyQt5.QtWidgets import QMainWindow, QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
-from qtpy import QtGui
+from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QIcon, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox, QWidget
+
+from db.music_db import MusicCatalogDB
+from log_config import get_logger
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
-
-from log_config import get_logger
 
 logger = get_logger(__name__)
 
 
-class DatabaseWindow(QMainWindow):
+class DatabaseWidget(QWidget):
     label_map = {}
     label_a_map = {}
 
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
-        if not isinstance(cls._instance, cls):
-            cls._instance = super(DatabaseWindow, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-    def show(self):
-        super(DatabaseWindow, self).show()
+        # self.but_db_goUp = None
+        # self.model = None
+        # self.tree = None
+        # self.ui = None
+        # self.animation = None
+        self.icon_left = QIcon("src/qt/icons/chevrons-left.svg")
+        self.icon_right = QIcon("src/qt/icons/chevrons-right.svg")
+        self.music_db = MusicCatalogDB("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
+        self.music_db.load()
 
-    def __init__(self, path: str, parent=None):
-        super(DatabaseWindow, self).__init__()
-        self.icon_right = None
-        self.icon_left = None
-        self.frame_3 = None
-        self.but_frame3_hide = None
-        self.go_up_button = None
-        self.model = None
-        self.tree = None
-        self.ui = None
-        self.animation = None
+    def setup_ui(self, path: str):
+        """Set up the UI components for the database widget."""
+        # get self
 
-        self.__setup_ui()
+        self.setWindowFlags(Qt.WindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint))
         self.__setup_model()
         self.__setup_line_edit(path)
         self.__setup_tree_view(path)
         self.__setup_buttons()
         self.__populate_label_maps()
         self.clear_track_labels()
-        self.__setup_icons()
-        self.__set_chevron_icon()
 
-    def __setup_line_edit(self, path : str) -> None:
+        self.__set_chevron_icon()
+        self.__setup_tree_views()
+        self.__populate_treeview_release()
+
+    def __setup_line_edit(self, path: str) -> None:
         # Set the completer for the MyLineEdit
-        self.path_info_bar = self.findChild(MyLineEdit, "path_source")
+        self.path_info_bar = self.findChild(MyLineEdit, "db_path_root")
         completer = QCompleter()
         completer.setCaseSensitivity(Qt.CaseInsensitive)
         completer.setCompletionMode(QCompleter.PopupCompletion)
@@ -68,35 +68,45 @@ class DatabaseWindow(QMainWindow):
         else:
             tree_view.change_dir(os.path.normpath(path_info_bar.text()))
 
-    def __setup_ui(self):
-        self.ui = uic.loadUi(os.path.join("src", "qt", "database.ui"), self)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-
     def __setup_model(self):
         self.model = QFileSystemModel()
         self.model.setRootPath(QDir.rootPath())
 
     def __setup_tree_view(self, path: str = QDir.rootPath()):
-        self.tree = self.findChild(MyTreeView, "treeView")
+        self.tree = self.findChild(MyTreeView, "treeView_db")
         self.tree.setModel(self.model)
         self.tree.setRootIndex(self.model.index(path))
         header = self.tree.header()  # get the header of the tree view
-        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         treeview = self.tree
         treeview.set_double_click_handler(lambda index, tree, info_bar: self.on_tree_double_clicked(index, self.tree, self.path_info_bar))
         self.tree.show()
 
     def __setup_buttons(self):
-        self.go_up_button = self.findChild(QPushButton, "but_goUp")
-        self.go_up_button.clicked.connect(lambda: self.go_up_one_level(self.path_info_bar))
+        self.but_db_goUp = self.findChild(QPushButton, "but_db_goUp")
+        self.but_db_goUp.clicked.connect(lambda: self.go_up_one_level(self.path_info_bar))
 
-        self.frame_3 = self.findChild(QFrame, "frame_3")
-        self.but_frame3_hide = self.findChild(QPushButton, "but_frame3_hide")
-        self.but_frame3_hide.clicked.connect(self.show_hide_frame_3)
+        self.db_side_frame = self.findChild(QFrame, "db_side_frame")
+        self.but_db_frame_hide = self.findChild(QPushButton, "but_db_frame_hide")
+        self.but_db_frame_hide.clicked.connect(self.show_hide_db_side_frame)
 
-    def __setup_icons(self):
-        self.icon_left = QtGui.QIcon("/src/qt/icons/chevrons-left.svg")
-        self.icon_right = QtGui.QIcon("/src/qt/icons/chevrons-right.svg")
+    def __setup_tree_views(self):
+        """Set up the tree views for releases."""
+        self.treeview_release = self.findChild(MyTreeView, "treeView_db_releases")
+        self.treeview_release.setModel(QStandardItemModel())
+        self.treeview_release.setRootIsDecorated(True)  # Enable expansion indicators
+        self.treeview_release.setHeaderHidden(True)
+        self.treeview_release.clicked.connect(self.on_release_clicked)
+        monospace = QFont("Source Code Pro", 8)  # change the size as desired
+        self.treeview_release.setFont(monospace)
+        self.__populate_treeview_release()
+
+    def on_release_clicked(self, index):
+        """Toggle expansion on click for release items."""
+        if self.treeview_release.isExpanded(index):
+            self.treeview_release.collapse(index)
+        else:
+            self.treeview_release.expand(index)
 
     @staticmethod
     def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
@@ -104,25 +114,26 @@ class DatabaseWindow(QMainWindow):
         tree_view.on_tree_double_clicked(index)
         path_bar.setText(tree_view.get_root_dir())
 
-    def show_hide_frame_3(self):
+    def show_hide_db_side_frame(self):
         """Animate the frame and change the icon."""
         logger.info("Animating frame")
-        self.frame_3.setVisible(self.frame_3.isHidden())
+        self.db_side_frame.setVisible(self.db_side_frame.isHidden())
         self.__set_chevron_icon()
 
     def __set_chevron_icon(self):
-        icon = self.icon_right if self.frame_3.isHidden() else self.icon_left
-        self.but_frame3_hide.setIcon(icon)
+        icon = self.icon_right if self.db_side_frame.isHidden() else self.icon_left
+        self.but_db_frame_hide.setIcon(icon)
 
     def __populate_label_maps(self):
         logger.info("Populating label maps")
-        gbox = self.findChild(QGroupBox, 'gbox_track_labels')
+        gbox = self.findChild(QGroupBox, 'gbox_db_track_labels')
         if not gbox:
+            logger.error("GroupBox 'gbox_track_labels' not found.")
             return None
 
         for child in gbox.children():
             if isinstance(child, QLabel):
-                if child.objectName().endswith('_a'):
+                if child.objectName().endswith('_a_2'):
                     self.label_a_map[child.objectName()] = child.minimumWidth()
                 else:
                     self.label_map[child.objectName()] = child.minimumWidth()
@@ -142,33 +153,28 @@ class DatabaseWindow(QMainWindow):
             label = self.findChild(QLabel, key)
             label.setText("")
 
-    # lbl_media
-    # lbl_album
-    # lbl_media_a
-    # lbl_track_a
-    # lbl_style
-    # lbl_date_a
-    # lbl_artist_a
-    # lbl_cat
-    # lbl_disc_a
-    # lbl_country
-    # lbl_title_a
-    # lbl_cat_a
-    # lbl_website
-    # lbl_title
-    # lbl_date
-    # lbl_style_a
-    # lbl_aartist
-    # lbl_label
-    # lbl_track
-    # lbl_side
-    # lbl_side_a
-    # lbl_artist
-    # lbl_country_a
-    # lbl_website_a
-    # lbl_genre_a
-    # lbl_album_a
-    # lbl_label_a
-    # lbl_disc
-    # lbl_aartist_a
-    # lbl_genre_a
+    def __populate_treeview_release(self):
+        # Create a model with a header label.
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["Releases"])
+
+        # Dictionary to store label items.
+        labels_dict = {}
+        folder_icon = QIcon(":/icons/icons/folder.svg")
+        media_icon = QIcon(":/media/icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png")
+        for release in self.music_db.get_releases().values():
+            # Use the new release class properties
+            record_label = release.label_name
+            # Create a folder icon for the label.
+            if record_label not in labels_dict:
+                label_item = QStandardItem(folder_icon, record_label)
+                model.appendRow(label_item)
+                labels_dict[record_label] = label_item
+
+            # Use the new property for the release title.
+            release_item = QStandardItem(media_icon, f"{release.catalog_number:17} - {release.album_title}")
+            labels_dict[record_label].appendRow(release_item)
+            release_item.setEditable(False)
+
+        # Set the model to the tree view.
+        self.treeview_release.setModel(model)

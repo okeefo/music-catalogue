@@ -26,7 +26,6 @@ from mutagen.id3 import PictureType
 from file_operations.audio_tags import AudioTagHelper, PictureTypeDescription
 from file_operations.file_utils import ask_and_move_files, ask_and_copy_files
 from file_operations.repackage_dir import repackage_dir_by_label
-# Set logger instance
 from log_config import get_logger
 from path_helper import get_absolute_path_config
 from ui.custom_image_label import ImageLabel
@@ -89,10 +88,11 @@ class MainWindow(QMainWindow):
             self,
         )
         self.__setup_ui()
+        self.db_window.setup_ui("C:/")
 
     def __setup_ui(self):
         """Set up the user interface. Returns: None"""
-
+        self.stack_page_view.setCurrentIndex(0)
         self.__setup_icons()
         self.__setup_decks()
         self.__setup_context_menus()
@@ -182,9 +182,15 @@ class MainWindow(QMainWindow):
         self.menubar.setDisabled(False)
         self.menu_options = self.findChild(QMenu, "menu_options")
         self.menu_options.setDisabled(False)
-        self.menu_options.setToolTip("Options Menu")
-        self.menu_options.setToolTipDuration(5000)
         self.menuBar().raise_()
+
+        self.menu_view_filem = self.findChild(QAction, "menu_view_filem")
+        self.menu_view_filem.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(0))
+        self.menu_view_filem.setToolTip("File Manager")
+
+        self.menu_view_dbm = self.findChild(QAction, "menu_view_dbm")
+        self.menu_view_dbm.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(1))
+        self.menu_view_dbm.setToolTip("Database View")
 
         # toggle menu
         self.frame_left_menu.setMinimumWidth(0)
