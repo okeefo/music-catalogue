@@ -101,7 +101,7 @@ QGroupBox::title {
 }
 QTableView {
     background-color: white;
-    alternate-background-color: rgb(244, 243, 225);
+    alternate-background-color: rgb(232, 231, 213);
 	gridline-color: #c0c0c0;
 }
 QTableView QHeaderView::section {
@@ -176,7 +176,7 @@ QTableView QHeaderView::section {
           <number>0</number>
          </property>
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="page">
           <layout class="QHBoxLayout" name="horizontalLayout_5">

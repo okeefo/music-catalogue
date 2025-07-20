@@ -8,12 +8,13 @@ logger = get_logger(__name__)
 
 @dataclass
 class Release:
-    release_id: int
+    id: int
+    discogs_id: int
     date: str
     country: str
     website: str
     album_id: int
-    album_title: str
+    title: str
     album_artist_id: int
     album_artist_name: str
     catalog_id: int
@@ -22,7 +23,7 @@ class Release:
     label_name: str
 
     def __str__(self):
-         return f"{self.catalog_number} - {self.album_title}"
+         return f"{self.catalog_number} - {self.title}"
 
 @dataclass
 class Track:
@@ -163,12 +164,13 @@ class MusicCatalogDB:
         for row in rows:
             discogs_id = row["discogs_id"]
             release = Release(
-                release_id=row["release_id"],
+                id=row["release_id"],
+                discogs_id=row["discogs_id"],
                 date=row["date"],
                 country=row["country"],
                 website=row["website"],
                 album_id=row["album_id"],
-                album_title=row["album_title"],
+                title=row["album_title"],
                 album_artist_id=row["album_artist_id"],
                 album_artist_name=row["album_artist_name"],
                 catalog_id=row["catalog_id"],

@@ -3,8 +3,8 @@ import os
 from PyQt5.QtCore import Qt, QDir, QModelIndex
 from PyQt5.QtGui import QFont
 from PyQt5.QtGui import QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox, QWidget, QTableView
-
+from PyQt5.QtWidgets import QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox, QWidget, QTableView, QStyledItemDelegate
+import PyQt5.QtWidgets as QtWidgets
 from db.music_db import MusicCatalogDB
 from log_config import get_logger
 from ui.custom_line_edit import MyLineEdit
@@ -50,6 +50,7 @@ class DatabaseWidget(QWidget):
         self.__set_chevron_icon()
         self.__setup_data_views()
         self.__populate_view_db_labels()
+        self.__populate_view_db_releases()
         self.__populate_view_db_tracks()
 
     def __setup_line_edit(self, path: str) -> None:
@@ -97,15 +98,22 @@ class DatabaseWidget(QWidget):
     def __setup_data_views(self):
         """Set up the tree views for releases."""
         self.view_db_labels = self.findChild(QTableView, "view_db_labels")
-        self.view_db_labels.setModel(QStandardItemModel())
-        monospace = QFont("Source Code Pro", 8)  # change the size as desired
-        self.view_db_labels.setFont(monospace)
-        self.view_db_labels.setAlternatingRowColors(True)
-        self.view_db_labels.verticalHeader().setVisible(False)
+        self.__setup_data_view(self.view_db_labels)
+
+        self.view_db_releases = self.findChild(QTableView, "view_db_releases")
+        self.__setup_data_view(self.view_db_releases)
 
         self.view_db_tracks = self.findChild(QTableView, "view_db_tracks")
-        self.view_db_tracks.setModel(QStandardItemModel())
-        self.view_db_tracks.setFont(monospace)
+        self.__setup_data_view(self.view_db_tracks)
+
+    @staticmethod
+    def __setup_data_view(table_view: QTableView) -> None:
+        """Set up a table view with a standard item model."""
+        table_view.setModel(QStandardItemModel())
+        monospace = QFont("Source Code Pro", 8)  # change the size as desired
+        table_view.setFont(monospace)
+        table_view.setAlternatingRowColors(True)
+        table_view.verticalHeader().setVisible(False)
 
     @staticmethod
     def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
@@ -167,6 +175,41 @@ class DatabaseWidget(QWidget):
         self.view_db_labels.setColumnHidden(0, True)
         self.view_db_labels.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
+    def __populate_view_db_releases(self):
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["Release ID", "label_id", "Catalog Number", "Discogs Id", "Title", "Artist", "Year" ])
+        model.setColumnCount(7)
+
+        for release in self.music_db.get_releases().values():
+            release_id_item = QStandardItem(str(release.id))
+            release_id_item.setEditable(False)
+            label_id_item = QStandardItem(str(release.label_id))
+            label_id_item.setEditable(False)
+            catalog_number_item = QStandardItem(release.catalog_number)
+            catalog_number_item.setEditable(False)
+            discogs_id_item = QStandardItem(str(release.discogs_id))
+            discogs_id_item.setEditable(False)
+            title_item = QStandardItem(release.title)
+            title_item.setEditable(False)
+            artist_item = QStandardItem(release.album_artist_name)
+            artist_item.setEditable(False)
+            year_item = QStandardItem(str(release.date))
+            year_item.setEditable(False)
+
+            model.appendRow([release_id_item, label_id_item, catalog_number_item, discogs_id_item, title_item, artist_item, year_item])
+
+        self.view_db_releases.setModel(model)
+        self.view_db_releases.setColumnHidden(0, True)  # Hide the release_id column
+        self.view_db_releases.setColumnHidden(1, True)  # Hide the label_id column
+        self.view_db_releases.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.view_db_releases.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.view_db_releases.horizontalHeader().setStretchLastSection(True)
+        self.view_db_releases.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
+        # Assuming discogs_id column index is <discogs_column_index>
+        discogs_column_index = 3  # adjust this to your actual column index
+        delegate = CenterAlignDelegate(self.view_db_releases)
+        self.view_db_releases.setItemDelegateForColumn(discogs_column_index, delegate)
+
     def __populate_view_db_tracks(self):
 
         model = QStandardItemModel()
@@ -185,3 +228,8 @@ class DatabaseWidget(QWidget):
             model.appendRow(item)
 
         self.view_db_tracks.setModel(model)
+
+class CenterAlignDelegate(QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        option.displayAlignment = Qt.AlignCenter
