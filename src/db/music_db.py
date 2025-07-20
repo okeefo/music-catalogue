@@ -44,6 +44,12 @@ class Track:
     style: str
     genre: str
 
+@dataclass
+class RecordLabel:
+    id: int
+    name: str
+
+
 class MusicCatalogDB:
     def __init__(self, db_path: str) -> None:
         """
@@ -55,6 +61,7 @@ class MusicCatalogDB:
         self.db_path = db_path
         self._tracks_cache: Dict[int, Dict[str, Any]] = {}
         self._releases_cache: Dict[int, Release] = {}
+        self._labels_cache: Dict[int, RecordLabel] = {}
         self.connection: Optional[sqlite3.Connection] = self.__connect()
 
     def __connect(self):
@@ -81,14 +88,20 @@ class MusicCatalogDB:
             if not result:
                 logger.error("Failed to load tracks from the database.")
                 return False
-
             logger.info(f"Loaded {len(self._tracks_cache)} tracks from the database.")
+
             result = self.__load_releases(connection)
             if not result:
                 logger.error("Failed to load releases from the database.")
                 return False
-
             logger.info(f"Loaded {len(self._releases_cache)} releases from the database.")
+
+            result = self.__load_label(connection)
+            if not result:
+                logger.error("Failed to load labels from the database.")
+                return False
+            logger.info(f"Loaded {len(self._labels_cache)} labels from the database.")
+
             return True
         except Exception as e:
             logger.error(f"Failed to load tracks adn releases: {e}")
@@ -177,6 +190,39 @@ class MusicCatalogDB:
         if self._releases_cache is None:
             self.load_releases()
         return self._releases_cache
+
+    def __load_label(self, conn: sqlite3.Connection) -> bool:
+        """
+        Load full releases from the database and return a cache indexed by discogs_id.
+        :param conn: Database connection object.
+        :return: Dictionary with discogs_id as keys and release information as values.
+        """
+        query = "SELECT * FROM labels"
+        cache = self._labels_cache
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        for row in rows:
+            label_id = row["id"]
+            label = RecordLabel(
+                id=label_id,
+                name=row["name"]
+            )
+            cache[label_id] = label
+        cursor.close()
+        return True
+
+    def get_labels(self) -> Dict[int, RecordLabel]:
+        """
+        Returns the cached labels if already loaded, otherwise loads them.
+
+        Returns:
+            Cached list of labels.
+        """
+        if self._labels_cache is None:
+            self.load_labels()
+        return self._labels_cache
 
     def count_tracks(self) -> int:
         """
