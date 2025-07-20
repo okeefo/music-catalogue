@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
 
     def __setup_ui(self):
         """Set up the user interface. Returns: None"""
-        self.stack_page_view.setCurrentIndex(0)
+        self.stack_page_view.setCurrentIndex(1)
         self.__setup_icons()
         self.__setup_decks()
         self.__setup_context_menus()

@@ -2,7 +2,7 @@ import sqlite3
 from dataclasses import dataclass
 
 from log_config import get_logger
-from typing import Dict
+from typing import Dict, Optional, Any
 
 logger = get_logger(__name__)
 
@@ -23,6 +23,26 @@ class Release:
 
     def __str__(self):
          return f"{self.catalog_number} - {self.album_title}"
+
+@dataclass
+class Track:
+    track_id: int
+    catalog_number: str
+    label: str
+    album_title: str
+    disc_number: int
+    track_artist: str
+    track_title: str
+    format: str
+    track_number: int
+    discogs_id: int
+    year: int
+    country: str
+    discogs_url: str
+    album_artist: str
+    file_location: str
+    style: str
+    genre: str
 
 class MusicCatalogDB:
     def __init__(self, db_path: str) -> None:
@@ -180,7 +200,7 @@ class MusicCatalogDB:
             return 0
         return len(self._releases_cache)
 
-    def get_tracks(self):
+    def get_tracks(self)-> Dict[int, Track]:
         """
         Returns the cached tracks if already loaded, otherwise loads them.
 

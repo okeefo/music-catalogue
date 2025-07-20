@@ -46,7 +46,8 @@ class DatabaseWidget(QWidget):
 
         self.__set_chevron_icon()
         self.__setup_tree_views()
-        self.__populate_treeview_release()
+        self.__populate_treeview_labels()
+        self.__populate_treeview_tracks()
 
     def __setup_line_edit(self, path: str) -> None:
         # Set the completer for the MyLineEdit
@@ -92,21 +93,28 @@ class DatabaseWidget(QWidget):
 
     def __setup_tree_views(self):
         """Set up the tree views for releases."""
-        self.treeview_release = self.findChild(MyTreeView, "treeView_db_releases")
-        self.treeview_release.setModel(QStandardItemModel())
-        self.treeview_release.setRootIsDecorated(True)  # Enable expansion indicators
-        self.treeview_release.setHeaderHidden(True)
-        self.treeview_release.clicked.connect(self.on_release_clicked)
+        self.treeview_labels = self.findChild(MyTreeView, "treeView_db_labels")
+        self.treeview_labels.setModel(QStandardItemModel())
+        self.treeview_labels.setRootIsDecorated(True)  # Enable expansion indicators
+        self.treeview_labels.setHeaderHidden(False)
+        self.treeview_labels.clicked.connect(self.on_release_clicked)
         monospace = QFont("Source Code Pro", 8)  # change the size as desired
-        self.treeview_release.setFont(monospace)
-        self.__populate_treeview_release()
+        self.treeview_labels.setFont(monospace)
+
+        self.treeview_tracks = self.findChild(MyTreeView, "treeView_db_tracks")
+        self.treeview_tracks.setModel(QStandardItemModel())
+        self.treeview_tracks.setRootIsDecorated(True)  # Enable expansion indicators
+        self.treeview_tracks.setHeaderHidden(True)
+        #self.treeview_tracks.clicked.connect(self.on_track_clicked)
+        self.treeview_tracks.setFont(monospace)
+       # self.__populate_treeview_tracks()
 
     def on_release_clicked(self, index):
         """Toggle expansion on click for release items."""
-        if self.treeview_release.isExpanded(index):
-            self.treeview_release.collapse(index)
+        if self.treeview_labels.isExpanded(index):
+            self.treeview_labels.collapse(index)
         else:
-            self.treeview_release.expand(index)
+            self.treeview_labels.expand(index)
 
     @staticmethod
     def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
@@ -153,7 +161,7 @@ class DatabaseWidget(QWidget):
             label = self.findChild(QLabel, key)
             label.setText("")
 
-    def __populate_treeview_release(self):
+    def __populate_treeview_labels_2(self):
         # Create a model with a header label.
         model = QStandardItemModel()
         model.setHorizontalHeaderLabels(["Releases"])
@@ -177,4 +185,52 @@ class DatabaseWidget(QWidget):
             release_item.setEditable(False)
 
         # Set the model to the tree view.
-        self.treeview_release.setModel(model)
+        self.treeview_labels.setModel(model)
+
+    def __populate_treeview_labels(self):
+        # Create a model with a header label.
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["Label, Catalog Number, Release Title"])
+
+        # Dictionary to store label items.
+        labels_dict = {}
+        folder_icon = QIcon(":/icons/icons/folder.svg")
+        media_icon = QIcon(":/media/icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png")
+        for release in self.music_db.get_releases().values():
+            # Use the new release class properties
+            record_label = release.label_name
+            # Create a folder icon for the label.
+            if record_label not in labels_dict:
+                label_item = QStandardItem(folder_icon, record_label)
+                model.appendRow(label_item)
+                labels_dict[record_label] = label_item
+
+            # Use the new property for the release title.
+            release_item = [QStandardItem(media_icon, f"{release.catalog_number:17}"),
+                            QStandardItem(media_icon, f"{release.album_title}")]
+            labels_dict[record_label].appendRow(release_item)
+            release_item[0].setEditable(False)
+            release_item[1].setEditable(False)
+        # Set the model to the tree view.
+        self.treeview_labels.setModel(model)
+
+
+
+    def __populate_treeview_tracks(self):
+
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["Tracks"])
+        media_icon = QIcon(":/media/icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png")
+
+        tracks = self.music_db.get_tracks().values()
+
+        # Iterate over the retrieved tracks and add them to the treeview
+        for track in tracks:
+            # Assuming each track is a dict with a 'title' key,
+            # create a new QStandardItem using the track's title.
+            item = QStandardItem(media_icon, str(track))
+            item.setEditable(False)
+            # Add the item to the model.
+            model.appendRow(item)
+
+        self.treeview_tracks.setModel(model)
