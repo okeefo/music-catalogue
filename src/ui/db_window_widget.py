@@ -1,6 +1,6 @@
 import os
 
-from PyQt5.QtCore import Qt, QDir, QModelIndex
+from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel
 from PyQt5.QtGui import QFont
 from PyQt5.QtGui import QIcon, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox, QWidget, QTableView, QStyledItemDelegate
@@ -9,6 +9,7 @@ from db.music_db import MusicCatalogDB
 from log_config import get_logger
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
+from PyQt5.QtCore import QItemSelection
 
 logger = get_logger(__name__)
 
@@ -134,14 +135,14 @@ class DatabaseWidget(QWidget):
 
     def __populate_label_maps(self):
         logger.info("Populating label maps")
-        gbox = self.findChild(QGroupBox, 'gbox_db_track_labels')
+        gbox = self.findChild(QGroupBox, "gbox_db_track_labels")
         if not gbox:
             logger.error("GroupBox 'gbox_track_labels' not found.")
             return None
 
         for child in gbox.children():
             if isinstance(child, QLabel):
-                if child.objectName().endswith('_a_2'):
+                if child.objectName().endswith("_a_2"):
                     self.label_a_map[child.objectName()] = child.minimumWidth()
                 else:
                     self.label_map[child.objectName()] = child.minimumWidth()
@@ -176,10 +177,13 @@ class DatabaseWidget(QWidget):
         self.view_db_labels.setModel(model)
         self.view_db_labels.setColumnHidden(0, True)
         self.view_db_labels.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.view_db_labels.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        self.view_db_labels.clicked.connect(self.on_label_row_clicked)
+        self.view_db_labels.selectionModel().selectionChanged.connect(self.on_label_selected)
 
     def __populate_view_db_releases(self):
         model = QStandardItemModel()
-        model.setHorizontalHeaderLabels(["Release ID", "label_id", "Catalog Number", "Discogs Id", "Title", "Artist", "Year" ])
+        model.setHorizontalHeaderLabels(["Release ID", "label_id", "Catalog Number", "Discogs Id", "Title", "Artist", "Year"])
         model.setColumnCount(7)
 
         for release in self.music_db.get_releases().values():
@@ -205,12 +209,72 @@ class DatabaseWidget(QWidget):
         self.view_db_releases.setColumnHidden(1, True)  # Hide the label_id column
         self.view_db_releases.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.view_db_releases.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.view_db_releases.horizontalHeader().setStretchLastSection(True)
         self.view_db_releases.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
+        self.view_db_releases.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+
         # Assuming discogs_id column index is <discogs_column_index>
         discogs_column_index = 3  # adjust this to your actual column index
         delegate = CenterAlignDelegate(self.view_db_releases)
         self.view_db_releases.setItemDelegateForColumn(discogs_column_index, delegate)
+
+    def on_label_row_clicked(self, index: QModelIndex):
+        selection_model = self.view_db_labels.selectionModel()
+        selection = QItemSelection(index, index)
+        if selection_model.isSelected(index):
+            selection_model.select(selection, QItemSelectionModel.Deselect | QItemSelectionModel.Rows)
+        else:
+            selection_model.clearSelection()
+            selection_model.select(selection, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+
+    def on_label_selected(self, selected, deselected):
+
+        logger.info("Label selected")
+
+        # Get the selected index
+        indexes = selected.indexes()
+        if not indexes:
+            self.__populate_view_db_releases()
+            return
+
+        # The first column (0) is the label ID (hidden)
+        label_id_index = indexes[0].siblingAtColumn(0)
+        label_id = label_id_index.data()
+        if not label_id:
+            return
+
+        # Filter releases by label_id
+        filtered_releases = [release for release in self.music_db.get_releases().values() if str(release.label_id) == str(label_id)]
+
+        # Rebuild the releases model with only matching releases
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(["Release ID", "label_id", "Catalog Number", "Discogs Id", "Title", "Artist", "Year"])
+        model.setColumnCount(7)
+
+        for release in filtered_releases:
+            release_id_item = QStandardItem(str(release.id))
+            release_id_item.setEditable(False)
+            label_id_item = QStandardItem(str(release.label_id))
+            label_id_item.setEditable(False)
+            catalog_number_item = QStandardItem(release.catalog_number)
+            catalog_number_item.setEditable(False)
+            discogs_id_item = QStandardItem(str(release.discogs_id))
+            discogs_id_item.setEditable(False)
+            title_item = QStandardItem(release.title)
+            title_item.setEditable(False)
+            artist_item = QStandardItem(release.album_artist_name)
+            artist_item.setEditable(False)
+            year_item = QStandardItem(str(release.date))
+            year_item.setEditable(False)
+
+            model.appendRow([release_id_item, label_id_item, catalog_number_item, discogs_id_item, title_item, artist_item, year_item])
+
+        self.view_db_releases.setModel(model)
+        self.view_db_releases.setColumnHidden(0, True)
+        self.view_db_releases.setColumnHidden(1, True)
+        self.view_db_releases.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.view_db_releases.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.view_db_releases.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
+        self.view_db_releases.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
 
     def __populate_view_db_tracks(self):
 
@@ -230,6 +294,7 @@ class DatabaseWidget(QWidget):
             model.appendRow(item)
 
         self.view_db_tracks.setModel(model)
+
 
 class CenterAlignDelegate(QStyledItemDelegate):
     def initStyleOption(self, option, index):
