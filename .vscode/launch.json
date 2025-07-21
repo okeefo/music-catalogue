@@ -6,17 +6,34 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug: Run main_window",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/src/main_window.py",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "Profile: main_window",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/main_window.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "-m",
+                "cProfile",
+                "-o",
+                "profile.out"
+            ]
         }
     ]
 }
