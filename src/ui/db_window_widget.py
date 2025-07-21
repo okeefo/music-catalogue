@@ -1,15 +1,12 @@
 import os
-
-from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel
-from PyQt5.QtGui import QFont
-from PyQt5.QtGui import QIcon, QStandardItem, QStandardItemModel
+from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
+from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox, QWidget, QTableView, QStyledItemDelegate
 import PyQt5.QtWidgets as QtWidgets
 from db.music_db import MusicCatalogDB
 from log_config import get_logger
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
-from PyQt5.QtCore import QItemSelection
 
 logger = get_logger(__name__)
 
@@ -69,11 +66,12 @@ class DatabaseWidget(QWidget):
     def on_path_info_bar_return_pressed(self, tree_view: MyTreeView, path_info_bar: MyLineEdit) -> None:
         """Handles the directory when the return key is pressed. Returns: None"""
 
-        if not os.path.isdir(path_info_bar.text()):
+        path = path_info_bar.text()
+        if not os.path.isdir(path):
             QMessageBox.critical(self, "Error", "Directory doesn't exist")
             path_info_bar.setText(tree_view.get_root_dir())
         else:
-            tree_view.change_dir(os.path.normpath(path_info_bar.text()))
+            tree_view.change_dir(os.path.normpath(path))
 
     def __setup_model(self):
         self.model = QFileSystemModel()
@@ -101,10 +99,10 @@ class DatabaseWidget(QWidget):
         """Set up the tree views for releases."""
         self.view_db_labels = self.findChild(QTableView, "view_db_labels")
         self.__setup_data_view(self.view_db_labels)
-
+        self.view_db_labels.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        self.view_db_labels.clicked.connect(self.on_label_row_clicked)
         self.view_db_releases = self.findChild(QTableView, "view_db_releases")
         self.__setup_data_view(self.view_db_releases)
-
         self.view_db_tracks = self.findChild(QTableView, "view_db_tracks")
         self.__setup_data_view(self.view_db_tracks)
 
@@ -112,8 +110,7 @@ class DatabaseWidget(QWidget):
     def __setup_data_view(table_view: QTableView) -> None:
         """Set up a table view with a standard item model."""
         table_view.setModel(QStandardItemModel())
-        monospace = QFont("Source Code Pro", 8)  # change the size as desired
-        table_view.setFont(monospace)
+        table_view.setFont(QFont("Source Code Pro", 8))  # change the size as desired
         table_view.setAlternatingRowColors(True)
         table_view.verticalHeader().setVisible(False)
 
@@ -177,40 +174,29 @@ class DatabaseWidget(QWidget):
         self.view_db_labels.setModel(model)
         self.view_db_labels.setColumnHidden(0, True)
         self.view_db_labels.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.view_db_labels.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
-        self.view_db_labels.clicked.connect(self.on_label_row_clicked)
         self.view_db_labels.selectionModel().selectionChanged.connect(self.on_label_selected)
 
-    def __populate_view_db_releases(self):
+    def __populate_view_db_releases(self, filtered_releases=None):
         model = QStandardItemModel()
         model.setHorizontalHeaderLabels(["Release ID", "label_id", "Catalog Number", "Discogs Id", "Title", "Artist", "Year"])
         model.setColumnCount(7)
 
-        for release in self.music_db.get_releases().values():
-            release_id_item = QStandardItem(str(release.id))
-            release_id_item.setEditable(False)
-            label_id_item = QStandardItem(str(release.label_id))
-            label_id_item.setEditable(False)
-            catalog_number_item = QStandardItem(release.catalog_number)
-            catalog_number_item.setEditable(False)
-            discogs_id_item = QStandardItem(str(release.discogs_id))
-            discogs_id_item.setEditable(False)
-            title_item = QStandardItem(release.title)
-            title_item.setEditable(False)
-            artist_item = QStandardItem(release.album_artist_name)
-            artist_item.setEditable(False)
-            year_item = QStandardItem(str(release.date))
-            year_item.setEditable(False)
+        releases = filtered_releases if filtered_releases is not None else self.music_db.get_releases().values()
 
-            model.appendRow([release_id_item, label_id_item, catalog_number_item, discogs_id_item, title_item, artist_item, year_item])
+        for release in releases:
+            items = [QStandardItem(str(getattr(release, attr))) for attr in ["id", "label_id", "catalog_number", "discogs_id", "title", "album_artist_name", "date"]]
+            for item in items:
+                item.setEditable(False)
+            model.appendRow(items)
 
         self.view_db_releases.setModel(model)
         self.view_db_releases.setColumnHidden(0, True)  # Hide the release_id column
         self.view_db_releases.setColumnHidden(1, True)  # Hide the label_id column
         self.view_db_releases.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.view_db_releases.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.view_db_releases.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
-        self.view_db_releases.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        header = self.view_db_releases.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
+        header.setSectionResizeMode(4, QHeaderView.Stretch)
 
         # Assuming discogs_id column index is <discogs_column_index>
         discogs_column_index = 3  # adjust this to your actual column index
@@ -242,39 +228,8 @@ class DatabaseWidget(QWidget):
         if not label_id:
             return
 
-        # Filter releases by label_id
         filtered_releases = [release for release in self.music_db.get_releases().values() if str(release.label_id) == str(label_id)]
-
-        # Rebuild the releases model with only matching releases
-        model = QStandardItemModel()
-        model.setHorizontalHeaderLabels(["Release ID", "label_id", "Catalog Number", "Discogs Id", "Title", "Artist", "Year"])
-        model.setColumnCount(7)
-
-        for release in filtered_releases:
-            release_id_item = QStandardItem(str(release.id))
-            release_id_item.setEditable(False)
-            label_id_item = QStandardItem(str(release.label_id))
-            label_id_item.setEditable(False)
-            catalog_number_item = QStandardItem(release.catalog_number)
-            catalog_number_item.setEditable(False)
-            discogs_id_item = QStandardItem(str(release.discogs_id))
-            discogs_id_item.setEditable(False)
-            title_item = QStandardItem(release.title)
-            title_item.setEditable(False)
-            artist_item = QStandardItem(release.album_artist_name)
-            artist_item.setEditable(False)
-            year_item = QStandardItem(str(release.date))
-            year_item.setEditable(False)
-
-            model.appendRow([release_id_item, label_id_item, catalog_number_item, discogs_id_item, title_item, artist_item, year_item])
-
-        self.view_db_releases.setModel(model)
-        self.view_db_releases.setColumnHidden(0, True)
-        self.view_db_releases.setColumnHidden(1, True)
-        self.view_db_releases.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.view_db_releases.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.view_db_releases.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
-        self.view_db_releases.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.__populate_view_db_releases(filtered_releases)
 
     def __populate_view_db_tracks(self):
 
