@@ -39,7 +39,8 @@ class DatabaseWidget(QWidget):
         """Set up the UI components for the database widget."""
         # get self
 
-        self.setWindowFlags(Qt.WindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint))
+        flags = self.windowFlags() & ~Qt.WindowContextHelpButtonHint
+        self.setWindowFlags(Qt.WindowFlags(flags))
         self.__setup_model()
         self.__setup_line_edit(path)
         self.__setup_tree_view(path)
@@ -147,6 +148,7 @@ class DatabaseWidget(QWidget):
 
         logger.info(f"Label map: {self.label_map}")
         logger.info(f"Label_a map: {self.label_a_map}")
+        return None
 
     def go_up_one_level(self, path_bar: MyLineEdit) -> None:
         """Slot that is called when the "Go Up" button is clicked."""
@@ -232,4 +234,4 @@ class DatabaseWidget(QWidget):
 class CenterAlignDelegate(QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super().initStyleOption(option, index)
-        option.displayAlignment = Qt.AlignCenter
+        option.displayAlignment = Qt.AlignmentFlag.AlignCenter
