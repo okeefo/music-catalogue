@@ -6,6 +6,7 @@ from typing import Dict, Optional, Any
 
 logger = get_logger(__name__)
 
+
 @dataclass
 class Release:
     id: int
@@ -23,7 +24,8 @@ class Release:
     label_name: str
 
     def __str__(self):
-         return f"{self.catalog_number} - {self.title}"
+        return f"{self.catalog_number} - {self.title}"
+
 
 @dataclass
 class Track:
@@ -45,6 +47,7 @@ class Track:
     style: str
     genre: str
 
+
 @dataclass
 class RecordLabel:
     id: int
@@ -60,7 +63,7 @@ class MusicCatalogDB:
             db_path (str): Path to the SQLite database file.
         """
         self.db_path = db_path
-        self._tracks_cache: Dict[int, Dict[str, Any]] = {}
+        self._tracks_cache: Dict[int, Track] = {}
         self._releases_cache: Dict[int, Release] = {}
         self._labels_cache: Dict[int, RecordLabel] = {}
         self.connection: Optional[sqlite3.Connection] = self.__connect()
@@ -110,12 +113,13 @@ class MusicCatalogDB:
         finally:
             connection.close()
 
-    def __load_tracks(self,  conn: sqlite3.Connection) -> bool:
+    def __load_tracks(self, conn: sqlite3.Connection) -> bool:
         """
         Loads tracks from the uber tracks view into the cache.
         Returns a dictionary where each key is the track_id.
         """
         query = "SELECT * FROM uber_tracks"
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -123,33 +127,34 @@ class MusicCatalogDB:
         # Load tracks into cache, keyed by track_id
         cache = self._tracks_cache
         for row in rows:
-            track = {
-                "track_id": row[0],
-                "catalog_number": row[1],
-                "label": row[2],
-                "album_title": row[3],
-                "disc_number": row[4],
-                "track_artist": row[5],
-                "track_title": row[6],
-                "format": row[7],
-                "track_number": row[8],
-                "discogs_id": row[9],
-                "year": row[10],
-                "country": row[11],
-                "discogs_url": row[12],
-                "album_artist": row[13],
-                "file_location": row[14],
-                "style": row[15],
-                "genre": row[16]
-            }
+            track_id=row["track_id"],
+            track = Track(
+                track_id=row["track_id"],
+                catalog_number=row["catalog_number"],
+                label=row["label"],
+                album_title=row["album_title"],
+                disc_number=row["disc_number"],
+                track_artist=row["track_artist"],
+                track_title=row["track_title"],
+                format=row["format"],
+                track_number=row["track_number"],
+                discogs_id=row["discogs_id"],
+                year=row["year"],
+                country=row["country"],
+                discogs_url=row["discogs_url"],
+                album_artist=row["album_artist"],
+                file_location=row["file_location"],
+                style=row["style"],
+                genre=row["genre"],
+            )
             # Use track_id as key in the cache
-            cache[track["track_id"]] = track
+            cache[track_id] = track
 
         cursor.close()
         return True
 
     # Python
-    def __load_releases(self,  conn: sqlite3.Connection) -> bool:
+    def __load_releases(self, conn: sqlite3.Connection) -> bool:
         """
         Load full releases from the database and return a cache indexed by discogs_id.
         :param conn: Database connection object.
@@ -207,10 +212,7 @@ class MusicCatalogDB:
         rows = cursor.fetchall()
         for row in rows:
             label_id = row["id"]
-            label = RecordLabel(
-                id=label_id,
-                name=row["name"]
-            )
+            label = RecordLabel(id=label_id, name=row["name"])
             cache[label_id] = label
         cursor.close()
         return True
@@ -248,7 +250,7 @@ class MusicCatalogDB:
             return 0
         return len(self._releases_cache)
 
-    def get_tracks(self)-> Dict[int, Track]:
+    def get_tracks(self) -> Dict[int, Track]:
         """
         Returns the cached tracks if already loaded, otherwise loads them.
 

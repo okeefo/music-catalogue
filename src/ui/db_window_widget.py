@@ -20,11 +20,6 @@ class DatabaseWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # self.but_db_goUp = None
-        # self.model = None
-        # self.tree = None
-        # self.ui = None
-        # self.animation = None
         self.icon_left = QIcon("src/qt/icons/chevrons-left.svg")
         self.icon_right = QIcon("src/qt/icons/chevrons-right.svg")
         self.folder_icon = QIcon(":/icons/icons/folder.svg")
@@ -98,21 +93,35 @@ class DatabaseWidget(QWidget):
     def __setup_data_views(self):
         """Set up the tree views for releases."""
         self.view_db_labels = self.findChild(QTableView, "view_db_labels")
-        self.__setup_data_view(self.view_db_labels)
-        self.view_db_labels.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
-        self.view_db_labels.clicked.connect(self.on_label_row_clicked)
+        self.__setup_data_view(self.view_db_labels, self.on_row_clicked)
+
         self.view_db_releases = self.findChild(QTableView, "view_db_releases")
-        self.__setup_data_view(self.view_db_releases)
+        self.__setup_data_view(self.view_db_releases, self.on_row_clicked)
+       
         self.view_db_tracks = self.findChild(QTableView, "view_db_tracks")
-        self.__setup_data_view(self.view_db_tracks)
+        self.__setup_data_view(self.view_db_tracks, self.on_row_clicked)
 
     @staticmethod
-    def __setup_data_view(table_view: QTableView) -> None:
+    def __setup_data_view(table_view: QTableView, clicked_connect) -> None:
         """Set up a table view with a standard item model."""
         table_view.setModel(QStandardItemModel())
         table_view.setFont(QFont("Source Code Pro", 8))  # change the size as desired
         table_view.setAlternatingRowColors(True)
         table_view.verticalHeader().setVisible(False)
+        table_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
+        table_view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        table_view.clicked.connect(lambda index: clicked_connect(table_view, index))
+
+        table_view.setStyleSheet("""
+        QTableView::item:selected {
+            background: #3399ff;
+            color: white;
+        }
+        QTableView::item:selected:!active {
+            background: #3399ff;
+            color: white;
+        }
+        """)
 
     @staticmethod
     def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
@@ -177,6 +186,7 @@ class DatabaseWidget(QWidget):
         self.view_db_labels.selectionModel().selectionChanged.connect(self.on_label_selected)
 
     def __populate_view_db_releases(self, filtered_releases=None):
+        logger.info("Populating view_db_releases with filtered releases" if filtered_releases else "Populating view_db_releases with all releases")
         model = QStandardItemModel()
         model.setHorizontalHeaderLabels(["Release ID", "label_id", "Catalog Number", "Discogs Id", "Title", "Artist", "Year"])
         model.setColumnCount(7)
@@ -193,6 +203,7 @@ class DatabaseWidget(QWidget):
         self.view_db_releases.setColumnHidden(0, True)  # Hide the release_id column
         self.view_db_releases.setColumnHidden(1, True)  # Hide the label_id column
         self.view_db_releases.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.view_db_releases.selectionModel().selectionChanged.connect(self.on_release_selected)
         header = self.view_db_releases.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
         header.setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
@@ -202,24 +213,25 @@ class DatabaseWidget(QWidget):
         discogs_column_index = 3  # adjust this to your actual column index
         delegate = CenterAlignDelegate(self.view_db_releases)
         self.view_db_releases.setItemDelegateForColumn(discogs_column_index, delegate)
-
-    def on_label_row_clicked(self, index: QModelIndex):
-        selection_model = self.view_db_labels.selectionModel()
+        
+    @staticmethod
+    def on_row_clicked(table_view: QTableView, index: QModelIndex):
+        selection_model = table_view.selectionModel()
         selection = QItemSelection(index, index)
         if selection_model.isSelected(index):
             selection_model.select(selection, QItemSelectionModel.Deselect | QItemSelectionModel.Rows)
         else:
             selection_model.clearSelection()
             selection_model.select(selection, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+            # set the background color of the label row
 
     def on_label_selected(self, selected, deselected):
-
-        logger.info("Label selected")
-
+        
         # Get the selected index
         indexes = selected.indexes()
         if not indexes:
-            self.__populate_view_db_releases()
+            self.__populate_view_db_releases(filtered_releases=None)
+            self.__populate_view_db_tracks(filtered_tracks=None)
             return
 
         # The first column (0) is the label ID (hidden)
@@ -228,27 +240,47 @@ class DatabaseWidget(QWidget):
         if not label_id:
             return
 
+        label_name_index = indexes[0].siblingAtColumn(1)
+        label_name = label_name_index.data()
+        if not label_name:
+            return
+        logger.info(f"Label selected: {label_name} (ID: {label_id})")
         filtered_releases = [release for release in self.music_db.get_releases().values() if str(release.label_id) == str(label_id)]
+        filtered_tracks = [track for track in self.music_db.get_tracks().values() if str(track.label) == str(label_name)]
         self.__populate_view_db_releases(filtered_releases)
+        self.__populate_view_db_tracks(filtered_tracks)
 
-    def __populate_view_db_tracks(self):
+    def on_release_selected(self, selected, deselected):
 
+        indexes = selected.indexes()
+        if not indexes:
+            self.__populate_view_db_tracks()
+            return
+        
+        discogs_index = indexes[0].siblingAtColumn(3)
+        discogs_id = discogs_index.data()
+        if not discogs_id:
+            return
+
+        logger.info(f"Release selected - discogsId: {discogs_id})")
+        filtered_tracks = [track for track in self.music_db.get_tracks().values() if str(track.discogs_id) == str(discogs_id)]
+        self.__populate_view_db_tracks(filtered_tracks)
+
+    def __populate_view_db_tracks(self,  filtered_tracks=None):
+        logger.info("Populating view_db_tracks with filtered tracks" if filtered_tracks else "Populating view_db_tracks with all tracks")
         model = QStandardItemModel()
-        model.setHorizontalHeaderLabels(["Tracks"])
-        media_icon = QIcon(":/media/icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png")
+        model.setHorizontalHeaderLabels(["Track ID", "Label", "Catalog Number", "Discogs ID", "Album Title", "Track Artist", "Track Title", "Format", "Disc Number", "Track Number", ])
+        
+        tracks = filtered_tracks if filtered_tracks is not None else self.music_db.get_tracks().values()
 
-        tracks = self.music_db.get_tracks().values()
-
-        # Iterate over the retrieved tracks and add them to the treeview
         for track in tracks:
-            # Assuming each track is a dict with a 'title' key,
-            # create a new QStandardItem using the track's title.
-            item = QStandardItem(media_icon, str(track))
-            item.setEditable(False)
-            # Add the item to the model.
-            model.appendRow(item)
+            items = [QStandardItem(str(getattr(track, attr))) for attr in ["track_id", "label", "catalog_number",  "discogs_id", "album_title", "track_artist", "track_title", "format", "disc_number", "track_number" ]]
+            for item in items:
+                item.setEditable(False)
+            model.appendRow(items)
 
         self.view_db_tracks.setModel(model)
+        self.view_db_tracks.setColumnHidden(0, True)
 
 
 class CenterAlignDelegate(QStyledItemDelegate):
