@@ -97,7 +97,7 @@ class DatabaseWidget(QWidget):
 
         self.view_db_releases = self.findChild(QTableView, "view_db_releases")
         self.__setup_data_view(self.view_db_releases, self.on_row_clicked)
-       
+
         self.view_db_tracks = self.findChild(QTableView, "view_db_tracks")
         self.__setup_data_view(self.view_db_tracks, self.on_row_clicked)
 
@@ -112,7 +112,8 @@ class DatabaseWidget(QWidget):
         table_view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         table_view.clicked.connect(lambda index: clicked_connect(table_view, index))
 
-        table_view.setStyleSheet("""
+        table_view.setStyleSheet(
+            """
         QTableView::item:selected {
             background: #3399ff;
             color: white;
@@ -121,7 +122,8 @@ class DatabaseWidget(QWidget):
             background: #3399ff;
             color: white;
         }
-        """)
+        """
+        )
 
     @staticmethod
     def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:
@@ -213,7 +215,7 @@ class DatabaseWidget(QWidget):
         discogs_column_index = 3  # adjust this to your actual column index
         delegate = CenterAlignDelegate(self.view_db_releases)
         self.view_db_releases.setItemDelegateForColumn(discogs_column_index, delegate)
-        
+
     @staticmethod
     def on_row_clicked(table_view: QTableView, index: QModelIndex):
         selection_model = table_view.selectionModel()
@@ -226,7 +228,7 @@ class DatabaseWidget(QWidget):
             # set the background color of the label row
 
     def on_label_selected(self, selected, deselected):
-        
+
         # Get the selected index
         indexes = selected.indexes()
         if not indexes:
@@ -256,7 +258,7 @@ class DatabaseWidget(QWidget):
         if not indexes:
             self.__populate_view_db_tracks()
             return
-        
+
         discogs_index = indexes[0].siblingAtColumn(3)
         discogs_id = discogs_index.data()
         if not discogs_id:
@@ -266,15 +268,31 @@ class DatabaseWidget(QWidget):
         filtered_tracks = [track for track in self.music_db.get_tracks().values() if str(track.discogs_id) == str(discogs_id)]
         self.__populate_view_db_tracks(filtered_tracks)
 
-    def __populate_view_db_tracks(self,  filtered_tracks=None):
+    def __populate_view_db_tracks(self, filtered_tracks=None):
         logger.info("Populating view_db_tracks with filtered tracks" if filtered_tracks else "Populating view_db_tracks with all tracks")
         model = QStandardItemModel()
-        model.setHorizontalHeaderLabels(["Track ID", "Label", "Catalog Number", "Discogs ID", "Album Title", "Track Artist", "Track Title", "Format", "Disc Number", "Track Number", ])
-        
+        model.setHorizontalHeaderLabels(
+            [
+                "Track ID",
+                "Label",
+                "Catalog Number",
+                "Discogs ID",
+                "Album Title",
+                "Track Artist",
+                "Track Title",
+                "Format",
+                "Disc Number",
+                "Track Number",
+            ]
+        )
+
         tracks = filtered_tracks if filtered_tracks is not None else self.music_db.get_tracks().values()
 
         for track in tracks:
-            items = [QStandardItem(str(getattr(track, attr))) for attr in ["track_id", "label", "catalog_number",  "discogs_id", "album_title", "track_artist", "track_title", "format", "disc_number", "track_number" ]]
+            items = [
+                QStandardItem(str(getattr(track, attr)))
+                for attr in ["track_id", "label", "catalog_number", "discogs_id", "album_title", "track_artist", "track_title", "format", "disc_number", "track_number"]
+            ]
             for item in items:
                 item.setEditable(False)
             model.appendRow(items)

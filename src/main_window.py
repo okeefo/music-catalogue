@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMessageBox,
     QCompleter,
+    QWidget,
     QFileSystemModel, QMenu,
 )
 from mutagen.id3 import PictureType
@@ -33,6 +34,7 @@ from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
 from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
 from ui.db_window import DatabaseWindow
+from ui.db_media_window import DatabaseMediaWindow
 from ui.media_player import MediaPlayerController
 from ui.recycle import RestoreDialog
 from ui.settings_dialogue import SettingsDialog
@@ -89,10 +91,11 @@ class MainWindow(QMainWindow):
         )
         self.__setup_ui()
         self.db_window.setup_ui("C:/")
+        self.db_media_window.setup_ui()
 
     def __setup_ui(self):
         """Set up the user interface. Returns: None"""
-        self.stack_page_view.setCurrentIndex(1)
+        self.stack_page_view.setCurrentIndex(2)
         self.__setup_icons()
         self.__setup_decks()
         self.__setup_context_menus()
@@ -192,6 +195,10 @@ class MainWindow(QMainWindow):
         self.menu_view_dbm.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(1))
         self.menu_view_dbm.setToolTip("Database View")
 
+        self.menu_view_dbm2 = self.findChild(QAction, "menu_view_dbm2")
+        self.menu_view_dbm2.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(2))
+        self.menu_view_dbm2.setToolTip("Database with Media Player View")
+        
         # toggle menu
         self.frame_left_menu.setMinimumWidth(0)
         self.but_toggle = self.findChild(QPushButton, "but_toggle")
