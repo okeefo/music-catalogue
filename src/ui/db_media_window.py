@@ -3,9 +3,11 @@ import os
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QDir, QModelIndex
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QWidget, QMainWindow, QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
+from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
 from qtpy import QtGui
 from db.db_reader import MusicCatalogDB_2
+from ui.custom_waveform_widget import WaveformWidget
+from ui.media_player import MediaPlayerController
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
 from log_config import get_logger
@@ -32,6 +34,7 @@ class DatabaseMediaWindow(QWidget):
 
     def setup_ui(self):
         self.__setupLabelViewer()
+        self.__setup_media_player()
 
     def __setupLabelViewer(self):
         cache = self.music_db2.get_labels_and_releases()
@@ -61,3 +64,15 @@ class DatabaseMediaWindow(QWidget):
         self.tree_view.setModel(model)
         self.tree_view.setHeaderHidden(False)
 
+    def __setup_media_player(self) -> None:
+        """Sets up the media player. Returns: None"""
+        self.slider_db = self.findChild(QSlider, "slider_db")
+        self.wdgt_wave_db = self.findChild(WaveformWidget, "wdgt_wave_db")
+        self.butt_play_db = self.findChild(QPushButton, "butt_play_db")
+        self.butt_stop_db = self.findChild(QPushButton, "butt_stop_db")
+        self.lbl_current_db = self.findChild(QLabel, "lbl_current_db")
+        self.lbl_duration_db = self.findChild(QLabel, "lbl_duration_db")
+        self.lbl_info_db = self.findChild(QLabel, "lbl_info_db")
+        self.lbl_cover_db = self.findChild(QLabel, "lbl_cover_db")
+        self.player = MediaPlayerController(self, self.slider_db, self.wdgt_wave_db, self.butt_play_db, self.butt_stop_db, self.lbl_current_db, self.lbl_duration_db,
+                                              self.lbl_info_db, self.lbl_cover_db)

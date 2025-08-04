@@ -5186,7 +5186,7 @@ QPushButton::pressed
                   <item row="1" column="0">
                    <layout class="QHBoxLayout" name="horizontalLayout_21">
                     <item>
-                     <widget class="QPushButton" name="butt_play_b_2">
+                     <widget class="QPushButton" name="butt_play_db">
                       <property name="maximumSize">
                        <size>
                         <width>35</width>
@@ -5251,7 +5251,7 @@ QPushButton::pressed
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="butt_stop_b_2">
+                     <widget class="QPushButton" name="butt_stop_db">
                       <property name="maximumSize">
                        <size>
                         <width>35</width>
@@ -5317,7 +5317,7 @@ QPushButton::pressed
                    </layout>
                   </item>
                   <item row="2" column="0">
-                   <widget class="QLabel" name="lbl_current_b_2">
+                   <widget class="QLabel" name="lbl_current_db">
                     <property name="minimumSize">
                      <size>
                       <width>80</width>
@@ -5330,7 +5330,7 @@ QPushButton::pressed
                    </widget>
                   </item>
                   <item row="2" column="1">
-                   <widget class="QSlider" name="slider_b_2">
+                   <widget class="QSlider" name="slider_db">
                     <property name="styleSheet">
                      <string notr="true">QSlider::groove:horizontal {
     border: 1px solid #999999;
@@ -5361,7 +5361,7 @@ QSlider::handle:horizontal {
                    </widget>
                   </item>
                   <item row="2" column="2">
-                   <widget class="QLabel" name="lbl_duration_b_2">
+                   <widget class="QLabel" name="lbl_duration_db">
                     <property name="minimumSize">
                      <size>
                       <width>80</width>
@@ -5374,7 +5374,7 @@ QSlider::handle:horizontal {
                    </widget>
                   </item>
                   <item row="1" column="1" colspan="2">
-                   <widget class="WaveformWidget" name="wdgt_wave_b_2" native="true">
+                   <widget class="WaveformWidget" name="wdgt_wave_db" native="true">
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
@@ -5384,7 +5384,7 @@ QSlider::handle:horizontal {
                    </widget>
                   </item>
                   <item row="0" column="1" colspan="2">
-                   <widget class="QLabel" name="lbl_info_b_2">
+                   <widget class="QLabel" name="lbl_info_db">
                     <property name="maximumSize">
                      <size>
                       <width>16777215</width>
@@ -5406,7 +5406,7 @@ QSlider::handle:horizontal {
                    </widget>
                   </item>
                   <item row="0" column="3" rowspan="3">
-                   <widget class="QLabel" name="lbl_cover_b_2">
+                   <widget class="QLabel" name="lbl_cover_db">
                     <property name="minimumSize">
                      <size>
                       <width>100</width>
