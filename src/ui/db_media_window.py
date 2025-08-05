@@ -1,9 +1,9 @@
 import os
 
 from PyQt5 import uic
-from PyQt5.QtCore import Qt, QDir, QModelIndex
+from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
+from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QTreeView, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
 from qtpy import QtGui
 from db.db_reader import MusicCatalogDB_2
 from ui.custom_waveform_widget import WaveformWidget
@@ -30,16 +30,13 @@ class DatabaseMediaWindow(QWidget):
         self.music_db2 = MusicCatalogDB_2("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
         self.music_db2.load()
 
-    #        self.setup_ui()
-
     def setup_ui(self):
         self.__setupLabelViewer()
         self.__setup_media_player()
 
     def __setupLabelViewer(self):
         cache = self.music_db2.get_labels_and_releases()
-        # Find the QTreeView widget
-        self.tree_view = self.findChild(MyTreeView, "view_db_labels_releases")
+        self.tree_view = self.findChild(QTreeView, "view_db_labels_releases")
 
         # Set up the model
         model = QStandardItemModel()
@@ -63,6 +60,7 @@ class DatabaseMediaWindow(QWidget):
 
         self.tree_view.setModel(model)
         self.tree_view.setHeaderHidden(False)
+        self.tree_view.pressed.connect(lambda index: self.on_row_pressed(self.tree_view, index))
 
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
@@ -74,5 +72,17 @@ class DatabaseMediaWindow(QWidget):
         self.lbl_duration_db = self.findChild(QLabel, "lbl_duration_db")
         self.lbl_info_db = self.findChild(QLabel, "lbl_info_db")
         self.lbl_cover_db = self.findChild(QLabel, "lbl_cover_db")
-        self.player = MediaPlayerController(self, self.slider_db, self.wdgt_wave_db, self.butt_play_db, self.butt_stop_db, self.lbl_current_db, self.lbl_duration_db,
-                                              self.lbl_info_db, self.lbl_cover_db)
+        self.player = MediaPlayerController(
+            self, self.slider_db, self.wdgt_wave_db, self.butt_play_db, self.butt_stop_db, self.lbl_current_db, self.lbl_duration_db, self.lbl_info_db, self.lbl_cover_db
+        )
+
+    def on_row_pressed(self, tree_view: QTreeView, index: QModelIndex):
+        selection_model = tree_view.selectionModel()
+        selection = QItemSelection(index, index)
+        if selection_model.isSelected(index):
+            selection_model.select(selection, QItemSelectionModel.Deselect | QItemSelectionModel.Rows)
+            logger.info(f"Deselected index: {index.data()}")
+        else:
+            selection_model.clearSelection()
+            selection_model.select(selection, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+            logger.info(f"Selected index: {index.data()}")

@@ -5156,9 +5156,9 @@ QPushButton::pressed
                   </widget>
                  </item>
                  <item row="2" column="0" colspan="5">
-                  <widget class="MyTreeView" name="view_db_labels_releases">
+                  <widget class="QTreeView" name="view_db_labels_releases">
                    <property name="selectionMode">
-                    <enum>QAbstractItemView::SingleSelection</enum>
+                    <enum>QAbstractItemView::NoSelection</enum>
                    </property>
                   </widget>
                  </item>
