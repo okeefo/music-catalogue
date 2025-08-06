@@ -16,7 +16,6 @@ logger = get_logger(__name__)
 
 
 class DatabaseMediaWindow(QWidget):
-    
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -268,6 +267,8 @@ class DatabaseMediaWindow(QWidget):
             selection_model.clearSelection()
             selection_model.select(selection, QItemSelectionModel.Select | QItemSelectionModel.Rows)
             logger.info(f"Selected index: {index.data()}")
+        # Force the view to update selection highlighting immediately
+        tree_view.viewport().update()
 
     def on_label_selected(self, selected: QItemSelection, deselected: QItemSelection):
         # Get the selected index
@@ -313,23 +314,28 @@ class DatabaseMediaWindow(QWidget):
         if self.player:
             logger.info(f"Loading file in media player: {file_path}")
             self.player.load_media(file_path)
-    
+
     def closeEvent(self, event):
         """
         Ensure all timers, media players, and widgets are properly cleaned up on close to avoid QBasicTimer warnings.
         """
-        # Stop and delete the media player if it exists
+        # Stop and close the media player if it exists
         if hasattr(self, "player") and self.player:
             try:
-                self.player.stop()  # Ensure MediaPlayerController has a stop() method
+                self.player.stop()
+            except Exception:
+                pass
+            try:
+                self.player.close()  # If MediaPlayerController is a QWidget or has a close method
             except Exception:
                 pass
             self.player.deleteLater()
-        # Stop and delete the waveform widget if it exists
+        # Stop and close the waveform widget if it exists
         if hasattr(self, "wdgt_wave_db") and self.wdgt_wave_db:
             try:
-                self.wdgt_wave_db.deleteLater()
+                self.wdgt_wave_db.close()
             except Exception:
                 pass
+            self.wdgt_wave_db.deleteLater()
         # Call the base class closeEvent
         super().closeEvent(event)
