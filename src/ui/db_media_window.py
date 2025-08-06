@@ -37,12 +37,50 @@ class DatabaseMediaWindow(QWidget):
     def __setupLabelViewer(self):
         self.tree_view = self.findChild(QTreeView, "view_db_labels_releases")
         self.populate_label_viewer()
+        self._current_label_release_tracks = None  # Tracks filtered by label/release
 
     def __setupSearchBars(self):
         self.search_bar_labels = self.findChild(QLineEdit, "search_bar_labels")
         self.search_bar_tracks = self.findChild(QLineEdit, "search_bar_tracks")
         if self.search_bar_labels:
             self.search_bar_labels.textChanged.connect(self.filter_label_viewer)
+        if self.search_bar_tracks:
+            self.search_bar_tracks.textChanged.connect(self.filter_track_viewer)
+
+    def filter_track_viewer(self, text):
+        """
+        Filters the track viewer table based on the search text.
+        Respects the current label/release filter if present.
+        Shows only tracks that match the search term in any column (case-insensitive, substring match).
+        """
+        text = text.strip().lower()
+        # Use the current label/release filtered tracks if present, else all tracks
+        base_tracks = self._current_label_release_tracks if self._current_label_release_tracks is not None else self.music_db2.get_all_tracks()
+        if not text:
+            self.__populate_view_db_tracks(base_tracks)
+            return
+        filtered_tracks = []
+        for track in base_tracks:
+            for attr in [
+                "track_id",
+                "label",
+                "catalog_number",
+                "discogs_id",
+                "album_title",
+                "track_artist",
+                "track_title",
+                "format",
+                "disc_number",
+                "track_number",
+                "year",
+                "country",
+                "file_location",
+            ]:
+                value = str(getattr(track, attr, "")).lower()
+                if text in value:
+                    filtered_tracks.append(track)
+                    break
+        self.__populate_view_db_tracks(filtered_tracks)
 
     def filter_label_viewer(self, text):
         """
@@ -231,10 +269,10 @@ class DatabaseMediaWindow(QWidget):
             logger.info(f"Selected index: {index.data()}")
 
     def on_label_selected(self, selected: QItemSelection, deselected: QItemSelection):
-
         # Get the selected index
         indexes = selected.indexes()
         if not indexes:
+            self._current_label_release_tracks = None
             self.__populate_view_db_tracks(filtered_tracks=None)
             return
 
@@ -246,6 +284,7 @@ class DatabaseMediaWindow(QWidget):
             label_name = index.data()
             logger.info(f"Label selected: {label_name}")
             filtered_tracks = [track for track in self.music_db2.get_all_tracks() if str(track.label) == str(label_name)]
+            self._current_label_release_tracks = filtered_tracks
             self.__populate_view_db_tracks(filtered_tracks)
         else:
             # Child: release
@@ -254,6 +293,7 @@ class DatabaseMediaWindow(QWidget):
             catalog_number = release_text.split(" - ")[0]
             logger.info(f"Release selected: {release_text} (Catalog: {catalog_number})")
             filtered_tracks = [track for track in self.music_db2.get_all_tracks() if str(track.catalog_number) == str(catalog_number)]
+            self._current_label_release_tracks = filtered_tracks
             self.__populate_view_db_tracks(filtered_tracks)
 
     def on_track_viewer_double_clicked(self, index: QModelIndex) -> None:
