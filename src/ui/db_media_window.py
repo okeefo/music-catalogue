@@ -1,23 +1,21 @@
 import os
+from typing import Dict
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QTreeView, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
+from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QTreeView, QTableView, QLabel, QHeaderView, QCompleter, QMessageBox
 from qtpy import QtGui
-from db.db_reader import MusicCatalogDB_2
+from db.db_reader import MusicCatalogDB_2, Track, Release, RecordLabel
 from ui.custom_waveform_widget import WaveformWidget
 from ui.media_player import MediaPlayerController
-from ui.custom_line_edit import MyLineEdit
-from ui.custom_tree_view import MyTreeView
+from ui.db_window_widget import CenterAlignDelegate, DatabaseWidget
 from log_config import get_logger
 
 logger = get_logger(__name__)
 
 
 class DatabaseMediaWindow(QWidget):
-    label_map = {}
-    label_a_map = {}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -32,24 +30,30 @@ class DatabaseMediaWindow(QWidget):
 
     def setup_ui(self):
         self.__setupLabelViewer()
+        self.__setupTrackViewer()
         self.__setup_media_player()
 
     def __setupLabelViewer(self):
-        cache = self.music_db2.get_labels_and_releases()
         self.tree_view = self.findChild(QTreeView, "view_db_labels_releases")
+        self.populate_label_viewer()
+
+    def populate_label_viewer(self):
+        """Populates the label viewer with labels and their associated releases."""
+
+        label_cache = self.music_db2.get_labels_and_releases()
 
         # Set up the model
         model = QStandardItemModel()
-        model.setHorizontalHeaderLabels(["Label & Release"])
+        model.setHorizontalHeaderLabels(["LabelS & ReleaseS"])
 
         # For each label, add as a parent item with folder icon
 
-        for label_name, release_ids in cache.items():
+        for label_name, release_ids in label_cache.items():
             label_item = QStandardItem(self.folder_icon, label_name)
             label_item.setEditable(False)
             # For each release under this label, add as child
             for release_id in release_ids:
-                release = self.music_db2._releases_cache.get(release_id)
+                release = self.music_db2.get_release_by_id(release_id)
                 if release:
                     # Show media_icon, catalog_number, and title
                     release_text = f"{release.catalog_number} - {release.title}"
@@ -61,6 +65,15 @@ class DatabaseMediaWindow(QWidget):
         self.tree_view.setModel(model)
         self.tree_view.setHeaderHidden(False)
         self.tree_view.pressed.connect(lambda index: self.on_row_pressed(self.tree_view, index))
+        self.tree_view.selectionModel().selectionChanged.connect(self.on_label_selected)
+
+    def __setupTrackViewer(self):
+        """Sets up the track viewer with a table view."""
+        self.track_viewer = self.findChild(QTableView, "track_viewer")
+        self.track_viewer.doubleClicked.connect(self.on_track_viewer_double_clicked)
+        DatabaseWidget._setup_data_view(self.track_viewer, DatabaseWidget.on_row_clicked)
+        self.__populate_view_db_tracks(None)
+        
 
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
@@ -76,6 +89,67 @@ class DatabaseMediaWindow(QWidget):
             self, self.slider_db, self.wdgt_wave_db, self.butt_play_db, self.butt_stop_db, self.lbl_current_db, self.lbl_duration_db, self.lbl_info_db, self.lbl_cover_db
         )
 
+    def __populate_view_db_tracks(self, filtered_tracks=None):
+        logger.info("Populating view_db_tracks with filtered tracks" if filtered_tracks else "Populating view_db_tracks with all tracks")
+        model = QStandardItemModel()
+        model.setHorizontalHeaderLabels(
+            [
+                "Track ID",
+                "Label",
+                "Catalog No",
+                "Discogs ID",
+                "Album Title",
+                "Track Artist",
+                "Track Title",
+                "Format",
+                "Disc No",
+                "Track No",
+                "Year",
+                "Country",
+                "File Path"
+            ]
+        )
+
+        tracks = filtered_tracks if filtered_tracks is not None else self.music_db2.get_all_tracks()
+
+        for track in tracks:
+            items = [
+                QStandardItem(str(getattr(track, attr)))
+                for attr in ["track_id", "label", "catalog_number", "discogs_id", "album_title", "track_artist", "track_title", "format", "disc_number", "track_number", "year", "country", "file_location"]
+            ]
+            for item in items:
+                item.setEditable(False)
+            model.appendRow(items)
+
+        self.track_viewer.setModel(model)
+        self.track_viewer.setColumnHidden(0, True)
+        
+        self.__center_align_delegate(2)  # Center align the catalog number column
+        self.__center_align_delegate(3)  # Center align the Discogs ID column
+        self.__center_align_delegate(7)  # Center align the format column
+        self.__center_align_delegate(8)  # Center align the disc number column
+        self.__center_align_delegate(9)  # Center align the track number column
+        
+        self.track_viewer.resizeColumnToContents(4)   # 4  is the index of "Album title"
+        self.track_viewer.resizeColumnToContents(5)   # 5  is the index of "Track Artist"
+        self.track_viewer.resizeColumnToContents(6)   # 6  is the index of "Track Title"
+        self.track_viewer.resizeColumnToContents(7)   # 7  is the index of "Format"
+        self.track_viewer.resizeColumnToContents(8)   # 8  is the index of "Disc No"
+        self.track_viewer.resizeColumnToContents(9)   # 9  is the index of "Track No"
+        self.track_viewer.resizeColumnToContents(10)  # 10 is the index of "Year"
+        self.track_viewer.resizeColumnToContents(11)  # 12 is the index of "Country"
+        self.track_viewer.resizeColumnToContents(12)  # 13 is the index of "File Path"
+
+    def __center_align_delegate(self, index: int) -> None:
+        """
+        Centers the text in the specified column index.
+        
+        Args:
+            index (int): The column index to center align.
+        """
+        delegate = CenterAlignDelegate(self.track_viewer)
+        self.track_viewer.setItemDelegateForColumn(index, delegate)
+
     def on_row_pressed(self, tree_view: QTreeView, index: QModelIndex):
         selection_model = tree_view.selectionModel()
         selection = QItemSelection(index, index)
@@ -86,3 +160,46 @@ class DatabaseMediaWindow(QWidget):
             selection_model.clearSelection()
             selection_model.select(selection, QItemSelectionModel.Select | QItemSelectionModel.Rows)
             logger.info(f"Selected index: {index.data()}")
+
+    def on_label_selected(self, selected: QItemSelection, deselected: QItemSelection):
+
+        # Get the selected index
+        indexes = selected.indexes()
+        if not indexes:
+            self.__populate_view_db_tracks(filtered_tracks=None)
+            return
+
+        index = indexes[0]
+        parent = index.parent()
+
+        if not parent.isValid():
+            # Top-level: label
+            label_name = index.data()
+            logger.info(f"Label selected: {label_name}")
+            filtered_tracks = [track for track in self.music_db2.get_all_tracks() if str(track.label) == str(label_name)]
+            self.__populate_view_db_tracks(filtered_tracks)
+        else:
+            # Child: release
+            release_text = index.data()
+            # Extract catalog number from release_text (format: "CATNO - Title")
+            catalog_number = release_text.split(" - ")[0]
+            logger.info(f"Release selected: {release_text} (Catalog: {catalog_number})")
+            filtered_tracks = [track for track in self.music_db2.get_all_tracks() if str(track.catalog_number) == str(catalog_number)]
+            self.__populate_view_db_tracks(filtered_tracks)
+            
+    def on_track_viewer_double_clicked(self, index: QModelIndex) -> None:
+        """Handles the tree view double click event. Returns: None"""
+
+        model = self.track_viewer.model()
+        row = index.row()
+        
+        file_path_index = model.index(row, 12)
+        file_path = file_path_index.data()
+        
+        if not file_path or not os.path.isfile(file_path):
+            logger.warning(f"File does not exist: {file_path}")
+            return
+        
+        if self.player:
+            logger.info(f"Loading file in media player: {file_path}")
+            self.player.load_media(file_path)

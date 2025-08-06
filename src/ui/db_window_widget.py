@@ -93,16 +93,16 @@ class DatabaseWidget(QWidget):
     def __setup_data_views(self):
         """Set up the tree views for releases."""
         self.view_db_labels = self.findChild(QTableView, "view_db_labels")
-        self.__setup_data_view(self.view_db_labels, self.on_row_clicked)
+        self._setup_data_view(self.view_db_labels, self.on_row_clicked)
 
         self.view_db_releases = self.findChild(QTableView, "view_db_releases")
-        self.__setup_data_view(self.view_db_releases, self.on_row_clicked)
+        self._setup_data_view(self.view_db_releases, self.on_row_clicked)
 
         self.view_db_tracks = self.findChild(QTableView, "view_db_tracks")
-        self.__setup_data_view(self.view_db_tracks, self.on_row_clicked)
+        self._setup_data_view(self.view_db_tracks, self.on_row_clicked)
 
     @staticmethod
-    def __setup_data_view(table_view: QTableView, clicked_connect) -> None:
+    def _setup_data_view(table_view: QTableView, clicked_connect) -> None:
         """Set up a table view with a standard item model."""
         table_view.setModel(QStandardItemModel())
         table_view.setFont(QFont("Source Code Pro", 8))  # change the size as desired

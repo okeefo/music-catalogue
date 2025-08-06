@@ -63,6 +63,8 @@ class MusicCatalogDB_2:
         self._labels_cache: Dict[str, RecordLabel] = {}
         self._label_to_releases: Dict[str, set] = {}
         self._release_to_tracks: Dict[int, set] = {}
+        self._track_list: list[Track] = []  # List to hold all tracks
+        #self._files_cache: Dict[int, list[str]] = {}  # Placeholder for file cache
         self.connection: Optional[sqlite3.Connection] = self.__connect()
 
     def __connect(self):
@@ -133,6 +135,7 @@ class MusicCatalogDB_2:
                 genre=row["genre"],
             )
             self._tracks_cache[track_id] = track
+            self._track_list.append(track)
            
             
             discogs_id = row["discogs_id"]
@@ -163,22 +166,19 @@ class MusicCatalogDB_2:
         return True
     
      # Retrieval methods:
-    def get_all_tracks(self):
-        return list(self._tracks_cache.values())
-
-    def get_tracks_for_release(self, discogs_id: int):
-        return [self._tracks_cache[tid] for tid in self._release_to_tracks.get(discogs_id, set())]
-
-    def get_tracks_for_label(self, label_name: str):
+    def get_all_tracks(self) -> list[Track]:
+        return self._track_list
+  
+    def get_tracks_for_label(self, label_name: str) -> list[Track]:
         track_ids = set()
         for release_id in self._label_to_releases.get(label_name, set()):
             track_ids.update(self._release_to_tracks.get(release_id, set()))
         return [self._tracks_cache[tid] for tid in track_ids]
 
-    def get_releases_for_label(self, label_name: str):
+    def get_releases_for_label(self, label_name: str) -> list[Release]:
         return [self._releases_cache[rid] for rid in self._label_to_releases.get(label_name, set())]
 
-    def get_all_labels(self):
+    def get_all_labels(self) -> list[RecordLabel]:
         return list(self._labels_cache.values())
     
     def get_labels_and_releases(self) -> Dict[str, set]:
@@ -208,6 +208,18 @@ class MusicCatalogDB_2:
         if self._tracks_cache is None:
             return 0
         return len(self._releases_cache)
+    
+    def get_release_by_id(self, release_id: int) -> Optional[Release]:
+        """
+        Retrieves a release by its Discogs ID.
+
+        Args:
+            discogs_id (int): The Discogs ID of the release.
+
+        Returns:
+            Optional[Release]: The Release object if found, None otherwise.
+        """
+        return self._releases_cache.get(release_id)
 
     def close(self):
         """Closes the SQLite connection."""

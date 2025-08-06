@@ -5476,7 +5476,7 @@ QSlider::handle:horizontal {
                    <widget class="QLineEdit" name="lineEdit_32"/>
                   </item>
                   <item row="2" column="0" colspan="5">
-                   <widget class="QTableView" name="view_db_tracks_2"/>
+                   <widget class="QTableView" name="track_viewer"/>
                   </item>
                  </layout>
                 </item>
