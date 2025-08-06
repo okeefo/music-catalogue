@@ -5115,26 +5115,77 @@ QPushButton::pressed
               <layout class="QHBoxLayout" name="horizontalLayout_27">
                <item>
                 <layout class="QGridLayout" name="gridLayout_20">
-                 <item row="0" column="0">
-                  <widget class="QLabel" name="label_55">
-                   <property name="text">
-                    <string>Search bar</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="0" colspan="3">
+                 <item row="2" column="0" colspan="9">
                   <widget class="QTreeView" name="view_db_labels_releases">
                    <property name="selectionMode">
                     <enum>QAbstractItemView::NoSelection</enum>
                    </property>
                   </widget>
                  </item>
-                 <item row="1" column="0" colspan="3">
+                 <item row="0" column="0" colspan="3">
+                  <widget class="QPushButton" name="butt_exp_releases">
+                   <property name="styleSheet">
+                    <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                   </property>
+                   <property name="text">
+                    <string/>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="resources.qrc">
+                     <normaloff>:/icons/icons/folder-minus.svg</normaloff>:/icons/icons/folder-minus.svg</iconset>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="7">
                   <widget class="QLineEdit" name="search_bar_labels">
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
-                     <height>25</height>
+                     <height>32</height>
                     </size>
                    </property>
                    <property name="maximumSize">
@@ -5142,6 +5193,64 @@ QPushButton::pressed
                      <width>16777215</width>
                      <height>25</height>
                     </size>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="3" colspan="4">
+                  <widget class="QPushButton" name="butt_clear_releases">
+                   <property name="styleSheet">
+                    <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                   </property>
+                   <property name="text">
+                    <string/>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="resources.qrc">
+                     <normaloff>:/icons/icons/x-circle.svg</normaloff>:/icons/icons/x-circle.svg</iconset>
                    </property>
                   </widget>
                  </item>
@@ -5418,22 +5527,15 @@ QSlider::handle:horizontal {
                <layout class="QHBoxLayout" name="horizontalLayout_28">
                 <item>
                  <layout class="QGridLayout" name="gridLayout_21">
-                  <item row="0" column="0">
-                   <widget class="QLabel" name="label_59">
-                    <property name="text">
-                     <string>Search bar</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="2" column="0" colspan="3">
+                  <item row="3" column="0" colspan="6">
                    <widget class="QTableView" name="track_viewer"/>
                   </item>
-                  <item row="1" column="0" colspan="3">
+                  <item row="0" column="4">
                    <widget class="QLineEdit" name="search_bar_tracks">
                     <property name="minimumSize">
                      <size>
                       <width>0</width>
-                      <height>25</height>
+                      <height>32</height>
                      </size>
                     </property>
                     <property name="maximumSize">
@@ -5441,6 +5543,64 @@ QSlider::handle:horizontal {
                       <width>16777215</width>
                       <height>25</height>
                      </size>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="0" colspan="4">
+                   <widget class="QPushButton" name="butt_clear_tracks">
+                    <property name="styleSheet">
+                     <string notr="true">/*-----QPushButton-----*/
+QPushButton
+{
+/**	background-color:  rgb(92, 106, 106);
+	color: #ffffff;
+**/	
+   border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+}
+
+QPushButton::disabled
+{
+	background-color: #404040;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
+
+QPushButton::hover
+{
+	background-color: lightgrey;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: rgb(125, 155, 143);
+	color: #ffffff;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 3px;
+	border-color: #051a39;
+	padding: 5px;
+
+}</string>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="resources.qrc">
+                      <normaloff>:/icons/icons/x-circle.svg</normaloff>:/icons/icons/x-circle.svg</iconset>
                     </property>
                    </widget>
                   </item>

@@ -24,6 +24,10 @@ class DatabaseMediaWindow(QWidget):
         self.icon_right = QIcon("src/qt/icons/chevrons-right.svg")
         self.folder_icon = QIcon(":/icons/icons/folder.svg")
         self.media_icon = QIcon(":/media/icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png")
+        self.icon_expand = QIcon(":/icons/icons/folder-plus.svg")
+        self.icon_collapse = QIcon(":/icons/icons/folder-minus.svg")
+
+        self._tree_expanded = False  # Track expand/collapse state
 
         self.music_db2 = MusicCatalogDB_2("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
         self.music_db2.load()
@@ -32,20 +36,50 @@ class DatabaseMediaWindow(QWidget):
         self.__setupLabelViewer()
         self.__setupTrackViewer()
         self.__setup_media_player()
-        self.__setupSearchBars()
+        self.__setup_search_bars()
+        self.__setup_buttons()
 
     def __setupLabelViewer(self):
         self.tree_view = self.findChild(QTreeView, "view_db_labels_releases")
         self.populate_label_viewer()
         self._current_label_release_tracks = None  # Tracks filtered by label/release
 
-    def __setupSearchBars(self):
+    def __setup_search_bars(self):
         self.search_bar_labels = self.findChild(QLineEdit, "search_bar_labels")
         self.search_bar_tracks = self.findChild(QLineEdit, "search_bar_tracks")
-        if self.search_bar_labels:
-            self.search_bar_labels.textChanged.connect(self.filter_label_viewer)
-        if self.search_bar_tracks:
-            self.search_bar_tracks.textChanged.connect(self.filter_track_viewer)
+        self.search_bar_labels.textChanged.connect(self.filter_label_viewer)
+        self.search_bar_tracks.textChanged.connect(self.filter_track_viewer)
+
+    def __setup_buttons(self):
+        self.butt_exp_releases = self.findChild(QPushButton, "butt_exp_releases")
+        self.butt_exp_releases.setIcon(self.icon_expand)
+        self.butt_exp_releases.clicked.connect(self.butt_exp_releases_clicked)
+
+        self.butt_clear_releases = self.findChild(QPushButton, "butt_clear_releases")
+        self.butt_clear_releases.clicked.connect(lambda: self.butt_clear_search_bar_clicked(self.search_bar_labels))
+
+        self.butt_clear_tracks = self.findChild(QPushButton, "butt_clear_tracks")
+        self.butt_clear_tracks.clicked.connect(lambda: self.butt_clear_search_bar_clicked(self.search_bar_tracks))
+
+    def butt_exp_releases_clicked(self):
+        """
+        Expands or collapses all releases in the label viewer tree.
+        and updates the button icon accordingly.
+        """
+        if self._tree_expanded:
+            self.tree_view.collapseAll()
+            self.butt_exp_releases.setIcon(self.icon_expand)
+            self._tree_expanded = False
+        else:
+            self.tree_view.expandAll()
+            self.butt_exp_releases.setIcon(self.icon_collapse)
+            self._tree_expanded = True
+
+    def butt_clear_search_bar_clicked(self, search_bar: QLineEdit):
+        """
+        Clears the search bar
+        """
+        search_bar.clear()
 
     def filter_track_viewer(self, text):
         """
