@@ -16,6 +16,7 @@ logger = get_logger(__name__)
 
 
 class DatabaseMediaWindow(QWidget):
+    
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -312,3 +313,23 @@ class DatabaseMediaWindow(QWidget):
         if self.player:
             logger.info(f"Loading file in media player: {file_path}")
             self.player.load_media(file_path)
+    
+    def closeEvent(self, event):
+        """
+        Ensure all timers, media players, and widgets are properly cleaned up on close to avoid QBasicTimer warnings.
+        """
+        # Stop and delete the media player if it exists
+        if hasattr(self, "player") and self.player:
+            try:
+                self.player.stop()  # Ensure MediaPlayerController has a stop() method
+            except Exception:
+                pass
+            self.player.deleteLater()
+        # Stop and delete the waveform widget if it exists
+        if hasattr(self, "wdgt_wave_db") and self.wdgt_wave_db:
+            try:
+                self.wdgt_wave_db.deleteLater()
+            except Exception:
+                pass
+        # Call the base class closeEvent
+        super().closeEvent(event)
