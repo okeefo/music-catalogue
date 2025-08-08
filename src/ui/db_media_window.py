@@ -58,10 +58,14 @@ class DatabaseMediaWindow(QWidget):
     def handle_analyse_selected(self):
         """
         Handler for the 'Analyse' context menu action. Gathers selected tracks, analyzes audio, and stores waveform data in DB.
+        Shows a progress dialog with cancel support.
         """
         from file_operations.audio_waveform_analyzer import analyze_audio_file
         from db.db_writer import MusicCatalogDBWriter
         import json
+        import time
+        from PyQt5.QtWidgets import QProgressDialog, QApplication
+        from PyQt5.QtCore import Qt
 
         # Determine which tracks to analyze
         selected_indexes = self.tree_view.selectionModel().selectedIndexes()
@@ -82,29 +86,55 @@ class DatabaseMediaWindow(QWidget):
                 tracks = [track for track in self.music_db2.get_all_tracks() if str(track.catalog_number) == str(catalog_number)]
                 logger.info(f"Analyzing tracks for release: {release_text}")
 
-        # Prepare DB writer
+        total_tracks = len(tracks)
+        if total_tracks == 0:
+            QMessageBox.information(self, "No Tracks", "No tracks found to analyze.")
+            return
+
+        # Progress dialog setup
+        progress = QProgressDialog("Analyzing audio files...", "Cancel", 0, total_tracks, self)
+        progress.setWindowTitle("Waveform Analysis Progress")
+        progress.setWindowModality(Qt.ApplicationModal)
+        progress.setMinimumDuration(0)
+        progress.setValue(0)
+        progress.setAutoClose(False)
+        progress.setAutoReset(False)
+
         db_writer = MusicCatalogDBWriter(self.music_db2.db_path)
         db_writer.ensure_track_meta_data_table()
 
-        # Analyze and store waveform for each unique file_id
         processed = 0
-        for track in tracks:
+        start_time = time.time()
+        cancelled = False
+        for i, track in enumerate(tracks, 1):
             file_id = track.file_id
             file_path = track.file_location
+            # Update progress dialog
+            progress.setLabelText(f"Processing file {i}/{total_tracks}:\n{file_path}")
+            progress.setValue(i - 1)
+            QApplication.processEvents()
+            if progress.wasCanceled():
+                cancelled = True
+                logger.info("Waveform analysis cancelled by user.")
+                break
             if not file_path or not os.path.isfile(file_path):
                 logger.warning(f"File does not exist: {file_path}")
                 continue
-            # Analyze audio file (high resolution)
             result = analyze_audio_file(file_path, num_samples=10000)
             if result is None:
                 logger.warning(f"Unsupported or failed to analyze: {file_path}")
                 continue
-            # Store waveform as JSON string (or use bytes if you prefer)
             waveform_json = json.dumps(result.waveform)
             db_writer.write_waveform_data(file_id, waveform_json.encode("utf-8"))
             processed += 1
         db_writer.close()
-        logger.info(f"Waveform analysis complete. Processed {processed} tracks.")
+        elapsed = time.time() - start_time
+        progress.setValue(total_tracks)
+        progress.close()
+        if cancelled:
+            QMessageBox.information(self, "Analysis Cancelled", f"Waveform analysis cancelled. Processed {processed} tracks in {elapsed:.2f} seconds.")
+        else:
+            logger.info(f"Waveform analysis complete. Processed {processed} tracks in {elapsed:.2f} seconds.")
 
     def __setup_search_bars(self):
         self.search_bar_labels = self.findChild(QLineEdit, "search_bar_labels")
