@@ -5,10 +5,15 @@ from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtWidgets import (
-    QWidget, QSlider, QPushButton, QLabel, QMessageBox,
+    QWidget,
+    QSlider,
+    QPushButton,
+    QLabel,
+    QMessageBox,
 )
 
 from file_operations.audio_tags import AudioTagHelper
+
 # Set logger instance
 from log_config import get_logger
 from ui.custom_waveform_widget import WaveformWidget
@@ -23,16 +28,16 @@ class MediaPlayerController(QWidget):
     parent = None
 
     def __init__(
-            self,
-            parent,
-            slider: QSlider,
-            waveform_widget: WaveformWidget,
-            butt_play: QPushButton,
-            butt_stop: QPushButton,
-            lbl_current: QLabel,
-            lbl_duration: QLabel,
-            lbl_info: QLabel,
-            lbl_cover_art: QWidget
+        self,
+        parent,
+        slider: QSlider,
+        waveform_widget: WaveformWidget,
+        butt_play: QPushButton,
+        butt_stop: QPushButton,
+        lbl_current: QLabel,
+        lbl_duration: QLabel,
+        lbl_info: QLabel,
+        lbl_cover_art: QWidget,
     ) -> None:
         super().__init__(parent)
         self.artist = ""
@@ -134,14 +139,29 @@ class MediaPlayerController(QWidget):
         self.lbl_current.setText(self.format_time(current_time))
 
     def load_media(self, path: str) -> None:
-        """Load media from the given path."""
-        self.load_start= datetime.datetime.now()
+        """Load media from the given path, using cached waveform if available."""
+        self.load_start = datetime.datetime.now()
         self.media_ready = False
         self.load_tag_data(path)
         self.set_cover_art()
         self.path = path
         self.player.setMedia(QMediaContent(QUrl.fromLocalFile(self.path)))
-        self.waveform_widget.load_waveform_from_file(self.path)
+        # Try to get file_id from tags or path (assumes parent has a method or attribute for this)
+        file_id = None
+        try:
+            # Try to get file_id from parent or track cache
+            if hasattr(self.parent, "music_db2"):
+                for track in self.parent.music_db2.get_all_tracks():
+                    if track.file_location == path:
+                        file_id = track.file_id
+                        break
+        except Exception:
+            pass
+        db_path = self.parent.music_db2.db_path if hasattr(self.parent, "music_db2") else None
+        if file_id is not None and db_path:
+            self.waveform_widget.load_waveform_from_db_or_file(file_id, path, db_path)
+        else:
+            self.waveform_widget.load_waveform_from_file(path)
         self.on_stop_button_clicked()
         self.info_bar.setText(f"Loading {self.artist} - {self.title}")
 
@@ -201,7 +221,7 @@ class MediaPlayerController(QWidget):
         self.player.stop()
         self.butt_play.setIcon(self.icon_play_off)
         self.butt_stop.setIcon(self.icon_stop_off)
-        if  self.media_ready:
+        if self.media_ready:
             self.info_bar.setText(f"{self.artist} - {self.title}")
 
     @staticmethod

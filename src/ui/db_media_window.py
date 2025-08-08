@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelect
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QTreeView, QTableView, QLabel, QLineEdit, QCompleter, QMessageBox
 from qtpy import QtGui
+from PyQt5.QtWidgets import QMenu
 from db.db_reader import MusicCatalogDB_2, Track, Release, RecordLabel
 from ui.custom_waveform_widget import WaveformWidget
 from ui.media_player import MediaPlayerController
@@ -43,6 +44,67 @@ class DatabaseMediaWindow(QWidget):
         self.tree_view = self.findChild(QTreeView, "view_db_labels_releases")
         self.populate_label_viewer()
         self._current_label_release_tracks = None  # Tracks filtered by label/release
+        # Enable custom context menu
+        self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree_view.customContextMenuRequested.connect(self.on_labels_tree_context_menu)
+
+    def on_labels_tree_context_menu(self, pos):
+        menu = QMenu(self.tree_view)
+        analyse_action = menu.addAction("Analyse")
+        action = menu.exec_(self.tree_view.viewport().mapToGlobal(pos))
+        if action == analyse_action:
+            self.handle_analyse_selected()
+
+    def handle_analyse_selected(self):
+        """
+        Handler for the 'Analyse' context menu action. Gathers selected tracks, analyzes audio, and stores waveform data in DB.
+        """
+        from file_operations.audio_waveform_analyzer import analyze_audio_file
+        from db.db_writer import MusicCatalogDBWriter
+        import json
+
+        # Determine which tracks to analyze
+        selected_indexes = self.tree_view.selectionModel().selectedIndexes()
+        if not selected_indexes:
+            tracks = self.music_db2.get_all_tracks()
+            logger.info("No label/release selected: analyzing all tracks.")
+        else:
+            # Use the same logic as on_label_selected
+            index = selected_indexes[0]
+            parent = index.parent()
+            if not parent.isValid():
+                label_name = index.data()
+                tracks = [track for track in self.music_db2.get_all_tracks() if str(track.label) == str(label_name)]
+                logger.info(f"Analyzing tracks for label: {label_name}")
+            else:
+                release_text = index.data()
+                catalog_number = release_text.split(" - ")[0]
+                tracks = [track for track in self.music_db2.get_all_tracks() if str(track.catalog_number) == str(catalog_number)]
+                logger.info(f"Analyzing tracks for release: {release_text}")
+
+        # Prepare DB writer
+        db_writer = MusicCatalogDBWriter(self.music_db2.db_path)
+        db_writer.ensure_track_meta_data_table()
+
+        # Analyze and store waveform for each unique file_id
+        processed = 0
+        for track in tracks:
+            file_id = track.file_id
+            file_path = track.file_location
+            if not file_path or not os.path.isfile(file_path):
+                logger.warning(f"File does not exist: {file_path}")
+                continue
+            # Analyze audio file (high resolution)
+            result = analyze_audio_file(file_path, num_samples=10000)
+            if result is None:
+                logger.warning(f"Unsupported or failed to analyze: {file_path}")
+                continue
+            # Store waveform as JSON string (or use bytes if you prefer)
+            waveform_json = json.dumps(result.waveform)
+            db_writer.write_waveform_data(file_id, waveform_json.encode("utf-8"))
+            processed += 1
+        db_writer.close()
+        logger.info(f"Waveform analysis complete. Processed {processed} tracks.")
 
     def __setup_search_bars(self):
         self.search_bar_labels = self.findChild(QLineEdit, "search_bar_labels")
@@ -292,17 +354,23 @@ class DatabaseMediaWindow(QWidget):
         self.track_viewer.setItemDelegateForColumn(index, delegate)
 
     def on_row_pressed(self, tree_view: QTreeView, index: QModelIndex):
-        selection_model = tree_view.selectionModel()
-        selection = QItemSelection(index, index)
-        if selection_model.isSelected(index):
-            selection_model.select(selection, QItemSelectionModel.Deselect | QItemSelectionModel.Rows)
-            logger.info(f"Deselected index: {index.data()}")
+        # Only change selection if the left mouse button is pressed
+        mouse_buttons = QtGui.QGuiApplication.mouseButtons()
+        if mouse_buttons & Qt.LeftButton:
+            selection_model = tree_view.selectionModel()
+            selection = QItemSelection(index, index)
+            if selection_model.isSelected(index):
+                selection_model.select(selection, QItemSelectionModel.Deselect | QItemSelectionModel.Rows)
+                logger.info(f"Deselected index: {index.data()}")
+            else:
+                selection_model.clearSelection()
+                selection_model.select(selection, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                logger.info(f"Selected index: {index.data()}")
+            # Force the view to update selection highlighting immediately
+            tree_view.viewport().update()
         else:
-            selection_model.clearSelection()
-            selection_model.select(selection, QItemSelectionModel.Select | QItemSelectionModel.Rows)
-            logger.info(f"Selected index: {index.data()}")
-        # Force the view to update selection highlighting immediately
-        tree_view.viewport().update()
+            # Ignore right/middle mouse button for selection
+            pass
 
     def on_label_selected(self, selected: QItemSelection, deselected: QItemSelection):
         # Get the selected index

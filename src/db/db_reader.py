@@ -42,6 +42,7 @@ class Track:
     file_location: str
     style: str
     genre: str
+    file_id: int
 
 
 @dataclass
@@ -133,6 +134,7 @@ class MusicCatalogDB_2:
                 file_location=row["file_location"],
                 style=row["style"],
                 genre=row["genre"],
+                file_id=row["track_file_id"]
             )
             self._tracks_cache[track_id] = track
             self._track_list.append(track)

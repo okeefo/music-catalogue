@@ -3,6 +3,7 @@ from PyQt5.QtGui import QPainter, QColor, QPen
 from PyQt5.QtWidgets import QWidget
 
 import file_operations.audio_waveform_analyzer as analyzer
+
 # create logger
 from log_config import get_logger
 
@@ -10,6 +11,46 @@ logger = get_logger(__name__)
 
 
 class WaveformWidget(QWidget):
+    def load_waveform_from_db_or_file(self, file_id, file_path, db_path, num_samples=2500):
+        """
+        Try to load waveform data from the DB. If not found, load from file and optionally cache to DB.
+        """
+        import json
+        from db.db_writer import MusicCatalogDBWriter
+
+        logger.info(f"Trying to load waveform from DB for file_id={file_id}")
+        db_writer = MusicCatalogDBWriter(db_path)
+        db_writer.ensure_track_meta_data_table()
+        cursor = db_writer.connection.cursor()
+        cursor.execute("SELECT waveform_data FROM track_meta_data WHERE id=?", (file_id,))
+        row = cursor.fetchone()
+        if row and row[0]:
+            try:
+                waveform = json.loads(row[0].decode("utf-8") if isinstance(row[0], bytes) else row[0])
+                logger.info(f"Loaded waveform from DB for file_id={file_id}")
+                # You may want to also fetch duration if you store it
+                self.set_waveform(waveform)
+                # Duration fallback: analyze file for duration only if needed
+                from file_operations.audio_waveform_analyzer import analyze_audio_file
+
+                result = analyze_audio_file(file_path, num_samples=10)  # Fast, low-res for duration
+                duration = result.duration if result else 0.0
+                self.set_duration(duration)
+                self.set_progress(0.0)
+                self.track_path = file_path
+                self.waveform_loaded = True
+                if self.callback_on_loaded:
+                    self.callback_on_loaded(duration)
+                cursor.close()
+                db_writer.close()
+                return
+            except Exception as e:
+                logger.warning(f"Failed to load waveform from DB: {e}")
+        cursor.close()
+        db_writer.close()
+        # Fallback: load from file as before
+        self.load_waveform_from_file(file_path)
+
     """
     Widget to display an audio waveform and playback progress.
     Emits seekRequested(float) when user clicks to seek.
@@ -113,7 +154,7 @@ class WaveformWidget(QWidget):
         logger.info(f"Waveform loaded with {len(self.waveform)} samples from {path}")
 
     def set_duration(self, duration: float) -> None:
-        """ Set the duration of the audio track."""
+        """Set the duration of the audio track."""
         self.duration = duration
         formatted = self._format_duration(duration)
         self.durationChanged.emit(formatted)
