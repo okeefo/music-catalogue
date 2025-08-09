@@ -201,6 +201,7 @@ class DatabaseMediaWindow(QWidget):
                 "year",
                 "country",
                 "file_location",
+                "file_id",
             ]:
                 value = str(getattr(track, attr, "")).lower()
                 if text in value:
@@ -318,15 +319,16 @@ class DatabaseMediaWindow(QWidget):
         self.lbl_duration_db = self.findChild(QLabel, "lbl_duration_db")
         self.lbl_info_db = self.findChild(QLabel, "lbl_info_db")
         self.lbl_cover_db = self.findChild(QLabel, "lbl_cover_db")
+        db_path = self.music_db2.db_path if hasattr(self, "music_db2") else None
         self.player = MediaPlayerController(
-            self, self.slider_db, self.wdgt_wave_db, self.butt_play_db, self.butt_stop_db, self.lbl_current_db, self.lbl_duration_db, self.lbl_info_db, self.lbl_cover_db
+            self, self.slider_db, self.wdgt_wave_db, self.butt_play_db, self.butt_stop_db, self.lbl_current_db, self.lbl_duration_db, self.lbl_info_db, self.lbl_cover_db, db_path
         )
 
     def __populate_view_db_tracks(self, filtered_tracks=None):
         logger.info("Populating view_db_tracks with filtered tracks" if filtered_tracks else "Populating view_db_tracks with all tracks")
         model = QStandardItemModel()
         model.setHorizontalHeaderLabels(
-            ["Track ID", "Label", "Catalog No", "Discogs ID", "Album Title", "Track Artist", "Track Title", "Format", "Disc No", "Track No", "Year", "Country", "File Path"]
+            ["Track ID", "Label", "Catalog No", "Discogs ID", "Album Title", "Track Artist", "Track Title", "Format", "Disc No", "Track No", "Year", "Country", "File Path", "Track File ID"]
         )
 
         tracks = filtered_tracks if filtered_tracks is not None else self.music_db2.get_all_tracks()
@@ -348,6 +350,7 @@ class DatabaseMediaWindow(QWidget):
                     "year",
                     "country",
                     "file_location",
+                    "file_id",
                 ]
             ]
             for item in items:
@@ -355,7 +358,7 @@ class DatabaseMediaWindow(QWidget):
             model.appendRow(items)
 
         self.track_viewer.setModel(model)
-        self.track_viewer.setColumnHidden(0, True)
+       # self.track_viewer.setColumnHidden(0, True)
 
         self.__center_align_delegate(2)  # Center align the catalog number column
         self.__center_align_delegate(3)  # Center align the Discogs ID column
@@ -439,13 +442,21 @@ class DatabaseMediaWindow(QWidget):
         file_path_index = model.index(row, 12)
         file_path = file_path_index.data()
 
+        # Get file_id from the model (assumes track_id is in column 0)
+        file_id_index = model.index(row, 13)
+        file_id = file_id_index.data()
+        try:
+            file_id = int(file_id)
+        except Exception:
+            file_id = None
+
         if not file_path or not os.path.isfile(file_path):
             logger.warning(f"File does not exist: {file_path}")
             return
 
         if self.player:
             logger.info(f"Loading file in media player: {file_path}")
-            self.player.load_media(file_path)
+            self.player.load_media(file_path, file_id=file_id)
 
     def closeEvent(self, event):
         """

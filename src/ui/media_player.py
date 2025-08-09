@@ -38,6 +38,7 @@ class MediaPlayerController(QWidget):
         lbl_duration: QLabel,
         lbl_info: QLabel,
         lbl_cover_art: QWidget,
+        db_path: str = None,
     ) -> None:
         super().__init__(parent)
         self.artist = ""
@@ -54,6 +55,7 @@ class MediaPlayerController(QWidget):
         self.info_bar.setText("No audio file loaded")
         self.media_ready = False
         self._user_is_sliding = None
+        self.db_path = db_path
 
         self.__setup_icons()
         self.__setup_media_player()
@@ -138,28 +140,16 @@ class MediaPlayerController(QWidget):
         current_time = rel_pos * duration
         self.lbl_current.setText(self.format_time(current_time))
 
-    def load_media(self, path: str) -> None:
-        """Load media from the given path, using cached waveform if available."""
+    def load_media(self, path: str, file_id: int = None) -> None:
+        """Load media from the given path, using cached waveform if available. file_id must be provided for DB lookup."""
         self.load_start = datetime.datetime.now()
         self.media_ready = False
         self.load_tag_data(path)
         self.set_cover_art()
         self.path = path
         self.player.setMedia(QMediaContent(QUrl.fromLocalFile(self.path)))
-        # Try to get file_id from tags or path (assumes parent has a method or attribute for this)
-        file_id = None
-        try:
-            # Try to get file_id from parent or track cache
-            if hasattr(self.parent, "music_db2"):
-                for track in self.parent.music_db2.get_all_tracks():
-                    if track.file_location == path:
-                        file_id = track.file_id
-                        break
-        except Exception:
-            pass
-        db_path = self.parent.music_db2.db_path if hasattr(self.parent, "music_db2") else None
-        if file_id is not None and db_path:
-            self.waveform_widget.load_waveform_from_db_or_file(file_id, path, db_path)
+        if file_id is not None and self.db_path:
+            self.waveform_widget.load_waveform_from_db_or_file(file_id, path, self.db_path)
         else:
             self.waveform_widget.load_waveform_from_file(path)
         self.on_stop_button_clicked()
