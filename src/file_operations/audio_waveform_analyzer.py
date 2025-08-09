@@ -6,12 +6,18 @@ from typing import List, Optional
 from pydub import AudioSegment
 import numpy as np
 
+
 @dataclass
 class AudioAnalysisResult:
     waveform: List[float]  # Normalized values between 0 and 1
-    duration: float        # Duration in seconds
+    duration: float  # Duration in seconds
 
-SUPPORTED_EXTENSIONS = ('.wav', '.mp3')
+
+SUPPORTED_EXTENSIONS = (".wav", ".mp3")
+
+# Number of decimal places for waveform values
+WAVEFORM_DECIMAL_PLACES = 4  # Change this value to adjust precision
+
 
 def analyze_audio_file(path: str, num_samples: int = 1000) -> Optional[AudioAnalysisResult]:
     """
@@ -46,6 +52,9 @@ def analyze_audio_file(path: str, num_samples: int = 1000) -> Optional[AudioAnal
     # Ensure the waveform is the requested length
     waveform = waveform[:num_samples]
     if len(waveform) < num_samples:
-        waveform = np.pad(waveform, (0, num_samples - len(waveform)), 'constant')
+        waveform = np.pad(waveform, (0, num_samples - len(waveform)), "constant")
+
+    # Round waveform values to the specified decimal places
+    waveform = np.round(waveform, WAVEFORM_DECIMAL_PLACES)
 
     return AudioAnalysisResult(waveform=waveform.tolist(), duration=duration)

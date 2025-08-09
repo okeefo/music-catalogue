@@ -17,6 +17,41 @@ logger = get_logger(__name__)
 
 
 class DatabaseMediaWindow(QWidget):
+    # Table column headers and attribute mapping
+    TRACK_TABLE_HEADERS = [
+        "Track ID",
+        "No",
+        "Label",
+        "Catalog No",
+        "Discogs ID",
+        "Album Title",
+        "Track Artist",
+        "Track Title",
+        "Format",
+        "Disc No",
+        "Track No",
+        "Year",
+        "Country",
+        "File Path",
+        
+    ]
+    TRACK_ATTRS = [
+        "track_id",
+        "file_id",
+        "label",
+        "catalog_number",
+        "discogs_id",
+        "album_title",
+        "track_artist",
+        "track_title",
+        "format",
+        "disc_number",
+        "track_number",
+        "year",
+        "country",
+        "file_location",
+            ]
+    COL_IDX = {name: i for i, name in enumerate(TRACK_TABLE_HEADERS)}
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -180,29 +215,13 @@ class DatabaseMediaWindow(QWidget):
         Shows only tracks that match the search term in any column (case-insensitive, substring match).
         """
         text = text.strip().lower()
-        # Use the current label/release filtered tracks if present, else all tracks
         base_tracks = self._current_label_release_tracks if self._current_label_release_tracks is not None else self.music_db2.get_all_tracks()
         if not text:
             self.__populate_view_db_tracks(base_tracks)
             return
         filtered_tracks = []
         for track in base_tracks:
-            for attr in [
-                "track_id",
-                "label",
-                "catalog_number",
-                "discogs_id",
-                "album_title",
-                "track_artist",
-                "track_title",
-                "format",
-                "disc_number",
-                "track_number",
-                "year",
-                "country",
-                "file_location",
-                "file_id",
-            ]:
+            for attr in self.TRACK_ATTRS:
                 value = str(getattr(track, attr, "")).lower()
                 if text in value:
                     filtered_tracks.append(track)
@@ -327,54 +346,44 @@ class DatabaseMediaWindow(QWidget):
     def __populate_view_db_tracks(self, filtered_tracks=None):
         logger.info("Populating view_db_tracks with filtered tracks" if filtered_tracks else "Populating view_db_tracks with all tracks")
         model = QStandardItemModel()
-        model.setHorizontalHeaderLabels(
-            ["Track ID", "Label", "Catalog No", "Discogs ID", "Album Title", "Track Artist", "Track Title", "Format", "Disc No", "Track No", "Year", "Country", "File Path", "Track File ID"]
-        )
+        model.setHorizontalHeaderLabels(self.TRACK_TABLE_HEADERS)
 
         tracks = filtered_tracks if filtered_tracks is not None else self.music_db2.get_all_tracks()
 
         for track in tracks:
-            items = [
-                QStandardItem(str(getattr(track, attr)))
-                for attr in [
-                    "track_id",
-                    "label",
-                    "catalog_number",
-                    "discogs_id",
-                    "album_title",
-                    "track_artist",
-                    "track_title",
-                    "format",
-                    "disc_number",
-                    "track_number",
-                    "year",
-                    "country",
-                    "file_location",
-                    "file_id",
-                ]
-            ]
-            for item in items:
-                item.setEditable(False)
+            items = []
+            for attr in self.TRACK_ATTRS:
+                if attr == "discogs_id":
+                    # Display as plain text but styled as a hyperlink
+                    discogs_id = str(getattr(track, attr, ""))
+                    item = QStandardItem(discogs_id)
+                    item.setData(track.discogs_url, Qt.UserRole)
+                    # Style as hyperlink: blue and underlined
+                    font = item.font()
+                    font.setUnderline(True)
+                    item.setFont(font)
+                    item.setForeground(QtGui.QBrush(QtGui.QColor(0, 102, 204)))
+                    item.setEditable(False)
+                    items.append(item)
+                else:
+                    item = QStandardItem(str(getattr(track, attr, "")))
+                    item.setEditable(False)
+                    items.append(item)
             model.appendRow(items)
 
         self.track_viewer.setModel(model)
-       # self.track_viewer.setColumnHidden(0, True)
+        # Hide the first and last columns (Track ID and No)
+        self.track_viewer.setColumnHidden(self.COL_IDX["Track ID"], True)
+        #self.track_viewer.setColumnHidden(self.COL_IDX["No"], True)
 
-        self.__center_align_delegate(2)  # Center align the catalog number column
-        self.__center_align_delegate(3)  # Center align the Discogs ID column
-        self.__center_align_delegate(7)  # Center align the format column
-        self.__center_align_delegate(8)  # Center align the disc number column
-        self.__center_align_delegate(9)  # Center align the track number column
+        # Use constants for column indexes
+        for col in ["Catalog No", "Discogs ID", "Format", "Disc No", "Track No"]:
+            self.__center_align_delegate(self.COL_IDX[col])
 
-        self.track_viewer.resizeColumnToContents(4)  # 4  is the index of "Album title"
-        self.track_viewer.resizeColumnToContents(5)  # 5  is the index of "Track Artist"
-        self.track_viewer.resizeColumnToContents(6)  # 6  is the index of "Track Title"
-        self.track_viewer.resizeColumnToContents(7)  # 7  is the index of "Format"
-        self.track_viewer.resizeColumnToContents(8)  # 8  is the index of "Disc No"
-        self.track_viewer.resizeColumnToContents(9)  # 9  is the index of "Track No"
-        self.track_viewer.resizeColumnToContents(10)  # 10 is the index of "Year"
-        self.track_viewer.resizeColumnToContents(11)  # 12 is the index of "Country"
-        self.track_viewer.resizeColumnToContents(12)  # 13 is the index of "File Path"
+        for col in ["Album Title", "Track Artist", "Track Title", "Format", "Disc No", "Track No", "Year", "Country", "File Path"]:
+            self.track_viewer.resizeColumnToContents(self.COL_IDX[col])
+
+        # No need for rich text rendering; hyperlink is styled with font/brush
 
     def __center_align_delegate(self, index: int) -> None:
         """
@@ -438,12 +447,27 @@ class DatabaseMediaWindow(QWidget):
 
         model = self.track_viewer.model()
         row = index.row()
+        col = index.column()
 
-        file_path_index = model.index(row, 12)
+        # If double-clicked on Discogs ID column, open the URL
+        if col == self.COL_IDX["Discogs ID"]:
+            item = model.item(row, col)
+            url = item.data(Qt.UserRole)
+            if url and isinstance(url, str) and url.strip():
+                import webbrowser
+
+                # Remove any embedded null characters
+                url = url.replace("\x00", "").replace("\0", "").strip()
+                try:
+                    webbrowser.open(url)
+                except Exception as e:
+                    logger.error(f"Failed to open Discogs URL: {url} ({e})")
+            return
+
+        file_path_index = model.index(row, self.COL_IDX["File Path"])
         file_path = file_path_index.data()
 
-        # Get file_id from the model (assumes track_id is in column 0)
-        file_id_index = model.index(row, 13)
+        file_id_index = model.index(row, self.COL_IDX["No"])
         file_id = file_id_index.data()
         try:
             file_id = int(file_id)
