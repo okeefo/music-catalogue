@@ -17,6 +17,7 @@ logger = get_logger(__name__)
 
 
 class DatabaseMediaWindow(QWidget):
+
     # Table column headers and attribute mapping
     TRACK_TABLE_HEADERS = [
         "Track ID",
@@ -33,8 +34,8 @@ class DatabaseMediaWindow(QWidget):
         "Year",
         "Country",
         "File Path",
-        
     ]
+
     TRACK_ATTRS = [
         "track_id",
         "file_id",
@@ -50,7 +51,7 @@ class DatabaseMediaWindow(QWidget):
         "year",
         "country",
         "file_location",
-            ]
+    ]
     COL_IDX = {name: i for i, name in enumerate(TRACK_TABLE_HEADERS)}
 
     def __init__(self, parent=None):
@@ -82,6 +83,90 @@ class DatabaseMediaWindow(QWidget):
         # Enable custom context menu
         self.tree_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree_view.customContextMenuRequested.connect(self.on_labels_tree_context_menu)
+
+    def __setupTrackViewer(self):
+        """Sets up the track viewer with a table view."""
+        self.track_viewer = self.findChild(QTableView, "track_viewer")
+        self.track_viewer.doubleClicked.connect(self.on_track_viewer_double_clicked)
+        DatabaseWidget._setup_data_view(self.track_viewer, DatabaseWidget.on_row_clicked)
+        self.__populate_view_db_tracks(None)
+        self.track_viewer.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.track_viewer.customContextMenuRequested.connect(self.on_track_viewer_context_menu)
+
+    def on_track_viewer_context_menu(self, pos):
+        logger.debug(f"Context menu requested at pos: {pos}")
+        index = self.track_viewer.indexAt(pos)
+        logger.debug(f"Index at pos: {index} (isValid: {index.isValid()})")
+        row = index.row() if index.isValid() else None
+        # If not on a valid index, try to use the current selection
+        if row is None or row < 0:
+            selection = self.track_viewer.selectionModel().selectedRows()
+            logger.debug(f"No valid index at pos. Selection: {selection}")
+            if selection:
+                row = selection[0].row()
+                logger.debug(f"Using selected row: {row}")
+            else:
+                logger.debug("No valid row to act on for context menu.")
+                return  # No valid row to act on
+        model = self.track_viewer.model()
+        file_path_index = model.index(row, self.COL_IDX["File Path"])
+        file_path = file_path_index.data()
+        file_id_index = model.index(row, self.COL_IDX["No"])
+        file_id = file_id_index.data()
+        logger.debug(f"Context menu for row: {row}, file_id: {file_id}, file_path: {file_path}")
+        try:
+            file_id = int(file_id)
+        except Exception:
+            file_id = None
+        menu = QMenu(self.track_viewer)
+        analyse_action = menu.addAction("Analyse")
+        play_action = menu.addAction("Play")
+        action = menu.exec_(self.track_viewer.viewport().mapToGlobal(pos))
+        logger.debug(f"Context menu action selected: {action.text() if action else None}")
+        if action == analyse_action:
+            logger.info(f"Analyse action triggered from context menu for file_id={file_id}, file_path={file_path}")
+            self.analyse_single_track(file_id, file_path)
+        elif action == play_action:
+            logger.info(f"Play action triggered from context menu for file_id={file_id}, file_path={file_path}")
+            self.play_single_track(file_path, file_id)
+
+    def analyse_single_track(self, file_id, file_path):
+        """Analyse a single track and store waveform data in DB."""
+        from file_operations.audio_waveform_analyzer import analyze_audio_file
+        from db.db_writer import MusicCatalogDBWriter
+        import json
+        import time
+
+        if not file_path or not os.path.isfile(file_path):
+            logger.warning(f"File does not exist: {file_path}")
+            QMessageBox.warning(self, "File Not Found", f"File does not exist: {file_path}")
+            return
+        db_writer = MusicCatalogDBWriter(self.music_db2.db_path)
+        db_writer.ensure_track_meta_data_table()
+        start_time = time.time()
+        result = analyze_audio_file(file_path, num_samples=10000)
+        if result is None:
+            logger.warning(f"Unsupported or failed to analyze: {file_path}")
+            QMessageBox.warning(self, "Analysis Failed", f"Unsupported or failed to analyze: {file_path}")
+            db_writer.close()
+            return
+        waveform_json = json.dumps(result.waveform)
+        db_writer.write_waveform_data(file_id, waveform_json.encode("utf-8"))
+        db_writer.close()
+        elapsed = time.time() - start_time
+        logger.info(f"Waveform analysis complete. Processed 1 track in {elapsed:.2f} seconds.")
+        QMessageBox.information(self, "Analysis Complete", f"Waveform analysis complete. Processed 1 track in {elapsed:.2f} seconds.")
+
+    def play_single_track(self, file_path, file_id):
+        """Load and play a single track from the table view."""
+        if not file_path or not os.path.isfile(file_path):
+            logger.warning(f"File does not exist: {file_path}")
+            QMessageBox.warning(self, "File Not Found", f"File does not exist: {file_path}")
+            return
+        if self.player:
+            logger.info(f"Loading and playing file in media player: {file_path}")
+            self.player.load_media(file_path, file_id=file_id)
+            self.player.on_play_button_clicked()
 
     def on_labels_tree_context_menu(self, pos):
         menu = QMenu(self.tree_view)
@@ -321,12 +406,6 @@ class DatabaseMediaWindow(QWidget):
         self.tree_view.pressed.connect(lambda index: self.on_row_pressed(self.tree_view, index))
         self.tree_view.selectionModel().selectionChanged.connect(self.on_label_selected)
 
-    def __setupTrackViewer(self):
-        """Sets up the track viewer with a table view."""
-        self.track_viewer = self.findChild(QTableView, "track_viewer")
-        self.track_viewer.doubleClicked.connect(self.on_track_viewer_double_clicked)
-        DatabaseWidget._setup_data_view(self.track_viewer, DatabaseWidget.on_row_clicked)
-        self.__populate_view_db_tracks(None)
 
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
@@ -374,7 +453,7 @@ class DatabaseMediaWindow(QWidget):
         self.track_viewer.setModel(model)
         # Hide the first and last columns (Track ID and No)
         self.track_viewer.setColumnHidden(self.COL_IDX["Track ID"], True)
-        #self.track_viewer.setColumnHidden(self.COL_IDX["No"], True)
+        # self.track_viewer.setColumnHidden(self.COL_IDX["No"], True)
 
         # Use constants for column indexes
         for col in ["Catalog No", "Discogs ID", "Format", "Disc No", "Track No"]:
@@ -443,8 +522,8 @@ class DatabaseMediaWindow(QWidget):
             self.__populate_view_db_tracks(filtered_tracks)
 
     def on_track_viewer_double_clicked(self, index: QModelIndex) -> None:
-        """Handles the tree view double click event. Returns: None"""
-
+        """Handles the table view double click event. Returns: None"""
+        logger.debug(f"Double clicked on index: row={index.row()}, col={index.column()}, button state unknown (Qt does not provide)")
         model = self.track_viewer.model()
         row = index.row()
         col = index.column()
@@ -453,6 +532,7 @@ class DatabaseMediaWindow(QWidget):
         if col == self.COL_IDX["Discogs ID"]:
             item = model.item(row, col)
             url = item.data(Qt.UserRole)
+            logger.debug(f"Double click on Discogs ID: url={url}")
             if url and isinstance(url, str) and url.strip():
                 import webbrowser
 
@@ -469,6 +549,7 @@ class DatabaseMediaWindow(QWidget):
 
         file_id_index = model.index(row, self.COL_IDX["No"])
         file_id = file_id_index.data()
+        logger.debug(f"Double click: row={row}, file_id={file_id}, file_path={file_path}")
         try:
             file_id = int(file_id)
         except Exception:
