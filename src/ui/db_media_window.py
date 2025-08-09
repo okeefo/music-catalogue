@@ -406,7 +406,6 @@ class DatabaseMediaWindow(QWidget):
         self.tree_view.pressed.connect(lambda index: self.on_row_pressed(self.tree_view, index))
         self.tree_view.selectionModel().selectionChanged.connect(self.on_label_selected)
 
-
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
         self.slider_db = self.findChild(QSlider, "slider_db")
@@ -555,13 +554,24 @@ class DatabaseMediaWindow(QWidget):
         except Exception:
             file_id = None
 
+        # Get track title for info bar
+        track_title_index = model.index(row, self.COL_IDX["Track Title"])
+        track_title = track_title_index.data() if track_title_index.isValid() else ""
+
         if not file_path or not os.path.isfile(file_path):
             logger.warning(f"File does not exist: {file_path}")
             return
 
         if self.player:
             logger.info(f"Loading file in media player: {file_path}")
+            # Set info bar to 'Loading <track title>'
+            if hasattr(self, "lbl_info_db") and self.lbl_info_db:
+                self.lbl_info_db.setText(f"Loading {track_title}")
+                self.lbl_info_db.repaint()  # Force immediate update
             self.player.load_media(file_path, file_id=file_id)
+            # Set info bar to '<track title>' after loading
+            if hasattr(self, "lbl_info_db") and self.lbl_info_db:
+                self.lbl_info_db.setText(track_title)
 
     def closeEvent(self, event):
         """
