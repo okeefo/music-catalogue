@@ -16,7 +16,7 @@ class AudioAnalysisResult:
 SUPPORTED_EXTENSIONS = (".wav", ".mp3")
 
 # Number of decimal places for waveform values
-WAVEFORM_DECIMAL_PLACES = 4  # Change this value to adjust precision
+WAVEFORM_DECIMAL_PLACES = 3  # Change this value to adjust precision
 
 
 def analyze_audio_file(path: str, num_samples: int = 1000) -> Optional[AudioAnalysisResult]:
@@ -58,3 +58,21 @@ def analyze_audio_file(path: str, num_samples: int = 1000) -> Optional[AudioAnal
     waveform = np.round(waveform, WAVEFORM_DECIMAL_PLACES)
 
     return AudioAnalysisResult(waveform=waveform.tolist(), duration=duration)
+
+
+# --- Fast Downsampling for Display ---
+def get_display_waveform(waveform: np.ndarray, widget_width: int) -> np.ndarray:
+    """
+    Downsample a high-resolution waveform to match the widget width for fast drawing.
+    Uses max-pooling for each pixel column for best visual quality.
+    Args:
+        waveform: np.ndarray of normalized waveform values (0-1), shape (N,)
+        widget_width: number of horizontal pixels to draw
+    Returns:
+        np.ndarray of length widget_width
+    """
+    if len(waveform) <= widget_width:
+        return waveform
+    factor = len(waveform) // widget_width
+    # Use max in each bin for a visually accurate envelope
+    return np.max(waveform[: factor * widget_width].reshape(-1, factor), axis=1)

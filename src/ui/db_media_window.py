@@ -130,32 +130,59 @@ class DatabaseMediaWindow(QWidget):
             logger.info(f"Play action triggered from context menu for file_id={file_id}, file_path={file_path}")
             self.play_single_track(file_path, file_id)
 
-    def analyse_single_track(self, file_id, file_path):
-        """Analyse a single track and store waveform data in DB."""
+    def _analyze_and_store_waveform(self, file_id, file_path, db_writer, show_messages=True):
+        """
+        Analyze a single track and store waveform data in DB. Returns (success, elapsed_time, error_message).
+        If show_messages is True, shows QMessageBox for errors/info.
+        """
         from file_operations.audio_waveform_analyzer import analyze_audio_file
-        from db.db_writer import MusicCatalogDBWriter
         import json
         import time
 
         if not file_path or not os.path.isfile(file_path):
             logger.warning(f"File does not exist: {file_path}")
-            QMessageBox.warning(self, "File Not Found", f"File does not exist: {file_path}")
-            return
-        db_writer = MusicCatalogDBWriter(self.music_db2.db_path)
-        db_writer.ensure_track_meta_data_table()
+            if show_messages:
+                QMessageBox.warning(self, "File Not Found", f"File does not exist: {file_path}")
+            return False, 0, "File does not exist"
         start_time = time.time()
-        result = analyze_audio_file(file_path, num_samples=10000)
+        result = analyze_audio_file(file_path, num_samples=50000)
         if result is None:
             logger.warning(f"Unsupported or failed to analyze: {file_path}")
-            QMessageBox.warning(self, "Analysis Failed", f"Unsupported or failed to analyze: {file_path}")
-            db_writer.close()
-            return
+            if show_messages:
+                QMessageBox.warning(self, "Analysis Failed", f"Unsupported or failed to analyze: {file_path}")
+            return False, 0, "Analysis failed"
         waveform_json = json.dumps(result.waveform)
         db_writer.write_waveform_data(file_id, waveform_json.encode("utf-8"))
-        db_writer.close()
         elapsed = time.time() - start_time
         logger.info(f"Waveform analysis complete. Processed 1 track in {elapsed:.2f} seconds.")
-        QMessageBox.information(self, "Analysis Complete", f"Waveform analysis complete. Processed 1 track in {elapsed:.2f} seconds.")
+        if show_messages:
+            QMessageBox.information(self, "Analysis Complete", f"Waveform analysis complete. Processed 1 track in {elapsed:.2f} seconds.")
+        return True, elapsed, None
+
+    def analyse_single_track(self, file_id, file_path):
+        """Analyse a single track and store waveform data in DB. If the track is loaded in the media player and not playing, update the waveform widget."""
+        from db.db_writer import MusicCatalogDBWriter
+
+        db_writer = MusicCatalogDBWriter(self.music_db2.db_path)
+        db_writer.ensure_track_meta_data_table()
+        success, elapsed, error = self._analyze_and_store_waveform(file_id, file_path, db_writer, show_messages=True)
+        db_writer.close()
+        if not success:
+            return
+
+        # If the analyzed track is loaded in the media player and not playing, update the waveform widget
+        if hasattr(self, "player") and self.player:
+            # Check if the current file loaded in the player matches file_path or file_id
+            current_file = getattr(self.player, "current_file_path", None)
+            current_file_id = getattr(self.player, "current_file_id", None)
+            is_loaded = (current_file == file_path) or (current_file_id == file_id)
+            is_playing = getattr(self.player, "is_playing", lambda: False)()
+            logger.debug(f"analyse_single_track: is_loaded={is_loaded}, is_playing={is_playing}")
+            if is_loaded and not is_playing:
+                # Reload waveform from DB
+                if hasattr(self, "wdgt_wave_db") and self.wdgt_wave_db:
+                    logger.info("Reloading waveform widget after analysis.")
+                    self.wdgt_wave_db.load_waveform_from_db(file_id, self.music_db2.db_path)
 
     def play_single_track(self, file_path, file_id):
         """Load and play a single track from the table view."""
@@ -180,12 +207,10 @@ class DatabaseMediaWindow(QWidget):
         Handler for the 'Analyse' context menu action. Gathers selected tracks, analyzes audio, and stores waveform data in DB.
         Shows a progress dialog with cancel support.
         """
-        from file_operations.audio_waveform_analyzer import analyze_audio_file
         from db.db_writer import MusicCatalogDBWriter
-        import json
-        import time
         from PyQt5.QtWidgets import QProgressDialog, QApplication
         from PyQt5.QtCore import Qt
+        import time
 
         # Determine which tracks to analyze
         selected_indexes = self.tree_view.selectionModel().selectedIndexes()
@@ -237,16 +262,9 @@ class DatabaseMediaWindow(QWidget):
                 cancelled = True
                 logger.info("Waveform analysis cancelled by user.")
                 break
-            if not file_path or not os.path.isfile(file_path):
-                logger.warning(f"File does not exist: {file_path}")
-                continue
-            result = analyze_audio_file(file_path, num_samples=10000)
-            if result is None:
-                logger.warning(f"Unsupported or failed to analyze: {file_path}")
-                continue
-            waveform_json = json.dumps(result.waveform)
-            db_writer.write_waveform_data(file_id, waveform_json.encode("utf-8"))
-            processed += 1
+            success, _, _ = self._analyze_and_store_waveform(file_id, file_path, db_writer, show_messages=False)
+            if success:
+                processed += 1
         db_writer.close()
         elapsed = time.time() - start_time
         progress.setValue(total_tracks)

@@ -1,5 +1,3 @@
-
-
 import sqlite3
 from dataclasses import dataclass
 
@@ -51,6 +49,24 @@ class RecordLabel:
 
 
 class MusicCatalogDB_2:
+    def get_waveform_data(self, file_id: int) -> Optional[bytes]:
+        """
+        Fetch waveform_data BLOB for a given file_id from track_meta_data table.
+        Returns the waveform_data as bytes, or None if not found.
+        """
+        try:
+            conn = self.connection or self.__connect()
+            cursor = conn.cursor()
+            cursor.execute("SELECT waveform_data FROM track_meta_data WHERE id=?", (file_id,))
+            row = cursor.fetchone()
+            cursor.close()
+            if row and row[0]:
+                return row[0]
+            return None
+        except Exception as e:
+            logger.error(f"Failed to fetch waveform data for file_id={file_id}: {e}")
+            return None
+
     def __init__(self, db_path: str) -> None:
         """
         Initializes the MusicCatalogDB instance.
@@ -65,7 +81,7 @@ class MusicCatalogDB_2:
         self._label_to_releases: Dict[str, set] = {}
         self._release_to_tracks: Dict[int, set] = {}
         self._track_list: list[Track] = []  # List to hold all tracks
-        #self._files_cache: Dict[int, list[str]] = {}  # Placeholder for file cache
+        # self._files_cache: Dict[int, list[str]] = {}  # Placeholder for file cache
         self.connection: Optional[sqlite3.Connection] = self.__connect()
 
     def __connect(self):
@@ -115,7 +131,7 @@ class MusicCatalogDB_2:
         # Load tracks into cache, keyed by track_id
         cache = self._tracks_cache
         for row in rows:
-            track_id=row["track_id"],
+            track_id = (row["track_id"],)
             track = Track(
                 track_id=row["track_id"],
                 catalog_number=row["catalog_number"],
@@ -134,12 +150,11 @@ class MusicCatalogDB_2:
                 file_location=row["file_location"],
                 style=row["style"],
                 genre=row["genre"],
-                file_id=row["track_file_id"]
+                file_id=row["track_file_id"],
             )
             self._tracks_cache[track_id] = track
             self._track_list.append(track)
-           
-            
+
             discogs_id = row["discogs_id"]
             if discogs_id not in self._releases_cache:
                 release = Release(
@@ -149,10 +164,10 @@ class MusicCatalogDB_2:
                     title=track.album_title,
                     album_artist_name=track.album_artist,
                     catalog_number=track.catalog_number,
-                    label_name=track.label
+                    label_name=track.label,
                 )
                 self._releases_cache[discogs_id] = release
- 
+
             # Label
             label_name = track.label
             if label_name and label_name not in self._labels_cache:
@@ -163,14 +178,13 @@ class MusicCatalogDB_2:
             # Release -> Tracks
             self._release_to_tracks.setdefault(discogs_id, set()).add(track_id)
 
-                
         cursor.close()
         return True
-    
-     # Retrieval methods:
+
+    # Retrieval methods:
     def get_all_tracks(self) -> list[Track]:
         return self._track_list
-  
+
     def get_tracks_for_label(self, label_name: str) -> list[Track]:
         track_ids = set()
         for release_id in self._label_to_releases.get(label_name, set()):
@@ -182,7 +196,7 @@ class MusicCatalogDB_2:
 
     def get_all_labels(self) -> list[RecordLabel]:
         return list(self._labels_cache.values())
-    
+
     def get_labels_and_releases(self) -> Dict[str, set]:
         """
         Returns a dictionary mapping label names to their releases.
@@ -210,7 +224,7 @@ class MusicCatalogDB_2:
         if self._tracks_cache is None:
             return 0
         return len(self._releases_cache)
-    
+
     def get_release_by_id(self, release_id: int) -> Optional[Release]:
         """
         Retrieves a release by its Discogs ID.

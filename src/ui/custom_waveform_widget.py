@@ -51,6 +51,40 @@ class WaveformWidget(QWidget):
         # Fallback: load from file as before
         self.load_waveform_from_file(file_path)
 
+    def load_waveform_from_db_or_file(self, file_id, file_path, db_path, num_samples=2500):
+        """
+        Try to load waveform data from the DB. If not found, load from file and optionally cache to DB.
+        """
+        import json
+        from db.db_reader import MusicCatalogDB_2
+
+        logger.info(f"Trying to load waveform from DB for file_id={file_id}")
+        db_reader = MusicCatalogDB_2(db_path)
+        raw_waveform = db_reader.get_waveform_data(file_id)
+        if raw_waveform:
+            try:
+                waveform = json.loads(raw_waveform.decode("utf-8") if isinstance(raw_waveform, bytes) else raw_waveform)
+                logger.info(f"Loaded waveform from DB for file_id={file_id}")
+                self.set_waveform(waveform)
+                # Duration fallback: analyze file for duration only if needed
+                from file_operations.audio_waveform_analyzer import analyze_audio_file
+
+                result = analyze_audio_file(file_path, num_samples=10)  # Fast, low-res for duration
+                duration = result.duration if result else 0.0
+                self.set_duration(duration)
+                self.set_progress(0.0)
+                self.track_path = file_path
+                self.waveform_loaded = True
+                if self.callback_on_loaded:
+                    self.callback_on_loaded(duration)
+                db_reader.close()
+                return
+            except Exception as e:
+                logger.warning(f"Failed to load waveform from DB: {e}")
+        db_reader.close()
+        # Fallback: load from file as before
+        self.load_waveform_from_file(file_path)
+
     """
     Widget to display an audio waveform and playback progress.
     Emits seekRequested(float) when user clicks to seek.
@@ -108,16 +142,21 @@ class WaveformWidget(QWidget):
         painter = QPainter(self)
         w, h = self.width(), self.height()
         mid = h // 2
-        n = len(self.waveform)
         played_color = QColor("blue")
         unplayed_color = QColor("orange")
         pen = QPen()
         pen.setWidth(1)
 
-        for i, value in enumerate(self.waveform):
-            x = int(i * w / n)
+        # Use fast downsampling for display
+        import numpy as np
+
+        display_waveform = analyzer.get_display_waveform(np.array(self.waveform), w)
+        n = len(display_waveform)
+
+        for i, value in enumerate(display_waveform):
+            x = i
             y = int(value * (h // 2))
-            pen.setColor(played_color if i / len(self.waveform) < self.progress else unplayed_color)
+            pen.setColor(played_color if (i / n) < self.progress else unplayed_color)
             painter.setPen(pen)
             painter.drawLine(x, mid - y, x, mid + y)
 
