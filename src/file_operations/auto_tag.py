@@ -350,7 +350,10 @@ def __derive_new_file_name(mask: str, tags: dict) -> str:
                 
             new_name = new_name.replace(f"%{tag}%", value )
         else:
-            new_name = new_name.replace(f"%{tag}%", "unknown_eek" )
+            if new_tag == AudioTagHelper.LABEL:
+                new_name = new_name.replace(f"%{tag}%", tags[AudioTagHelper.ORGANIZATION][0] )
+            else:
+                new_name = new_name.replace(f"%{tag}%", "unknown_eek" )
     return new_name
 
 

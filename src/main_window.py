@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
 
     def __setup_ui(self):
         """Set up the user interface. Returns: None"""
-        self.stack_page_view.setCurrentIndex(2)
+        self.stack_page_view.setCurrentIndex(0)  # default to file view with media player
         self.__setup_icons()
         self.__setup_decks()
         self.__setup_context_menus()
@@ -659,6 +659,17 @@ class MainWindow(QMainWindow):
                 return audio_tags[AudioTagHelper.CATALOG_NUMBER][0]
             if AudioTagHelper.CATALOGID in audio_tags:
                 return audio_tags[AudioTagHelper.CATALOGID][0]
+        if tag == AudioTagHelper.MEDIA:
+            if AudioTagHelper.MEDIA in audio_tags:
+                return audio_tags[AudioTagHelper.MEDIA][0]
+            if AudioTagHelper.MEDIATYPE in audio_tags:
+                return audio_tags[AudioTagHelper.MEDIATYPE][0]
+        if tag == AudioTagHelper.LABEL:
+            if AudioTagHelper.LABEL in audio_tags:
+                return audio_tags[AudioTagHelper.LABEL][0]
+            if AudioTagHelper.ORGANIZATION in audio_tags:
+                return audio_tags[AudioTagHelper.ORGANIZATION][0]
+            
         return ""
 
     def get_labels(self, tree_view: QTreeView, label_type: str) -> Union[list, dict]:

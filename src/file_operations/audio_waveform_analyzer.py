@@ -5,7 +5,10 @@ from typing import List, Optional
 
 from pydub import AudioSegment
 import numpy as np
+# create logger
+from log_config import get_logger
 
+logger = get_logger(__name__)
 
 @dataclass
 class AudioAnalysisResult:
@@ -13,11 +16,48 @@ class AudioAnalysisResult:
     duration: float  # Duration in seconds
 
 
-SUPPORTED_EXTENSIONS = (".wav", ".mp3")
+SUPPORTED_EXTENSIONS = (".wav", ".mp3", ".flac")
 
 # Number of decimal places for waveform values
 WAVEFORM_DECIMAL_PLACES = 3  # Change this value to adjust precision
 
+def analyze_audio_file_go_style(path: str, num_samples: int = 1000) -> np.ndarray:
+    """
+    Analyze an audio file and return waveform data using max-pooling and normalization,
+    similar to the Go backend logic.
+    Returns a numpy array of floats in the range 0.0–1.0.
+    """
+    audio = AudioSegment.from_file(path)
+    samples = np.array(audio.get_array_of_samples())
+    # Convert to mono (average channels, or use only left channel for exact Go match)
+    if audio.channels > 1:
+        samples = samples.reshape((-1, audio.channels))
+        samples = samples.mean(axis=1)  # Or: samples = samples[:, 0] for left only
+
+    length = len(samples)
+    factor = max(1, length // num_samples)
+    waveform = []
+    for i in range(num_samples):
+        start = i * factor
+        end = min(start + factor, length)
+        if start < end:
+            max_amp = np.max(np.abs(samples[start:end]))
+        else:
+            max_amp = 0.0
+        waveform.append(max_amp)
+    waveform = np.array(waveform)
+    
+    # Normalize to 0.0–1.0
+    if waveform.max() > 0:
+        waveform = waveform / waveform.max()
+    else:
+        waveform = np.zeros(num_samples)
+    
+    # Round waveform values to the specified decimal places
+    waveform = np.round(waveform, WAVEFORM_DECIMAL_PLACES)
+    
+    duration = len(audio) / 1000.0  # milliseconds to seconds
+    return AudioAnalysisResult(waveform=waveform.tolist(), duration=duration)
 
 def analyze_audio_file(path: str, num_samples: int = 1000) -> Optional[AudioAnalysisResult]:
     """
@@ -30,6 +70,7 @@ def analyze_audio_file(path: str, num_samples: int = 1000) -> Optional[AudioAnal
     """
     ext = os.path.splitext(path)[1].lower()
     if ext not in SUPPORTED_EXTENSIONS:
+        logger.warning(f"Unsupported audio format: {ext}")
         return None
 
     audio = AudioSegment.from_file(path)

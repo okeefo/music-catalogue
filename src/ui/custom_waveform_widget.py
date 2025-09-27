@@ -20,7 +20,7 @@ class WaveformWidget(QWidget):
 
         logger.info(f"Trying to load waveform from DB for file_id={file_id}")
         db_writer = MusicCatalogDBWriter(db_path)
-        db_writer.ensure_track_meta_data_table()
+        db_writer.ensure_track_meta_data_table()  # TODO: should only be called once, not every time
         cursor = db_writer.connection.cursor()
         cursor.execute("SELECT waveform_data FROM track_meta_data WHERE id=?", (file_id,))
         row = cursor.fetchone()
@@ -31,9 +31,9 @@ class WaveformWidget(QWidget):
                 # You may want to also fetch duration if you store it
                 self.set_waveform(waveform)
                 # Duration fallback: analyze file for duration only if needed
-                from file_operations.audio_waveform_analyzer import analyze_audio_file
+                from file_operations.audio_waveform_analyzer import analyze_audio_file_go_style, analyze_audio_file
 
-                result = analyze_audio_file(file_path, num_samples=10)  # Fast, low-res for duration
+                result = analyze_audio_file_go_style(file_path, num_samples=10)  # Fast, low-res for duration
                 duration = result.duration if result else 0.0
                 self.set_duration(duration)
                 self.set_progress(0.0)
@@ -234,5 +234,8 @@ class WaveformWorker(QThread):
         self.num_samples = num_samples
 
     def run(self):
-        track_data = analyzer.analyze_audio_file(self.path, num_samples=self.num_samples)
-        self.waveformLoaded.emit(track_data.waveform, track_data.duration)
+        track_data = analyzer.analyze_audio_file_go_style(self.path, num_samples=self.num_samples)
+        if track_data:
+            self.waveformLoaded.emit(track_data.waveform, track_data.duration)
+        else:
+            logger.warning(f"Failed to analyze audio file: {self.path}")
