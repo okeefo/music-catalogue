@@ -263,7 +263,7 @@ class MusicCatalogDB_2:
 
 # Dummy execution for testing purposes
 if __name__ == "__main__":
-    db = MusicCatalogDB("music_catalog.db")
-    tracks = db.load_tracks()
-    print("Loaded tracks:", tracks)
+    db = MusicCatalogDB_2("music_catalog.db")
+    ok = db.load()
+    print("Loaded tracks:", len(db.get_all_tracks()) if ok else 0)
     db.close()

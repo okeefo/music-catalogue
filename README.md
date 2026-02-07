@@ -98,6 +98,12 @@ The application has been tested with python 3.10.4.  It should work with python 
 
 Run the main_window.py script to start
 
+## Discogs API key
+
+This app reads your Discogs token from config.ini under the [discogs] section.
+Keep config.ini local only (it is ignored by git) and never commit your token.
+If your token was committed previously, rotate it immediately in Discogs and update your local config.ini.
+
 ## Contributing
 
 :TODO
