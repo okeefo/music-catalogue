@@ -1,13 +1,16 @@
 import os
+import configparser
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QDir, QModelIndex
-from PyQt5.QtWidgets import QMainWindow, QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox, QTableView
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from qtpy import QtGui
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
 
 from log_config import get_logger
+from db.music_db import MusicCatalogDB
 
 logger = get_logger(__name__)
 
@@ -47,8 +50,9 @@ class DatabaseWindow(QMainWindow):
         self.clear_track_labels()
         self.__setup_icons()
         self.__set_chevron_icon()
+#        self.__setup_tracks_viewer()
 
-    def __setup_line_edit(self, path : str) -> None:
+    def __setup_line_edit(self, path: str) -> None:
         # Set the completer for the MyLineEdit
         self.path_info_bar = self.findChild(MyLineEdit, "path_source")
         completer = QCompleter()
@@ -77,6 +81,12 @@ class DatabaseWindow(QMainWindow):
         self.model.setRootPath(QDir.rootPath())
 
     def __setup_tree_view(self, path: str = QDir.rootPath()):
+        # Fallback to root if provided path is invalid
+        if not os.path.isdir(path):
+            path = QDir.rootPath()
+            if hasattr(self, "path_info_bar") and self.path_info_bar:
+                self.path_info_bar.setText(path)
+
         self.tree = self.findChild(MyTreeView, "treeView")
         self.tree.setModel(self.model)
         self.tree.setRootIndex(self.model.index(path))
@@ -116,13 +126,13 @@ class DatabaseWindow(QMainWindow):
 
     def __populate_label_maps(self):
         logger.info("Populating label maps")
-        gbox = self.findChild(QGroupBox, 'gbox_track_labels')
+        gbox = self.findChild(QGroupBox, "gbox_track_labels")
         if not gbox:
             return None
 
         for child in gbox.children():
             if isinstance(child, QLabel):
-                if child.objectName().endswith('_a'):
+                if child.objectName().endswith("_a"):
                     self.label_a_map[child.objectName()] = child.minimumWidth()
                 else:
                     self.label_map[child.objectName()] = child.minimumWidth()

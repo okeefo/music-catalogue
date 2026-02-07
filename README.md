@@ -107,4 +107,5 @@ Run the main_window.py script to start
 This project is licensed under the terms of the MIT License. See the [LICENSE-MIT](LICENSE-MIT)  file for details.
 
 ## Screen shots
-![File Browser](image.png)
+![File Browser](fileExplorer_ss.png)
+![Db Viewer](dbviewer_ss.png)

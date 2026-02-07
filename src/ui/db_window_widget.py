@@ -1,8 +1,22 @@
+import configparser
 import os
+
 from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox, QWidget, QTableView, QStyledItemDelegate
-import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtWidgets import (
+    QFileSystemModel,
+    QPushButton,
+    QFrame,
+    QGroupBox,
+    QLabel,
+    QHeaderView,
+    QCompleter,
+    QMessageBox,
+    QWidget,
+    QTableView,
+    QStyledItemDelegate,
+    QAbstractItemView,
+)
 from db.music_db import MusicCatalogDB
 from log_config import get_logger
 from ui.custom_line_edit import MyLineEdit
@@ -25,13 +39,20 @@ class DatabaseWidget(QWidget):
         self.folder_icon = QIcon(":/icons/icons/folder.svg")
         self.media_icon = QIcon(":/media/icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png")
 
-        self.music_db = MusicCatalogDB("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
-        self.music_db.load()
+        db_path = self.__resolve_db_path()
+        self.music_db = MusicCatalogDB(db_path)
+        if not self.music_db.load():
+            logger.warning(f"DB Window: Failed to load database at: {db_path}. Views may be empty.")
+        try:
+            track_count = self.music_db.count_tracks()
+            release_count = self.music_db.count_releases()
+        except Exception:
+            track_count = 0
+            release_count = 0
+        logger.info(f"DB Window: Tracks loaded: {track_count}, Releases loaded: {release_count} (db: {db_path})")
 
     def setup_ui(self, path: str):
         """Set up the UI components for the database widget."""
-        # get self
-
         flags = self.windowFlags() & ~Qt.WindowContextHelpButtonHint
         self.setWindowFlags(Qt.WindowFlags(flags))
         self.__setup_model()
@@ -46,6 +67,8 @@ class DatabaseWidget(QWidget):
         self.__populate_view_db_labels()
         self.__populate_view_db_releases()
         self.__populate_view_db_tracks()
+        if self.music_db and self.music_db.count_tracks() == 0:
+            QMessageBox.information(self, "No Tracks", "DB Window: No tracks found in the database.\nPlease check your config.ini [db] path.")
 
     def __setup_line_edit(self, path: str) -> None:
         # Set the completer for the MyLineEdit
@@ -82,6 +105,30 @@ class DatabaseWidget(QWidget):
         treeview.set_double_click_handler(lambda index, tree, info_bar: self.on_tree_double_clicked(index, self.tree, self.path_info_bar))
         self.tree.show()
 
+    def __resolve_db_path(self) -> str:
+        """Resolve the database path using config.ini [db] section, with sensible fallbacks."""
+        candidates: list[str] = []
+        try:
+            cfg = configparser.ConfigParser()
+            cfg.read("config.ini")
+            if cfg.has_section("db"):
+                loc = cfg["db"].get("location")
+                name = cfg["db"].get("name")
+                if loc and name:
+                    candidates.append(os.path.join(loc, name))
+                    candidates.append(os.path.join(loc, f"{name}.db"))
+        except Exception:
+            pass
+
+        candidates.append("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
+        for p in candidates:
+            try:
+                if p and os.path.isfile(p):
+                    return p
+            except Exception:
+                continue
+        return candidates[-1]
+
     def __setup_buttons(self):
         self.but_db_goUp = self.findChild(QPushButton, "but_db_goUp")
         self.but_db_goUp.clicked.connect(lambda: self.go_up_one_level(self.path_info_bar))
@@ -108,8 +155,8 @@ class DatabaseWidget(QWidget):
         table_view.setFont(QFont("Source Code Pro", 8))  # change the size as desired
         table_view.setAlternatingRowColors(True)
         table_view.verticalHeader().setVisible(False)
-        table_view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.NoSelection)
-        table_view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        table_view.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        table_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table_view.clicked.connect(lambda index: clicked_connect(table_view, index))
 
         table_view.setStyleSheet(
@@ -204,11 +251,11 @@ class DatabaseWidget(QWidget):
         self.view_db_releases.setModel(model)
         self.view_db_releases.setColumnHidden(0, True)  # Hide the release_id column
         self.view_db_releases.setColumnHidden(1, True)  # Hide the label_id column
-        self.view_db_releases.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.view_db_releases.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view_db_releases.selectionModel().selectionChanged.connect(self.on_release_selected)
         header = self.view_db_releases.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
+        header.setSectionResizeMode(QHeaderView.Interactive)
         header.setSectionResizeMode(4, QHeaderView.Stretch)
 
         # Assuming discogs_id column index is <discogs_column_index>

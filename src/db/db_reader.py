@@ -119,44 +119,63 @@ class MusicCatalogDB_2:
 
     def __load_tracks(self, conn: sqlite3.Connection) -> bool:
         """
-        Loads tracks from the uber tracks view into the cache.
-        Returns a dictionary where each key is the track_id.
+        Loads tracks from the uber_tracks view into the cache.
+        Handles minor schema variations (column name differences) gracefully.
+        Returns True if loaded, False otherwise.
         """
+
+        def get_col(r: sqlite3.Row, names: list[str], default=None):
+            for n in names:
+                try:
+                    return r[n]
+                except (KeyError, IndexError):
+                    continue
+            return default
+
         query = "SELECT * FROM uber_tracks"
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute(query)
         rows = cursor.fetchall()
 
-        # Load tracks into cache, keyed by track_id
+        if not rows:
+            cursor.close()
+            return True
+
+        # Load tracks into cache, keyed by track_id (int)
         cache = self._tracks_cache
         for row in rows:
-            track_id = (row["track_id"],)
+            tid = get_col(row, ["track_id", "id"])
+            if tid is None:
+                # Skip rows without a track identifier
+                continue
+
             track = Track(
-                track_id=row["track_id"],
-                catalog_number=row["catalog_number"],
-                label=row["label"],
-                album_title=row["album_title"],
-                disc_number=row["disc_number"],
-                track_artist=row["track_artist"],
-                track_title=row["track_title"],
-                format=row["format"],
-                track_number=row["track_number"],
-                discogs_id=row["discogs_id"],
-                year=row["year"],
-                country=row["country"],
-                discogs_url=row["discogs_url"],
-                album_artist=row["album_artist"],
-                file_location=row["file_location"],
-                style=row["style"],
-                genre=row["genre"],
-                file_id=row["track_file_id"],
+                track_id=tid,
+                catalog_number=get_col(row, ["catalog_number", "catalog_no", "catalog"], ""),
+                label=get_col(row, ["label", "label_name"], ""),
+                album_title=get_col(row, ["album_title", "title"], ""),
+                disc_number=get_col(row, ["disc_number", "disc_no"], 0),
+                track_artist=get_col(row, ["track_artist", "artist", "album_artist"], ""),
+                track_title=get_col(row, ["track_title", "name"], ""),
+                format=get_col(row, ["format", "media"], ""),
+                track_number=get_col(row, ["track_number", "track_no"], 0),
+                discogs_id=get_col(row, ["discogs_id"], 0),
+                year=get_col(row, ["year", "date"], 0),
+                country=get_col(row, ["country"], ""),
+                discogs_url=get_col(row, ["discogs_url", "url"], ""),
+                album_artist=get_col(row, ["album_artist", "album_artist_name", "artist"], ""),
+                file_location=get_col(row, ["file_location", "path", "file_path"], ""),
+                style=get_col(row, ["style"], ""),
+                genre=get_col(row, ["genre"], ""),
+                file_id=get_col(row, ["track_file_id", "file_id", "file_file_id"], None),
             )
-            self._tracks_cache[track_id] = track
+
+            cache[tid] = track
             self._track_list.append(track)
 
-            discogs_id = row["discogs_id"]
-            if discogs_id not in self._releases_cache:
+            discogs_id = get_col(row, ["discogs_id"], None)
+            if discogs_id is not None and discogs_id not in self._releases_cache:
                 release = Release(
                     discogs_id=discogs_id,
                     date=track.year,
@@ -168,15 +187,13 @@ class MusicCatalogDB_2:
                 )
                 self._releases_cache[discogs_id] = release
 
-            # Label
-            label_name = track.label
+            label_name = track.label or ""
             if label_name and label_name not in self._labels_cache:
                 self._labels_cache[label_name] = RecordLabel(name=label_name)
 
-            # Label -> Releases
-            self._label_to_releases.setdefault(label_name, set()).add(discogs_id)
-            # Release -> Tracks
-            self._release_to_tracks.setdefault(discogs_id, set()).add(track_id)
+            if discogs_id is not None:
+                self._label_to_releases.setdefault(label_name, set()).add(discogs_id)
+                self._release_to_tracks.setdefault(discogs_id, set()).add(tid)
 
         cursor.close()
         return True

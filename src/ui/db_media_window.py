@@ -2,6 +2,8 @@ import os
 from typing import Dict
 
 from PyQt5 import uic
+import configparser
+import os
 from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QTreeView, QTableView, QLabel, QLineEdit, QCompleter, QMessageBox
@@ -66,8 +68,17 @@ class DatabaseMediaWindow(QWidget):
 
         self._tree_expanded = False  # Track expand/collapse state
 
-        self.music_db2 = MusicCatalogDB_2("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
-        self.music_db2.load()
+        # Resolve DB path from config.ini if available, else fall back
+        db_path = self.__resolve_db_path()
+        self.music_db2 = MusicCatalogDB_2(db_path)
+        if not self.music_db2.load():
+            logger.warning(f"DB Media Window: Failed to load database at: {db_path}. Viewer may be empty.")
+        # Log loaded track count clearly for this window
+        try:
+            self._tracks_loaded_count = len(self.music_db2.get_all_tracks())
+        except Exception:
+            self._tracks_loaded_count = 0
+        logger.info(f"DB Media Window: Tracks loaded: {self._tracks_loaded_count} (db: {db_path})")
 
     def setup_ui(self):
         self.__setupLabelViewer()
@@ -75,6 +86,36 @@ class DatabaseMediaWindow(QWidget):
         self.__setup_media_player()
         self.__setup_search_bars()
         self.__setup_buttons()
+        # Inform user if no tracks were found
+        if getattr(self, "_tracks_loaded_count", 0) == 0:
+            QMessageBox.information(self, "No Tracks", "DB Media Window: No tracks found in the database.\nPlease check your config.ini [db] path.")
+
+    def __resolve_db_path(self) -> str:
+        """Resolve the database path using config.ini [db] section, with sensible fallbacks."""
+        candidates = []
+        try:
+            cfg = configparser.ConfigParser()
+            cfg.read("config.ini")
+            if cfg.has_section("db"):
+                loc = cfg["db"].get("location")
+                name = cfg["db"].get("name")
+                if loc and name:
+                    candidates.append(os.path.join(loc, name))
+                    candidates.append(os.path.join(loc, f"{name}.db"))
+        except Exception as e:
+            logger.debug(f"Could not read config.ini for DB path: {e}")
+
+        # Original hard-coded path as final fallback
+        candidates.append("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
+
+        for p in candidates:
+            try:
+                if p and os.path.isfile(p):
+                    return p
+            except Exception:
+                pass
+        # If none exist, return the last candidate (may not exist; load() will warn)
+        return candidates[-1]
 
     def __setupLabelViewer(self):
         self.tree_view = self.findChild(QTreeView, "view_db_labels_releases")
@@ -144,16 +185,16 @@ class DatabaseMediaWindow(QWidget):
             if show_messages:
                 QMessageBox.warning(self, "File Not Found", f"File does not exist: {file_path}")
             return False, 0, "File does not exist"
-        
+
         start_time = time.time()
-        
+
         result = analyze_audio_file_go_style(file_path, num_samples=50000)
         if result is None:
             logger.warning(f"Unsupported or failed to analyze: {file_path}")
             if show_messages:
                 QMessageBox.warning(self, "Analysis Failed", f"Unsupported or failed to analyze: {file_path}")
             return False, 0, "Analysis failed"
-        
+
         waveform_json = json.dumps(result.waveform)
         db_writer.write_waveform_data(file_id, waveform_json.encode("utf-8"))
         elapsed = time.time() - start_time
@@ -443,13 +484,17 @@ class DatabaseMediaWindow(QWidget):
         )
 
     def __populate_view_db_tracks(self, filtered_tracks=None):
-        logger.info("Populating view_db_tracks with filtered tracks" if filtered_tracks else "Populating view_db_tracks with all tracks")
+        logger.info("DB Media Window: Populating track viewer with filtered tracks" if filtered_tracks else "DB Media Window: Populating track viewer with all tracks")
         model = QStandardItemModel()
         model.setHorizontalHeaderLabels(self.TRACK_TABLE_HEADERS)
 
         tracks = filtered_tracks if filtered_tracks is not None else self.music_db2.get_all_tracks()
+        try:
+            logger.info(f"DB Media Window: Rendering {len(tracks)} tracks in table")
+        except Exception:
+            pass
 
-        for track in tracks:
+        for row_index, track in enumerate(tracks, start=1):
             items = []
             for attr in self.TRACK_ATTRS:
                 if attr == "discogs_id":
@@ -465,7 +510,10 @@ class DatabaseMediaWindow(QWidget):
                     item.setEditable(False)
                     items.append(item)
                 else:
-                    item = QStandardItem(str(getattr(track, attr, "")))
+                    if attr == "file_id":
+                        item = QStandardItem(str(row_index))
+                    else:
+                        item = QStandardItem(str(getattr(track, attr, "")))
                     item.setEditable(False)
                     items.append(item)
             model.appendRow(items)
