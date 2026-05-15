@@ -1,15 +1,10 @@
-# music-catalogue
+# Music Catalogue
 
-STATUS = database integration in progress. 
+> **Status**: Active development — database integration in progress, production hardening underway on `dev/production-ready` branch.
 
-As there is only a single contributor, me, and there is no other contributor, I will not be using a git workflow.  I will be using a single branch and will be committing to the main branch.
+A Windows desktop application for streamlining the digitisation and cataloguing of vinyl records. Built with Python and PyQt5.
 
-Any other branches created are simple to try out new features.
-
-I have yet to create a version and as this is a hobby project i may not do so for some time.
-
-For ideas, bugs and feature requests please use the issues tab.
-
+---
 
 ## History
 
@@ -24,94 +19,163 @@ Music Catalogue started as a personal project to streamline the process of backi
 7. Open tracks in MP3 Tag.
 8. Find the release ID on Discogs.
 9. Tag the tracks with the release ID.
-10. Rename the file name of the tracks - catalog id - Label - artist - title etc.
-11. Copy the tracks to a folder with the Label as the name.
+10. Rename the file name of the tracks — catalog id, label, artist, title etc.
+11. Copy the tracks to a folder with the label as the name.
 
-The initial goal was to create a single UI with two file explorers for easy file management. This idea evolved, leading to the addition of features like track playback, tag display, artwork display, and more.
+The initial goal was a single UI with two file explorers for easy file management. This evolved into a fuller application with track playback, tag display, artwork display, automated batch processing, and a music database.
 
 The current process is much more streamlined:
 
 1. Record an LP into Audacity as a single recording at 45rpm to speed up recording.
 2. Remove needle drops and clicks from flipping the record over.
 3. Find the release ID on Discogs.
-4. Save the file name with the release ID and the original speed.
+4. Save the file with the release ID and original speed in the filename.
 
-The rest of the process:
+Everything else is now automated with a single click:
 
-* Amplifying the recording
-* Slowing down the recording
-* Splitting the recording into tracks
-* Tagging the tracks based on the Discogs ID
-* Adding artwork
-* Renaming filenames of the tracks
-* Repacking the tracks into a folder by label
+- Amplifying the recording
+- Slowing down the recording
+- Splitting the recording into tracks
+- Tagging the tracks based on the Discogs ID
+- Adding artwork
+- Renaming filenames of the tracks
+- Repacking the tracks into a folder by label
 
-is now automated and can be done with a single click from within the application. Each operation can also be performed separately if needed.
+Each operation can also be performed separately if needed.
+
+---
 
 ## Features
 
-Music Catalogue is packed with features that simplify the organisation of a music collection:
+### Working / Stable
+- **Dual File Explorer** — twin-panel file browser for easy file management
+- **Automated Batch Processing** — amplify, slow down, split, tag, rename, and repack in one click
+- **Manual Control** — each operation available individually
+- **Discogs Integration** — auto-tag tracks using a Discogs release ID
+- **Track Playback** — built-in media player with waveform visualisation
+- **Tag & Artwork Display** — view and inspect track metadata
+- **File Management** — move, copy, delete with recycle bin support
+- **3rd Party Tool Integration** — open files directly in Audacity, Mp3Tag, VLC, and MediaInfo (must be installed separately)
 
-* **Automated Processes**: Amplify recordings, slow down recordings, split recordings into tracks, tag tracks, add artwork, rename track filenames, and repack tracks into folders by label - all with a single click.
-* **Manual Control**: Each operation can also be performed separately for maximum control.
-* **Track Playback**: Listen to your tracks directly from the application.
-* **Tag and Artwork Display**: View track tags and artwork.
-* **File Management**: Easily manage your music files with two file explorers.
-* **Trim**: Remove silence from the start of the track - (experimental/beta testing)
-* **Discogs Integration**: Find release IDs on Discogs.
-* **3rd Party**: Opens files in Audacity for editing, Mp3Tag, VLC Player and MediaInfo - you must have these installed.
+### In Progress / Experimental
+- **Database** — scan music collection and build a searchable database (`db/` module, UI exists, integration in progress)
+- **Trim** — remove silence from the start/end of a track (implemented, experimental — see notes below)
+- **Settings Dialog** — UI exists but changes are not yet persisted back to `config.ini`
+- **Configuration Manager** — skeleton exists, not yet wired up
 
-## Installation
-This is a python application and requires a python environment.  It runs only on windows.  It has been tested on windows 11 and 10.  It should run on windows 7 and 8.
+### Known Limitations
+- **Windows only** — uses `winshell`, `pywin32`, and Windows-specific paths
+- **Trim is harsh** — silence detection removes too aggressively; a pre-start buffer is wanted but not yet implemented in SOX
+- **External tools must be installed** — Mp3Tag, VLC, Audacity, MediaInfo, K-Lite Codec Pack
 
-Third party DLLs and executables are included and the path is automatically updated for the session when the application is run.  These DLLs and executables are required for the wav file processing.
+---
 
-for tagging install the following:
+## Requirements
 
+### Python
+Tested on Python 3.10.4. Requires Python 3.10 or later.
+
+### Python Dependencies
+
+```
 pip install mutagen
-pip install winshell
-pip install pywin32
 pip install pytaglib
-pip install send2trash
-pip install discogs_client
 pip install pydub
 pip install PyQt5
-pip install pydantic
 pip install qtpy
 pip install pydantic
 pip install numpy
+pip install discogs_client
+pip install winshell
+pip install pywin32
+pip install send2trash
+```
 
-The application has been tested with python 3.10.4.  It should work with python 3.10 and later. 
+### External Tools (must be installed separately)
+These are integrated via subprocess calls. Paths are expected at their default installation locations.
 
-## Upcoming features:
+| Tool | Purpose | Default Path |
+|------|---------|-------------|
+| [SOX](https://sourceforge.net/projects/sox/) | Audio processing | bundled in `utils/sox/` |
+| [SoundStretch](http://www.surina.net/soundtouch/soundstretch.html) | Time-stretching | bundled in `utils/` |
+| [Audacity](https://www.audacityteam.org/) | Manual audio editing | `C:\Program Files\Audacity\` |
+| [Mp3Tag](https://www.mp3tag.de/) | Metadata editing | `C:\Program Files\Mp3tag\` |
+| [VLC](https://www.videolan.org/vlc/) | Media playback | `C:\Program Files\VideoLAN\VLC\` |
+| [MediaInfo](https://mediaarea.net/en/MediaInfo) | File analysis | `C:\Program Files (x86)\K-Lite Codec Pack\Tools\` |
+| [K-Lite Codec Pack](https://codecguide.com/download_kl.htm) | Media codecs | Required for playback |
 
-* TRIM - remove silence from the start and end of the track - in progress
-  * Currently implemented as a separate process.  It will be integrated into the main process once more testing has completed.
-  * I added this because the beat grid editor in Engine DJ is rubbish and i couldn't move the to the first bar to the start of the track
-  * The Trim process is a bit harsh, I want to give a few a ms before the start of the track but SOX doesn't seem to be able to do this.
-  * I can have written some code to do this but not keen to commit this yet. It does work well though and I'll probably get back to the DB work ;)
-* Database options - scan the music collection and create a database of the music collection  - in progress.
-* Configuration manager to make it easier to update the config file - change the defaults
+---
 
+## Configuration
+
+Copy or create `config.ini` in the project root (it is gitignored — never commit it). Example structure:
+
+```ini
+[paths]
+default_path = C:/your/music/folder
+db_location = C:/your/music/folder/catalogue.db
+
+[discogs]
+token = YOUR_DISCOGS_TOKEN_HERE
+
+[logging]
+log_dir = logs/
+```
+
+### Discogs API Token
+The app reads your Discogs token from `config.ini` under `[discogs]`. 
+
+- Keep `config.ini` local only — it is in `.gitignore` and must never be committed.
+- If your token was previously committed, rotate it immediately in your [Discogs settings](https://www.discogs.com/settings/developers) and update your local `config.ini`.
+
+---
 
 ## Getting Started
 
-Run the main_window.py script to start
+```
+python src/main_window.py
+```
 
-## Discogs API key
+Ensure your working directory is the project root when running the app, as resource paths (UI files, icons) are resolved relative to it.
 
-This app reads your Discogs token from config.ini under the [discogs] section.
-Keep config.ini local only (it is ignored by git) and never commit your token.
-If your token was committed previously, rotate it immediately in Discogs and update your local config.ini.
+---
+
+## Branch Strategy
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Stable code |
+| `dev/production-ready` | Active development — refactoring, tests, CI/CD, Windows executable |
+| `baseline-2026-05-15` | Tagged snapshot before production hardening began |
+
+---
+
+## Upcoming / Roadmap
+
+- Complete database integration — full scan, search, and query UI
+- Proper Python packaging (`pyproject.toml`, entry points)
+- Windows executable build (PyInstaller)
+- CI/CD pipeline
+- Expanded test coverage
+- Settings dialog that persists changes
+- Trim integration into main batch process with configurable pre-start buffer
+- Configurable external tool paths (rather than hardcoded `Program Files`)
+
+---
+
+## Screenshots
+
+![File Browser](fileExplorer_ss.png)
+![DB Viewer](dbviewer_ss.png)
+
+---
 
 ## Contributing
 
-:TODO
+Issues, ideas, and feature requests via the [Issues](https://github.com/okeefo/music-catalogue/issues) tab.
+
+---
 
 ## License
 
-This project is licensed under the terms of the MIT License. See the [LICENSE-MIT](LICENSE-MIT)  file for details.
-
-## Screen shots
-![File Browser](fileExplorer_ss.png)
-![Db Viewer](dbviewer_ss.png)
+MIT License — see [LICENSE-MIT](LICENSE-MIT) for details.
