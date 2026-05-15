@@ -198,7 +198,11 @@ class MainWindow(QMainWindow):
         self.menu_view_dbm2 = self.findChild(QAction, "menu_view_dbm2")
         self.menu_view_dbm2.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(2))
         self.menu_view_dbm2.setToolTip("Database with Media Player View")
-        
+
+        self.mo_settings = self.findChild(QAction, "mo_settings")
+        self.mo_settings.triggered.connect(self.on_settings_button_clicked)
+        self.mo_settings.setToolTip("Open Settings")
+
         # toggle menu
         self.frame_left_menu.setMinimumWidth(0)
         self.but_toggle = self.findChild(QPushButton, "but_toggle")
