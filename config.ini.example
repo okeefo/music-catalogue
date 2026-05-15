@@ -1,0 +1,35 @@
+# Copy this file to config.ini and fill in your values.
+# config.ini is gitignored and must NEVER be committed to the repository.
+
+[Directories]
+# The app updates these automatically as you navigate — just set sensible defaults
+last_target_directory = C:\your\music\folder
+last_source_directory = C:\your\music\folder
+last_left_directory   = C:\your\music\folder
+last_right_directory  = C:\your\music\folder
+
+[Window]
+# Updated automatically by the app on resize
+height = 900
+width  = 1600
+
+[main_logger]
+# Where log files are written — use a path inside the project or your user folder
+log_dir          = logs\
+clear_log_each_run = False
+max_log_size     = 10MB
+backup_count     = 5
+
+[discogs]
+# Get your token from: https://www.discogs.com/settings/developers
+# NEVER commit this file with a real token in it
+token = YOUR_DISCOGS_TOKEN_HERE
+
+[autotag]
+# Filename template for tagged tracks
+filename_mask = %catalognumber% -- %publisher% -- %album% -- %discnumber% -- %artist% -- %title%
+
+[db]
+# Folder containing the SQLite database file
+location = C:\your\music\folder
+name     = music_catalogue.db
