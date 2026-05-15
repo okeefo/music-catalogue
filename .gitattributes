@@ -1,0 +1,23 @@
+# Normalize line endings to LF in the repository
+* text=auto eol=lf
+
+# Windows batch/script files must use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files — no line ending conversion
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.pdf binary
+*.db binary
+*.sqlite binary
+*.rcc binary
+*.flac binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
