@@ -1,9 +1,10 @@
-import re, os, sys, configparser, discogs_client, requests
+import re, os, sys, discogs_client, requests
 
 from pathlib import Path
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from config_manager import ConfigurationManager
 from discogs_client.models import Release, Track
 from pydantic import BaseModel
 from typing import List, Optional
@@ -374,9 +375,7 @@ def __get_mapping_for_tag(tag: str) -> str:
 
 def get_filename_mask_from_config() -> str:
     """Get the filename mask from the config file"""
-    config = configparser.RawConfigParser()
-    config.read("config.ini")
-    return config.get("autotag", "filename_mask")
+    return ConfigurationManager().filename_mask
 
 
 def __open_file_wav(full_path: str) -> WAVE:
@@ -459,11 +458,8 @@ def __add_cover_art(song: Union[WAVE.tags, ID3], art_work: bytes, full_path: Pat
 
 def get_discogs_client() -> discogs_client.Client:
     """Get Discogs client"""
-
     logger.info("Getting Discogs client")
-    config = configparser.ConfigParser()
-    config.read("config.ini")
-    token = config["discogs"]["token"]
+    token = ConfigurationManager().discogs_token
     return discogs_client.Client("ExampleApplication/0.1", user_token=token)
 
 

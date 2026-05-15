@@ -1,5 +1,5 @@
-import configparser
 import os
+from config_manager import ConfigurationManager
 
 from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
@@ -106,20 +106,9 @@ class DatabaseWidget(QWidget):
         self.tree.show()
 
     def __resolve_db_path(self) -> str:
-        """Resolve the database path using config.ini [db] section, with sensible fallbacks."""
-        candidates: list[str] = []
-        try:
-            cfg = configparser.ConfigParser()
-            cfg.read("config.ini")
-            if cfg.has_section("db"):
-                loc = cfg["db"].get("location")
-                name = cfg["db"].get("name")
-                if loc and name:
-                    candidates.append(os.path.join(loc, name))
-                    candidates.append(os.path.join(loc, f"{name}.db"))
-        except Exception:
-            pass
-
+        """Resolve the database path from ConfigurationManager."""
+        cfg = ConfigurationManager()
+        candidates = [cfg.db_path, os.path.join(cfg.db_location, f"{cfg.db_name}.db")]
         for p in candidates:
             try:
                 if p and os.path.isfile(p):

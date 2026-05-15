@@ -2,8 +2,7 @@ import os
 from typing import Dict
 
 from PyQt5 import uic
-import configparser
-import os
+from config_manager import ConfigurationManager
 from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QTreeView, QTableView, QLabel, QLineEdit, QCompleter, QMessageBox
@@ -91,20 +90,9 @@ class DatabaseMediaWindow(QWidget):
             QMessageBox.information(self, "No Tracks", "DB Media Window: No tracks found in the database.\nPlease check your config.ini [db] path.")
 
     def __resolve_db_path(self) -> str:
-        """Resolve the database path using config.ini [db] section, with sensible fallbacks."""
-        candidates = []
-        try:
-            cfg = configparser.ConfigParser()
-            cfg.read("config.ini")
-            if cfg.has_section("db"):
-                loc = cfg["db"].get("location")
-                name = cfg["db"].get("name")
-                if loc and name:
-                    candidates.append(os.path.join(loc, name))
-                    candidates.append(os.path.join(loc, f"{name}.db"))
-        except Exception as e:
-            logger.debug(f"Could not read config.ini for DB path: {e}")
-
+        """Resolve the database path from ConfigurationManager."""
+        cfg = ConfigurationManager()
+        candidates = [cfg.db_path, os.path.join(cfg.db_location, f"{cfg.db_name}.db")]
         for p in candidates:
             try:
                 if p and os.path.isfile(p):
