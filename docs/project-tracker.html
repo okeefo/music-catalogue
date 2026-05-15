@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Music Catalogue — Production Readiness Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:              #141410;
+      --surface:         #1E1D19;
+      --surface-hover:   #262520;
+      --surface-done:    #181714;
+      --border:          #333028;
+      --border-subtle:   #272520;
+      --text-primary:    #EDE8DC;
+      --text-secondary:  #9A9080;
+      --text-muted:      #5E5A50;
+      --text-done:       #3A3830;
+      --gold:            #F0B429;
+      --gold-bright:     #FFD060;
+      --gold-glow:       rgba(240,180,41,0.18);
+      --gold-dim:        #6A500E;
+
+      --critical:        #FF4040;
+      --critical-dim:    rgba(255,64,64,0.14);
+      --high:            #FF8030;
+      --high-dim:        rgba(255,128,48,0.13);
+      --medium:          #F5D000;
+      --medium-dim:      rgba(245,208,0,0.11);
+      --low:             #30D4A0;
+      --low-dim:         rgba(48,212,160,0.11);
+      --feature:         #C070FF;
+      --feature-dim:     rgba(192,112,255,0.11);
+      --tests:           #40D080;
+      --tests-dim:       rgba(64,208,128,0.11);
+      --infra:           #60A8F0;
+      --infra-dim:       rgba(96,168,240,0.11);
+
+      --radius:          10px;
+      --font-display:    "Bebas Neue", sans-serif;
+      --font-body:       "DM Sans", sans-serif;
+      --font-mono:       "JetBrains Mono", monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 2.5rem 1.25rem 4rem;
+      background-image: radial-gradient(ellipse at 20% 0%, rgba(240,180,41,0.04) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 100%, rgba(240,180,41,0.03) 0%, transparent 60%);
+    }
+
+    .container { max-width: 920px; margin: 0 auto; }
+
+    /* ── HEADER ── */
+    header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.8rem;
+      border-bottom: 1px solid var(--border);
+      animation: fadeDown 0.5s ease both;
+    }
+
+    .header-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    header h1 {
+      font-family: var(--font-display);
+      font-size: 3.2rem;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    header h1 span { color: var(--gold); }
+
+    .header-meta {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-top: 0.4rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .header-meta code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      color: var(--gold);
+    }
+
+    /* ── PROGRESS ── */
+    .progress-wrap {
+      margin-top: 1.4rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.6rem;
+    }
+
+    .progress-heading {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    #progressLabel {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--gold-bright);
+      font-weight: 500;
+    }
+
+    .progress-track {
+      background: var(--border);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    #progressBar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+      border-radius: 999px;
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 0 12px var(--gold-glow);
+    }
+
+    .reset-btn {
+      margin-top: 0.8rem;
+      background: none;
+      border: 1px solid #60A8F0;
+      color: #60A8F0;
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .reset-btn:hover { border-color: var(--critical); color: var(--critical); background: rgba(255,64,64,0.08); }
+
+    /* ── INFO BOX ── */
+    .info-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 0.9rem 1.1rem;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      line-height: 1.6;
+      animation: fadeDown 0.5s 0.1s ease both;
+    }
+
+    .info-box strong { color: var(--gold-bright); }
+
+    /* ── SECTION ── */
+    .section {
+      margin-bottom: 2.5rem;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .section:nth-child(1) { animation-delay: 0.05s; }
+    .section:nth-child(2) { animation-delay: 0.10s; }
+    .section:nth-child(3) { animation-delay: 0.15s; }
+    .section:nth-child(4) { animation-delay: 0.20s; }
+    .section:nth-child(5) { animation-delay: 0.25s; }
+    .section:nth-child(6) { animation-delay: 0.30s; }
+    .section:nth-child(7) { animation-delay: 0.35s; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .section-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      letter-spacing: 0.06em;
+      color: var(--text-primary);
+    }
+
+    .section[data-sec="critical"] .section-header h2 { color: var(--critical); }
+    .section[data-sec="high"]     .section-header h2 { color: var(--high); }
+    .section[data-sec="medium"]   .section-header h2 { color: var(--medium); }
+    .section[data-sec="low"]      .section-header h2 { color: var(--low); }
+    .section[data-sec="feature"]  .section-header h2 { color: var(--feature); }
+    .section[data-sec="tests"]    .section-header h2 { color: var(--tests); }
+    .section[data-sec="infra"]    .section-header h2 { color: var(--infra); }
+
+    .section-count {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-primary);
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    /* ── BADGES ── */
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .badge-critical { background: var(--critical-dim); color: var(--critical); border: 1px solid rgba(255,61,61,0.3); }
+    .badge-high     { background: var(--high-dim);     color: var(--high);     border: 1px solid rgba(255,122,47,0.3); }
+    .badge-medium   { background: var(--medium-dim);   color: var(--medium);   border: 1px solid rgba(255,214,0,0.3); }
+    .badge-low      { background: var(--low-dim);      color: var(--low);      border: 1px solid rgba(0,207,255,0.3); }
+    .badge-feature  { background: var(--feature-dim);  color: var(--feature);  border: 1px solid rgba(191,95,255,0.3); }
+    .badge-tests    { background: var(--tests-dim);    color: var(--tests);    border: 1px solid rgba(0,229,160,0.3); }
+    .badge-infra    { background: var(--infra-dim);    color: var(--infra);    border: 1px solid rgba(77,159,255,0.3); }
+
+    /* ── TASKS ── */
+    .task {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+      border-radius: var(--radius);
+      margin-bottom: 0.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid transparent;
+      cursor: pointer;
+      transition: background 0.15s, border-left-color 0.15s, box-shadow 0.15s;
+      user-select: none;
+    }
+
+    /* Section-coloured left accent on hover */
+    .section[data-sec="critical"] .task:hover  { border-left-color: var(--critical); background: var(--surface-hover); }
+    .section[data-sec="high"]     .task:hover  { border-left-color: var(--high);     background: var(--surface-hover); }
+    .section[data-sec="medium"]   .task:hover  { border-left-color: var(--medium);   background: var(--surface-hover); }
+    .section[data-sec="low"]      .task:hover  { border-left-color: var(--low);      background: var(--surface-hover); }
+    .section[data-sec="feature"]  .task:hover  { border-left-color: var(--feature);  background: var(--surface-hover); }
+    .section[data-sec="tests"]    .task:hover  { border-left-color: var(--tests);    background: var(--surface-hover); }
+    .section[data-sec="infra"]    .task:hover  { border-left-color: var(--infra);    background: var(--surface-hover); }
+
+    .task.done {
+      background: var(--surface-done);
+      border-color: var(--border-subtle);
+      border-left-color: transparent !important;
+      opacity: 0.5;
+    }
+
+    .task.done .task-title  { text-decoration: line-through; color: var(--text-done); }
+    .task.done .task-detail { color: var(--text-done); }
+    .task.done .task-meta   { color: var(--text-done); }
+
+    /* Custom checkbox */
+    .task input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      margin-top: 3px;
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      position: relative;
+    }
+
+    .task input[type="checkbox"]:checked {
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+
+    .task input[type="checkbox"]:checked::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 6px;
+      height: 10px;
+      border: 2px solid #111;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+
+    .task-body { flex: 1; min-width: 0; }
+
+    .task-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    .task-detail {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-top: 0.3rem;
+      line-height: 1.6;
+    }
+
+    .task-detail code {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      padding: 0.05rem 0.35rem;
+      border-radius: 3px;
+      color: var(--gold);
+    }
+
+    .task-meta {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.4rem;
+      line-height: 1.5;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      margin-top: 3rem;
+      padding-top: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="header-eyebrow">Production Readiness Tracker</div>
+    <h1>Music <span>Catalogue</span></h1>
+    <div class="header-meta">
+      <span>Branch: <code>dev/production-ready</code></span>
+      <span>Baseline: <code>baseline-2026-05-15</code></span>
+      <span>Repo: <code>okeefo/music-catalogue</code></span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span class="progress-heading">Overall Progress</span>
+        <span id="progressLabel">0 / 0 tasks complete</span>
+      </div>
+      <div class="progress-track">
+        <div id="progressBar" style="width:0%"></div>
+      </div>
+      <button class="reset-btn" onclick="resetAll()">⟳ Reset all</button>
+    </div>
+  </header>
+
+  <div class="info-box">
+    <strong>How to use:</strong> Click any task to mark it done. Progress is saved in your browser automatically.
+    Work through Critical → High → Medium → Low. Commit and push after each section is cleared.
+  </div>
+
+  <!-- ═══════════════════════════════════ CRITICAL -->
+  <div class="section" data-sec="critical">
+    <div class="section-header">
+      <span class="badge badge-critical">Critical</span>
+      <h2>Security &amp; Blockers</h2>
+      <span class="section-count" id="count-critical"></span>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="c1">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Rotate the Discogs API token</div>
+        <div class="task-detail">A real token is stored in <code>config.ini</code>. Even though the file is gitignored now it may have been committed previously. Rotate it at discogs.com/settings/developers, then update local <code>config.ini</code>.</div>
+        <div class="task-meta">Security · Do this outside of code, right now</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="c2">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Remove hardcoded personal paths from source code</div>
+        <div class="task-detail">Personal paths like <code>H:\_-__Tagged__-_\Vinyl Collection</code>, <code>C:\dev\projects\python\music-catalogue\src</code> and absolute program paths are scattered across 10+ source files. App will crash on any machine that isn't yours.</div>
+        <div class="task-meta">src/main_window.py · src/ui/custom_messagebox.py · src/ui/db_window_widget.py · src/ui/db_media_window.py · src/ui/custom_tree_view_context_menu_handler.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="c3">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Move all configurable paths into config.ini + ConfigManager</div>
+        <div class="task-detail">External tool paths (Mp3Tag, VLC, Audacity, MediaInfo), music folder, DB location and log dir should all come from <code>config.ini</code> via a proper <code>ConfigManager</code>. The skeleton exists in <code>config_manager.py</code> but is unused.</div>
+        <div class="task-meta">src/config_manager.py · config.ini</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ HIGH -->
+  <div class="section" data-sec="high">
+    <div class="section-header">
+      <span class="badge badge-high">High</span>
+      <h2>Code Quality — High Priority</h2>
+      <span class="section-count" id="count-high"></span>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="h1">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Delete dead code — scratch.py and example_treeview_columns.py</div>
+        <div class="task-detail"><code>scratch.py</code> has broken circular imports and is an abandoned experiment. <code>example_treeview_columns.py</code> is an example file, not used anywhere in production code.</div>
+        <div class="task-meta">src/file_operations/scratch.py · src/example_treeview_columns.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="h2">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Fix sys.path manipulation in source files</div>
+        <div class="task-detail">Three source files use <code>sys.path.append()</code> or <code>sys.path.insert()</code> to wire up imports. This is fragile and will break packaging. Fix with proper package structure and a single entry point.</div>
+        <div class="task-meta">src/file_operations/audio_processor.py:7 · src/file_operations/auto_tag.py:5 · src/ui/custom_messagebox.py:67</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="h3">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Fix broken test and set up proper test structure</div>
+        <div class="task-detail">The only test file (<code>tests/repackage_dir.py</code>) has broken imports referencing <code>src.scanner.*</code> which doesn't exist. Set up pytest properly, fix existing test, and agree a testing strategy.</div>
+        <div class="task-meta">tests/repackage_dir.py · pyproject.toml</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="h4">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Consolidate database implementation — pick one</div>
+        <div class="task-detail">Two competing DB classes exist: <code>MusicCatalogDB</code> and <code>MusicCatalogDB_2</code>. The <code>db_reader.py</code> references a non-existent <code>uber_tracks</code> view. Decide on the correct implementation, delete the other, and wire it into the main app.</div>
+        <div class="task-meta">src/db/music_db.py · src/db/db_reader.py · src/db/db_writer.py · src/db/db_manager.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="h5">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Fix settings dialog — make it actually save changes</div>
+        <div class="task-detail">The settings dialog UI exists and loads config, but writes nothing back to <code>config.ini</code>. It is a dead feature until persistence is implemented.</div>
+        <div class="task-meta">src/ui/settings_dialogue.py · src/qt/settings.ui</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="h6">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Add null checks in auto_tag.py for Discogs response fields</div>
+        <div class="task-detail">Code assumes Discogs always returns artists, labels, and formats. If a release has incomplete data the app will crash with an IndexError.</div>
+        <div class="task-meta">src/file_operations/auto_tag.py:72, 77, 112</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="h7">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Fix database connection leaks</div>
+        <div class="task-detail">DB connections are created without being reliably closed. Use context managers (<code>with</code> blocks) throughout the <code>db/</code> module.</div>
+        <div class="task-meta">src/db/db_manager.py:74 · src/db/db_reader.py:118</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ MEDIUM -->
+  <div class="section" data-sec="medium">
+    <div class="section-header">
+      <span class="badge badge-medium">Medium</span>
+      <h2>Code Quality — Medium Priority</h2>
+      <span class="section-count" id="count-medium"></span>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="m1">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Replace deprecated logger.warn() with logger.warning()</div>
+        <div class="task-detail">Three files use the deprecated <code>logger.warn()</code> call which has been deprecated since Python 3.2.</div>
+        <div class="task-meta">src/file_operations/auto_tag.py:505 · src/file_operations/repackage_dir.py:60, 66</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="m2">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Fix resource loading — UI files and icons must not rely on CWD</div>
+        <div class="task-detail">All <code>uic.loadUi()</code> and <code>QIcon()</code> calls use relative paths like <code>"src\\qt\\music_manager.ui"</code>. These break if the working directory changes. Use <code>__file__</code>-relative paths or <code>importlib.resources</code>.</div>
+        <div class="task-meta">src/main_window.py:89 · multiple UI widget files</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="m3">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Extract magic numbers into named config constants</div>
+        <div class="task-detail">Audio processing thresholds (<code>-55</code>, <code>-25</code>, <code>8</code>, <code>-60</code>, <code>2000</code>) are hardcoded. They should be named constants or config values.</div>
+        <div class="task-meta">src/file_operations/audio_processor.py:180–182, 237</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="m4">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Remove unused imports</div>
+        <div class="task-detail"><code>traceback</code> is imported in <code>main_window.py</code> but never used. Audit all files with a linter and remove unused imports.</div>
+        <div class="task-meta">src/main_window.py:3 · run flake8 or ruff across all src/</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="m5">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Break up oversized functions</div>
+        <div class="task-detail"><code>__batch_process_files()</code> is 150+ lines. <code>custom_tree_view_context_menu_handler.py</code> is 534 lines. These should be split into smaller, testable units.</div>
+        <div class="task-meta">src/file_operations/audio_processor.py · src/ui/custom_tree_view_context_menu_handler.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="m6">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Add type hints consistently across all modules</div>
+        <div class="task-detail">Type hints are partial and inconsistent. Add them to all public functions and fix deprecated syntax (e.g. <code>dict[str]</code> → <code>Dict[str, Any]</code>).</div>
+        <div class="task-meta">All src/ files — priority: file_operations/, db/</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ LOW -->
+  <div class="section" data-sec="low">
+    <div class="section-header">
+      <span class="badge badge-low">Low</span>
+      <h2>Code Quality — Low Priority / Polish</h2>
+      <span class="section-count" id="count-low"></span>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="l1">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Remove all commented-out code blocks</div>
+        <div class="task-detail">Commented code in <code>db_reader.py</code>, <code>recycle.py</code>, <code>ui/main_window.py</code>, and <code>scratch.py</code>. If code is not needed, delete it — git history is the undo.</div>
+        <div class="task-meta">src/db/db_reader.py:84 · src/ui/recycle.py:137 · src/ui/main_window.py:116</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="l2">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Standardise singleton pattern across the codebase</div>
+        <div class="task-detail"><code>ConfigurationManager</code> and <code>DatabaseWindow</code> both implement singletons but with different approaches. Pick one pattern and apply it consistently.</div>
+        <div class="task-meta">src/config_manager.py · src/ui/db_window.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="l3">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Improve error feedback for batch operations</div>
+        <div class="task-detail">When files fail during batch processing the user gets no summary of how many failed or why. Progress dialog should show error counts and a post-run summary.</div>
+        <div class="task-meta">src/file_operations/audio_processor.py · src/ui/custom_progress_dialog.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="l4">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Fix type mismatch in repackage_dir.py function signature</div>
+        <div class="task-detail">Function signature says <code>files: dict[str]</code> but receives a <code>list[str]</code>.</div>
+        <div class="task-meta">src/file_operations/repackage_dir.py:26</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ FEATURES -->
+  <div class="section" data-sec="feature">
+    <div class="section-header">
+      <span class="badge badge-feature">Feature</span>
+      <h2>Incomplete / In-Progress Features</h2>
+      <span class="section-count" id="count-feature"></span>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="f1">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Complete and wire up ConfigManager</div>
+        <div class="task-detail">Implement full read/write of <code>config.ini</code> in <code>ConfigManager</code>. All modules should get config values through it rather than direct <code>configparser</code> calls or hardcoded defaults.</div>
+        <div class="task-meta">src/config_manager.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="f2">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Complete settings dialog — persist changes to config.ini</div>
+        <div class="task-detail">Settings dialog UI is built. Wire the save button to write changes back to <code>config.ini</code> and notify other modules of the change.</div>
+        <div class="task-meta">src/ui/settings_dialogue.py · src/qt/settings.ui</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="f3">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Complete database integration</div>
+        <div class="task-detail">Consolidate to one DB implementation, create the missing <code>uber_tracks</code> view or replace the query, connect the DB window to the main app workflow so scanning and querying works end-to-end.</div>
+        <div class="task-meta">src/db/ · src/ui/db_window.py · src/ui/db_media_window.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="f4">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Integrate Trim into main batch process</div>
+        <div class="task-detail">Trim silence is implemented and works but is separate. Integrate it as an optional step in the main batch pipeline. Add a configurable pre-start buffer (the SOX workaround).</div>
+        <div class="task-meta">src/file_operations/audio_processor.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="f5">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Fix and restore artwork display</div>
+        <div class="task-detail">Artwork display code exists but is commented out in the DB window. Re-enable and wire it up properly.</div>
+        <div class="task-meta">src/ui/db_window.py:53 · src/ui/custom_image_label.py</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ TESTS -->
+  <div class="section" data-sec="tests">
+    <div class="section-header">
+      <span class="badge badge-tests">Tests</span>
+      <h2>Test Suite — Build from Zero</h2>
+      <span class="section-count" id="count-tests"></span>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="t1">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Set up pytest, pytest-qt, and coverage tooling</div>
+        <div class="task-detail">Add <code>pytest</code>, <code>pytest-qt</code>, <code>pytest-mock</code>, and <code>pytest-cov</code> to <code>pyproject.toml</code>. Configure coverage reporting. Set a baseline coverage target.</div>
+        <div class="task-meta">pyproject.toml · tests/</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="t2">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Tests: file_operations — repackage_dir</div>
+        <div class="task-detail">Fix the existing broken test. Add tests for happy path, empty input, missing files, and name collision.</div>
+        <div class="task-meta">tests/test_repackage_dir.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="t3">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Tests: file_operations — audio_tags</div>
+        <div class="task-detail">Test tag reading and writing with real and malformed files. Test empty file, missing tags, and corrupted metadata cases.</div>
+        <div class="task-meta">tests/test_audio_tags.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="t4">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Tests: db — reader and writer</div>
+        <div class="task-detail">Test DB queries against a temporary SQLite database. Test connection handling, missing tables, and waveform data round-trips.</div>
+        <div class="task-meta">tests/test_db_reader.py · tests/test_db_writer.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="t5">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Tests: file_operations — file_utils</div>
+        <div class="task-detail">Test move, copy, delete operations with temp directories. Test conflict resolution and locked file handling.</div>
+        <div class="task-meta">tests/test_file_utils.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="t6">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Tests: config_manager</div>
+        <div class="task-detail">Test read and write of all config sections. Test missing file, malformed INI, and default value fallbacks.</div>
+        <div class="task-meta">tests/test_config_manager.py</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="t7">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Tests: auto_tag — Discogs integration (mocked)</div>
+        <div class="task-detail">Mock the Discogs client and test tag application, missing fields, malformed release data, and API error handling.</div>
+        <div class="task-meta">tests/test_auto_tag.py</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ INFRA -->
+  <div class="section" data-sec="infra">
+    <div class="section-header">
+      <span class="badge badge-infra">Infra</span>
+      <h2>Packaging, CI/CD &amp; Distribution</h2>
+      <span class="section-count" id="count-infra"></span>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="i1">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Set up proper pyproject.toml with entry point and dependencies</div>
+        <div class="task-detail">Current <code>pyproject.toml</code> only has Black config. Add full metadata, dependencies, Python version constraint, and a <code>[project.scripts]</code> entry point so the app can be launched as a command.</div>
+        <div class="task-meta">pyproject.toml</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="i2">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Add a GitHub Actions CI pipeline</div>
+        <div class="task-detail">Run on every push to <code>dev/production-ready</code> and on PRs to <code>main</code>. Steps: install deps, run linter (ruff/flake8), run tests with coverage report.</div>
+        <div class="task-meta">.github/workflows/ci.yml</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="i3">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Build Windows executable with PyInstaller</div>
+        <div class="task-detail">Create a PyInstaller spec file that bundles the app, Qt resources, SOX/SoundStretch utils, and all dependencies into a single <code>.exe</code> or one-folder distribution. Test the build on a clean Windows machine.</div>
+        <div class="task-meta">music_catalogue.spec · build/ or dist/</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="i4">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Add GitHub Actions release pipeline</div>
+        <div class="task-detail">On a version tag push (<code>v*.*.*</code>), automatically build the Windows executable with PyInstaller and attach it to a GitHub Release.</div>
+        <div class="task-meta">.github/workflows/release.yml</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="i5">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Add ruff (linter) and configure pre-commit hooks</div>
+        <div class="task-detail">Add <code>ruff</code> as the linter (replaces flake8, isort, pyupgrade). Add a <code>.pre-commit-config.yaml</code> so linting and formatting run before each commit.</div>
+        <div class="task-meta">.pre-commit-config.yaml · pyproject.toml</div>
+      </div>
+    </div>
+
+    <div class="task" onclick="toggle(this)" data-id="i6">
+      <input type="checkbox" />
+      <div class="task-body">
+        <div class="task-title">Create a config.ini.example file</div>
+        <div class="task-detail">Provide a template <code>config.ini.example</code> committed to the repo showing all required keys with placeholder values and comments. Users copy this to <code>config.ini</code> and fill it in.</div>
+        <div class="task-meta">config.ini.example</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Music Catalogue &nbsp;·&nbsp; Production Readiness Tracker &nbsp;·&nbsp; Progress auto-saved in browser</footer>
+
+</div>
+<script>
+  const STORAGE_KEY = "mc-tracker-v1";
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+  }
+
+  function save(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function toggle(taskEl) {
+    const cb = taskEl.querySelector("input[type=checkbox]");
+    cb.checked = !cb.checked;
+    taskEl.classList.toggle("done", cb.checked);
+    const state = load();
+    state[taskEl.dataset.id] = cb.checked;
+    save(state);
+    updateProgress();
+  }
+
+  function resetAll() {
+    if (!confirm("Reset all checkboxes?")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    document.querySelectorAll(".task").forEach(t => {
+      t.classList.remove("done");
+      t.querySelector("input[type=checkbox]").checked = false;
+    });
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const all  = document.querySelectorAll(".task");
+    const done = document.querySelectorAll(".task.done");
+    const pct  = all.length ? Math.round((done.length / all.length) * 100) : 0;
+    document.getElementById("progressBar").style.width = pct + "%";
+    document.getElementById("progressLabel").textContent =
+      `${done.length} / ${all.length} tasks complete (${pct}%)`;
+
+    const sections = {
+      critical: ["c"], high: ["h"], medium: ["m"], low: ["l"],
+      feature: ["f"], tests: ["t"], infra: ["i"]
+    };
+    for (const [sec, prefixes] of Object.entries(sections)) {
+      const el = document.getElementById("count-" + sec);
+      if (!el) continue;
+      const tasks = [...all].filter(t => prefixes.some(p => t.dataset.id.startsWith(p)));
+      const doneCount = tasks.filter(t => t.classList.contains("done")).length;
+      el.textContent = `${doneCount} / ${tasks.length}`;
+    }
+  }
+
+  (function init() {
+    const state = load();
+    document.querySelectorAll(".task").forEach(t => {
+      if (state[t.dataset.id]) {
+        t.querySelector("input[type=checkbox]").checked = true;
+        t.classList.add("done");
+      }
+    });
+    updateProgress();
+  })();
+</script>
+</body>
+</html>
