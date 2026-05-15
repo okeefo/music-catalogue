@@ -120,7 +120,6 @@ class DatabaseWidget(QWidget):
         except Exception:
             pass
 
-        candidates.append("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
         for p in candidates:
             try:
                 if p and os.path.isfile(p):

@@ -105,17 +105,13 @@ class DatabaseMediaWindow(QWidget):
         except Exception as e:
             logger.debug(f"Could not read config.ini for DB path: {e}")
 
-        # Original hard-coded path as final fallback
-        candidates.append("H:/_-__Tagged__-_/Vinyl Collection/keefy.db")
-
         for p in candidates:
             try:
                 if p and os.path.isfile(p):
                     return p
             except Exception:
                 pass
-        # If none exist, return the last candidate (may not exist; load() will warn)
-        return candidates[-1]
+        return ""
 
     def __setupLabelViewer(self):
         self.tree_view = self.findChild(QTreeView, "view_db_labels_releases")

@@ -1,3 +1,4 @@
+import os
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QIcon
 import qt.resources_rcc
@@ -64,7 +65,7 @@ if __name__ == "__main__":
     import sys
     from PyQt5.QtWidgets import QApplication
 
-    sys.path.insert(0, "C:\\dev\\projects\\python\\music-catalogue\\src")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     app = QApplication(sys.argv)
 
     result = show_message_box("This is a test", ButtonType.YesNoToAllCancel, "Test Message", "information")
