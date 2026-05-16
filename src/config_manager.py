@@ -13,7 +13,7 @@ class ConfigurationManager:
     def __new__(cls):
         if not isinstance(cls._instance, cls):
             cls._instance = super().__new__(cls)
-            cls._instance._config = configparser.ConfigParser()
+            cls._instance._config = configparser.ConfigParser(interpolation=None)
             cls._instance._load()
         return cls._instance
 
@@ -24,7 +24,7 @@ class ConfigurationManager:
 
     def reload(self) -> None:
         """Re-read config.ini from disk — call after external changes."""
-        self._config = configparser.ConfigParser()
+        self._config = configparser.ConfigParser(interpolation=None)
         self._load()
 
     def save(self) -> None:
