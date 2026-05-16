@@ -869,8 +869,22 @@
     }
   }
 
+  // Items completed by autonomous agent — pre-checked if user hasn't touched them
+  const AGENT_COMPLETED = {
+    "c2": "Remove hardcoded personal paths",
+    "c3": "ConfigurationManager built and wired up",
+    "h1": "Dead code deleted (scratch.py, example_treeview_columns.py)",
+    "h2": "sys.path already using __file__-relative paths — verified clean",
+    "i6": "config.ini.example created and committed"
+  };
+
   (function init() {
     const state = load();
+    // Pre-check agent-completed items only if user hasn't set them
+    Object.keys(AGENT_COMPLETED).forEach(id => {
+      if (!(id in state)) state[id] = true;
+    });
+    save(state);
     document.querySelectorAll(".task").forEach(t => {
       if (state[t.dataset.id]) {
         t.querySelector("input[type=checkbox]").checked = true;
