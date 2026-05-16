@@ -66,10 +66,10 @@ class MusicCatalogDB:
         self._tracks_cache: Dict[int, Track] = {}
         self._releases_cache: Dict[int, Release] = {}
         self._labels_cache: Dict[int, RecordLabel] = {}
-        self.connection: Optional[sqlite3.Connection] = self.__connect()
+        self.connection: Optional[sqlite3.Connection] = None
 
     def __connect(self):
-        """Establishes an SQLite connection and keeps it as an instance attribute."""
+        """Opens and returns a new SQLite connection. Caller is responsible for closing it."""
         try:
             connection = sqlite3.connect(self.db_path)
             logger.info("Connected to SQLite database.")
@@ -262,10 +262,11 @@ class MusicCatalogDB:
         return self._tracks_cache
 
     def close(self):
-        """Closes the SQLite connection."""
+        """Closes the SQLite connection if one is open."""
         if self.connection:
             self.connection.close()
-            print("SQLite connection closed.")
+            self.connection = None
+            logger.info("SQLite connection closed.")
 
 
 # Dummy execution for testing purposes

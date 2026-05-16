@@ -53,9 +53,12 @@ class MusicCatalogDB_2:
         """
         Fetch waveform_data BLOB for a given file_id from track_meta_data table.
         Returns the waveform_data as bytes, or None if not found.
+        Opens and closes its own connection so no connection leaks occur.
         """
+        conn = self.__connect()
+        if conn is None:
+            return None
         try:
-            conn = self.connection or self.__connect()
             cursor = conn.cursor()
             cursor.execute("SELECT waveform_data FROM track_meta_data WHERE id=?", (file_id,))
             row = cursor.fetchone()
@@ -66,6 +69,8 @@ class MusicCatalogDB_2:
         except Exception as e:
             logger.error(f"Failed to fetch waveform data for file_id={file_id}: {e}")
             return None
+        finally:
+            conn.close()
 
     def __init__(self, db_path: str) -> None:
         """
@@ -82,10 +87,10 @@ class MusicCatalogDB_2:
         self._release_to_tracks: Dict[int, set] = {}
         self._track_list: list[Track] = []  # List to hold all tracks
         # self._files_cache: Dict[int, list[str]] = {}  # Placeholder for file cache
-        self.connection: Optional[sqlite3.Connection] = self.__connect()
+        self.connection: Optional[sqlite3.Connection] = None
 
     def __connect(self):
-        """Establishes an SQLite connection and keeps it as an instance attribute."""
+        """Opens and returns a new SQLite connection. Caller is responsible for closing it."""
         try:
             connection = sqlite3.connect(self.db_path)
             logger.info("Connected to SQLite database.")
@@ -255,10 +260,11 @@ class MusicCatalogDB_2:
         return self._releases_cache.get(release_id)
 
     def close(self):
-        """Closes the SQLite connection."""
+        """Closes the SQLite connection if one is open."""
         if self.connection:
             self.connection.close()
-            print("SQLite connection closed.")
+            self.connection = None
+            logger.info("SQLite connection closed.")
 
 
 # Dummy execution for testing purposes
