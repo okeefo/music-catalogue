@@ -21,6 +21,12 @@ dependencies = [
     "send2trash",
 ]
 
+[project.scripts]
+music-catalogue = "main_window:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.black]
 line-length = 200
 

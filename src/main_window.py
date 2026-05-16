@@ -714,8 +714,8 @@ class MainWindow(QMainWindow):
         self.but_toggle.setToolTipDuration(1000 if width <= 0 else 0)
 
 
-if __name__ == "__main__":
-
+def main():
+    """Entry point for the music-catalogue application."""
     import sys
 
     exit_code = 0
@@ -733,3 +733,7 @@ if __name__ == "__main__":
         logger.info("Application exited")
         app.quit()
     sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    main()
