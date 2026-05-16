@@ -31,3 +31,11 @@ pythonpath = ["src"]
 [tool.coverage.run]
 source = ["src"]
 omit = ["src/qt/resources_rcc.py"]
+
+[tool.ruff]
+line-length = 200
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # line length handled separately

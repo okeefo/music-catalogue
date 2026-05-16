@@ -1,10 +1,11 @@
-import sys, winshell
 import os
-import win32com.client
 import shutil
+import sys
 
-from PyQt5.QtWidgets import QApplication, QDialog, QTreeView, QFileIconProvider
-from PyQt5.QtCore import  QModelIndex, QAbstractItemModel, Qt, QFileInfo
+import win32com.client
+import winshell
+from PyQt5.QtCore import QAbstractItemModel, QFileInfo, QModelIndex, Qt
+from PyQt5.QtWidgets import QApplication, QDialog, QFileIconProvider, QTreeView
 from PyQt5.uic import loadUi
 
 from log_config import get_logger

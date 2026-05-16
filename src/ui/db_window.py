@@ -1,15 +1,17 @@
 import os
 
 from PyQt5 import uic
-from PyQt5.QtCore import Qt, QDir, QModelIndex
-from PyQt5.QtWidgets import QMainWindow, QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
+from PyQt5.QtCore import QDir, QModelIndex, Qt
+from PyQt5.QtWidgets import QCompleter, QFileSystemModel, QFrame, QGroupBox, QHeaderView, QLabel, QMainWindow, QMessageBox, QPushButton
 from qtpy import QtGui
+
+from log_config import get_logger
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
 
-from log_config import get_logger
-
 logger = get_logger(__name__)
+
+_UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "qt")
 
 
 class DatabaseWindow(QMainWindow):
@@ -70,7 +72,7 @@ class DatabaseWindow(QMainWindow):
             tree_view.change_dir(os.path.normpath(path_info_bar.text()))
 
     def __setup_ui(self):
-        self.ui = uic.loadUi(os.path.join("src", "qt", "database.ui"), self)
+        self.ui = uic.loadUi(os.path.join(_UI_DIR, "database.ui"), self)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
     def __setup_model(self):
@@ -102,8 +104,9 @@ class DatabaseWindow(QMainWindow):
         self.but_frame3_hide.clicked.connect(self.show_hide_frame_3)
 
     def __setup_icons(self):
-        self.icon_left = QtGui.QIcon("/src/qt/icons/chevrons-left.svg")
-        self.icon_right = QtGui.QIcon("/src/qt/icons/chevrons-right.svg")
+        _icons_dir = os.path.join(_UI_DIR, "icons")
+        self.icon_left = QtGui.QIcon(os.path.join(_icons_dir, "chevrons-left.svg"))
+        self.icon_right = QtGui.QIcon(os.path.join(_icons_dir, "chevrons-right.svg"))
 
     @staticmethod
     def on_tree_double_clicked(index: QModelIndex, tree_view: MyTreeView, path_bar: MyLineEdit) -> None:

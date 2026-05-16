@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt, pyqtSignal, QThread
-from PyQt5.QtGui import QPainter, QColor, QPen
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtGui import QColor, QPainter, QPen
 from PyQt5.QtWidgets import QWidget
 
 import file_operations.audio_waveform_analyzer as analyzer
@@ -16,6 +16,7 @@ class WaveformWidget(QWidget):
         Try to load waveform data from the DB. If not found, load from file and optionally cache to DB.
         """
         import json
+
         from db.db_reader import MusicCatalogDB_2
 
         logger.info(f"Trying to load waveform from DB for file_id={file_id}")

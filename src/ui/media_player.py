@@ -1,24 +1,27 @@
 import datetime
+import os
 from typing import Dict
 
-from PyQt5.QtCore import QUrl, Qt
+from mutagen.id3 import APIC
+from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import (
-    QWidget,
-    QSlider,
-    QPushButton,
     QLabel,
     QMessageBox,
+    QPushButton,
+    QSlider,
+    QWidget,
 )
 
 from file_operations.audio_tags import AudioTagHelper
-
-# Set logger instance
 from log_config import get_logger
 from ui.custom_waveform_widget import WaveformWidget
 
 logger = get_logger(__name__)
+
+_UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "qt")
+_MEDIA_ICONS_DIR = os.path.join(_UI_DIR, "icons", "media")
 
 INVALID_MEDIA_ERROR_MSG = 'Failed to play the media file. You might need to install the K-Lite Codec Pack. You can download it from the official website:<br><a href="https://www.codecguide.com/download_kl.htm">https://www.codecguide.com/download_kl.htm</a>'
 
@@ -66,11 +69,11 @@ class MediaPlayerController(QWidget):
     def __setup_icons(self) -> None:
         """Set up the icons. Returns: None"""
 
-        self.icon_play_off = QIcon("src/qt/icons/media/Farm-Fresh_control_play.png")
-        self.icon_play_on = QIcon("src/qt/icons/media/Fatcow-Farm-Fresh-Control-play-blue.32.png")
-        self.icon_stop_off = QIcon("src/qt/icons/media/Fatcow-Farm-Fresh-Control-stop.32.png")
-        self.icon_stop_on = QIcon("src/qt/icons/media/Fatcow-Farm-Fresh-Control-stop-blue.32.png")
-        self.icon_pause = QIcon("src/qt/icons/media/Fatcow-Farm-Fresh-Control-pause-blue.32.png")
+        self.icon_play_off = QIcon(os.path.join(_MEDIA_ICONS_DIR, "Farm-Fresh_control_play.png"))
+        self.icon_play_on = QIcon(os.path.join(_MEDIA_ICONS_DIR, "Fatcow-Farm-Fresh-Control-play-blue.32.png"))
+        self.icon_stop_off = QIcon(os.path.join(_MEDIA_ICONS_DIR, "Fatcow-Farm-Fresh-Control-stop.32.png"))
+        self.icon_stop_on = QIcon(os.path.join(_MEDIA_ICONS_DIR, "Fatcow-Farm-Fresh-Control-stop-blue.32.png"))
+        self.icon_pause = QIcon(os.path.join(_MEDIA_ICONS_DIR, "Fatcow-Farm-Fresh-Control-pause-blue.32.png"))
 
     def __setup_action_buttons(self, butt_play: QPushButton, butt_stop: QPushButton) -> None:
         """Set up the action buttons. Returns: None"""
@@ -240,7 +243,7 @@ class MediaPlayerController(QWidget):
         if self.cover_art:
             pixmap.loadFromData(self.cover_art[0].data)  # type: ignore[attr-defined]
         else:
-            pixmap.load("src/qt/white_label_record.jpg")
+            pixmap.load(os.path.join(_UI_DIR, "white_label_record.jpg"))
 
         scaled_pixmap = pixmap.scaled(self.wdgt_cover_art.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.wdgt_cover_art.setPixmap(scaled_pixmap)

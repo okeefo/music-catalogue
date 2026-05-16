@@ -1,11 +1,11 @@
+import configparser
 import logging
-from logging.handlers import RotatingFileHandler
-from path_helper import get_absolute_path_log_dir, get_absolute_path_config
 import os
 import sys
-import codecs
-import configparser
 from logging import Logger
+from logging.handlers import RotatingFileHandler
+
+from path_helper import get_absolute_path_config, get_absolute_path_log_dir
 
 log_file_cleared = False
 

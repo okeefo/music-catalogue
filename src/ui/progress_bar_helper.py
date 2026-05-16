@@ -1,11 +1,8 @@
-from PyQt5.QtWidgets import QProgressDialog
-from PyQt5.QtWidgets import QMessageBox, QProgressDialog,QLabel
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QFont
-import qt.resources_rcc
 import time
-import log_config
-from PyQt5.QtWidgets import QApplication
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtWidgets import QApplication, QLabel, QProgressDialog
 
 
 class ProgressBarHelper:
@@ -40,7 +37,7 @@ class ProgressBarHelper:
         # Set word wrap on the QLabel
         if label is not None:
             label.setWordWrap(True)
-    
+
         font = QFont()
         font.setPointSize(10)
         self.progress_bar.setFont(font)
@@ -84,7 +81,7 @@ class ProgressBarHelper:
         """Update the progress bar text and value"""
 
         if self.progress_bar:
-            self.update_progress_bar_text(f"\n\{message}")
+            self.update_progress_bar_text(f"\n\\{message}")
             self.increment()
 
     def user_has_cancelled(self) -> bool:

@@ -7,14 +7,15 @@ import tempfile
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from typing import List, Tuple
+
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
-from log_config import get_logger
-from file_operations.auto_tag import get_discogs_client, ReleaseFacade, auto_tag_files
-from file_operations.audio_tags import AudioTagHelper
-from ui.progress_bar_helper import ProgressBarHelper
 
 from config_manager import ConfigurationManager
+from file_operations.audio_tags import AudioTagHelper
+from file_operations.auto_tag import ReleaseFacade, auto_tag_files, get_discogs_client
+from log_config import get_logger
+from ui.progress_bar_helper import ProgressBarHelper
 
 config = ConfigurationManager()
 config.add_to_system_path("utils\\sox")

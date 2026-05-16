@@ -4,28 +4,28 @@ import traceback
 from typing import Dict, Union, cast
 
 import winshell
-from PyQt5 import uic, QtGui
-from PyQt5.QtCore import QSize, QPropertyAnimation, QEasingCurve, QDir, QModelIndex, QPoint
-from PyQt5.QtGui import QFont, QPixmap, QIcon
+from mutagen.id3 import PictureType
+from PyQt5 import QtGui, uic
+from PyQt5.QtCore import QDir, QEasingCurve, QModelIndex, QPoint, QPropertyAnimation, QSize
+from PyQt5.QtGui import QFont, QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtWidgets import (
-    QStackedWidget,
-    QApplication,
-    QMainWindow,
     QAction,
+    QApplication,
+    QCompleter,
+    QFileDialog,
+    QFileSystemModel,
+    QMainWindow,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QStackedWidget,
     QStyle,
     QTreeView,
-    QFileDialog,
-    QPushButton,
-    QMessageBox,
-    QCompleter,
-    QWidget,
-    QFileSystemModel, QMenu,
 )
-from mutagen.id3 import PictureType
 
 from file_operations.audio_tags import AudioTagHelper, PictureTypeDescription
-from file_operations.file_utils import ask_and_move_files, ask_and_copy_files
+from file_operations.file_utils import ask_and_copy_files, ask_and_move_files
 from file_operations.repackage_dir import repackage_dir_by_label
 from log_config import get_logger
 from path_helper import get_absolute_path_config
@@ -34,12 +34,13 @@ from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
 from ui.custom_tree_view_context_menu_handler import TreeViewContextMenuHandler
 from ui.db_window import DatabaseWindow
-from ui.db_media_window import DatabaseMediaWindow
 from ui.media_player import MediaPlayerController
 from ui.recycle import RestoreDialog
 from ui.settings_dialogue import SettingsDialog
 
 logger = get_logger("mc.main_window")
+
+_UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qt")
 
 # Create an instance of QApplication
 app = QApplication([])
@@ -86,7 +87,7 @@ class MainWindow(QMainWindow):
         # Set up the user interface from Designer.
         # Load the .ui file and set up the UI
         uic.loadUi(
-            "src\\qt\\music_manager.ui",
+            os.path.join(_UI_DIR, "music_manager.ui"),
             self,
         )
         self.__setup_ui()
@@ -172,13 +173,13 @@ class MainWindow(QMainWindow):
 
     def __setup_icons(self) -> None:
         """Set up the icons. Returns: None"""
-
-        self.icon_left = QIcon("src/qt/icons/chevrons-left.svg")
-        self.icon_right = QIcon("src/qt/icons/chevrons-right.svg")
-        self.icon_menu = QIcon("src/qt/icons/menu.svg")
-        self.icon_repackage = QIcon("src/qt/icons/package.svg")
-        self.icon_move = QIcon("src/qt/icons/move.svg")
-        self.icon_exit = QIcon("src/qt/icons/log-out.svg")
+        _icons_dir = os.path.join(_UI_DIR, "icons")
+        self.icon_left = QIcon(os.path.join(_icons_dir, "chevrons-left.svg"))
+        self.icon_right = QIcon(os.path.join(_icons_dir, "chevrons-right.svg"))
+        self.icon_menu = QIcon(os.path.join(_icons_dir, "menu.svg"))
+        self.icon_repackage = QIcon(os.path.join(_icons_dir, "package.svg"))
+        self.icon_move = QIcon(os.path.join(_icons_dir, "move.svg"))
+        self.icon_exit = QIcon(os.path.join(_icons_dir, "log-out.svg"))
 
     def __setup_menu_buttons(self) -> None:
         """Set up the menu buttons. Returns: None"""
@@ -673,7 +674,7 @@ class MainWindow(QMainWindow):
                 return audio_tags[AudioTagHelper.LABEL][0]
             if AudioTagHelper.ORGANIZATION in audio_tags:
                 return audio_tags[AudioTagHelper.ORGANIZATION][0]
-            
+
         return ""
 
     def get_labels(self, tree_view: QTreeView, label_type: str) -> Union[list, dict]:

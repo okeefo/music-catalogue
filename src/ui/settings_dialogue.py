@@ -3,16 +3,19 @@ import os
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QFileDialog
+
 from config_manager import ConfigurationManager
 from log_config import get_logger
 
 logger = get_logger(__name__)
 
+_UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "qt")
+
 
 class SettingsDialog(QDialog):
     def __init__(self):
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("src", "qt", "settings.ui"), self)
+        self.ui = uic.loadUi(os.path.join(_UI_DIR, "settings.ui"), self)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self._connect_browse_buttons()
         self._load_settings()

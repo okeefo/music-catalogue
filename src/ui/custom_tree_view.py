@@ -1,10 +1,10 @@
 import contextlib
 import os
-from typing import List, cast, Callable
+from typing import List, cast
 
-from PyQt5.QtCore import QItemSelectionModel, Qt, QDir, QFileInfo, QFile, QModelIndex
+from PyQt5.QtCore import QDir, QFile, QFileInfo, QItemSelectionModel, QModelIndex, Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QTreeView, QFileSystemModel, QAbstractItemView, QLabel
+from PyQt5.QtWidgets import QAbstractItemView, QApplication, QFileSystemModel, QTreeView
 
 from file_operations.audio_tags import AudioTagHelper
 from log_config import get_logger
@@ -240,7 +240,7 @@ class MyTreeView(QTreeView):
     def get_selected_files(self, default_all=False) -> List[str]:
         """Returns a list of selected file paths from the tree view, if there are no selected files and defaultAll=true, returns all files."""
 
-        if len(self.selectionModel().selectedRows()) == 0 and default_all == True:
+        if len(self.selectionModel().selectedRows()) == 0 and default_all:
             self.selectAll()
 
         model = cast(QFileSystemModel, self.model())

@@ -1,7 +1,8 @@
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QDialog
-from PyQt5.QtCore import  Qt
-from PyQt5.QtGui import QPixmap, QIcon
 from mutagen.id3 import APIC
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout
+
 from file_operations.audio_tags import PictureTypeDescription
 
 

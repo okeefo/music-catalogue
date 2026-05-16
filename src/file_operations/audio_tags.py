@@ -1,10 +1,12 @@
 from pathlib import Path
-from log_config import get_logger
+
 import taglib
-from mutagen.wave import WAVE
-from mutagen.id3 import ID3, APIC, ID3NoHeaderError
-from mutagen.flac import FLAC
 from mutagen import File
+from mutagen.flac import FLAC
+from mutagen.id3 import APIC, ID3, ID3NoHeaderError
+from mutagen.wave import WAVE
+
+from log_config import get_logger
 
 AUDIO_EXTENSIONS = [".mp3", ".wav",".flac"]
 logger = get_logger(__name__)
@@ -12,12 +14,12 @@ logger = get_logger(__name__)
 
 # The AudioTags class is used to manage and manipulate audio tags.
 class AudioTagHelper:
-    
+
     def __init__(self):
         pass
-        
+
     def get_tags_and_cover_art(self, absolute_path_filename: str) -> tuple[dict,list[APIC]]:
-        
+
         tags = self.get_tags(absolute_path_filename)
         cover__art = self.get_cover_art(absolute_path_filename)
         return tags, cover__art
@@ -43,7 +45,7 @@ class AudioTagHelper:
 
         logger.info(f"Found tags in file: '{absolute_path_filename}' tags:'{tags}'")
         return tags
-    
+
     # Given a collection of tags and a fully qualified filename, write the tags to the file
     def write_tags(self, absolute_path_filename: str, tags: dict) -> None:
         if not self.isSupportedAudioFile(absolute_path_filename):
@@ -55,7 +57,7 @@ class AudioTagHelper:
             file.save()
         except Exception:
             logger.exception(f"Could not write tags to file: '{absolute_path_filename}'")
-            
+
 
     def isSupportedAudioFile(self, absolute_path_filename: str) -> bool:
         path = Path(absolute_path_filename)
@@ -93,13 +95,13 @@ class AudioTagHelper:
                 return filedata.getall("APIC")
             except ID3NoHeaderError:
                 return []
-        
+
     # Given a collection of cover art, a List[APIC] data and a fully qualified filename, write the cover art to the file, using mutagen
     def write_cover_art(self, absolute_path_filename: str, cover_art: list[APIC]) -> None:
-        
+
         if not self.isSupportedAudioFile(absolute_path_filename):
             return
-        
+
         path = Path(absolute_path_filename)
 
         if path.suffix == ".wav":
@@ -107,7 +109,7 @@ class AudioTagHelper:
             for art in cover_art:
                 filedata.tags.add(art)
             filedata.save()
-        
+
         try:
             file = ID3(absolute_path_filename)
             for art in cover_art:
@@ -156,9 +158,9 @@ class AudioTagHelper:
 
         audio = File(file_path)
         logger.info(f"{audio.tags} ")
-        
+
     def get_title(self, tags: dict) -> str:
-        
+
         if tags is None:
             return ""
 
@@ -170,28 +172,28 @@ class AudioTagHelper:
             return ""
 
         return tags[self.ARTIST][0].strip() if self.ARTIST in tags else ""
-    
+
     def get_disc_number(self, tags: dict) -> str:
-        
+
         if tags is None:
             return ""
 
-        return tags[self.DISC_NUMBER][0] if self.DISC_NUMBER in tags else ""    
+        return tags[self.DISC_NUMBER][0] if self.DISC_NUMBER in tags else ""
 
-        
+
     def get_track_number(self, tags: dict) -> str:
-        
+
         if tags is None:
             return ""
 
-        return tags[self.TRACK_NUMBER][0] if self.TRACK_NUMBER in tags else "" 
-    
+        return tags[self.TRACK_NUMBER][0] if self.TRACK_NUMBER in tags else ""
+
     def get_release_id(self, tags: dict) -> str:
-        
+
         if tags is None:
             return ""
 
-        return tags[self.DISCOGS_RELEASE_ID][0] if self.DISCOGS_RELEASE_ID in tags else ""  
+        return tags[self.DISCOGS_RELEASE_ID][0] if self.DISCOGS_RELEASE_ID in tags else ""
 
 
 class PictureTypeDescription:

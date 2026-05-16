@@ -1,9 +1,8 @@
 import os
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtGui import QIcon
-import qt.resources_rcc
 from typing import Literal
 
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMessageBox
 
 response_mapping = {QMessageBox.Yes: "Yes", QMessageBox.No: "No", QMessageBox.YesToAll: "Yes to all", QMessageBox.NoToAll: "No to all", QMessageBox.Cancel: "Cancel"}
 
@@ -63,6 +62,7 @@ def show_message_box(message: str, buttonType: ButtonType, title: str = "Message
 # test dialog opens
 if __name__ == "__main__":
     import sys
+
     from PyQt5.QtWidgets import QApplication
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

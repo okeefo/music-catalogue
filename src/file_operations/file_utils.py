@@ -1,12 +1,13 @@
-import shutil
-import send2trash
 import os
+import shutil
 from typing import List, Union
-from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
-from ui.progress_bar_helper import ProgressBarHelper
+
+import send2trash
 from PyQt5.QtWidgets import QMessageBox
 
 import log_config
+from ui.custom_messagebox import ButtonType, convert_response_to_string, show_message_box
+from ui.progress_bar_helper import ProgressBarHelper
 
 logger = log_config.get_logger(__name__)
 
@@ -45,14 +46,14 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str, progres
             __clean_up(files_to_delete)
             logger.info("Clean up done")
             progress_bar.complete_progress_bar()
-    
+
     except Exception as e:
-    
+
         logger.error(f"Error moving files: {e}")
         if root:
             progress_bar.update_progress_bar_text("Error moving files, check log files for details")
             progress_bar.complete_progress_bar()
-            
+
         show_message_box(f"Error moving files, check log files for details: {e}", ButtonType.Ok, "Error Moving Files")
 
 
@@ -270,7 +271,7 @@ def delete_files(file_path: List[str]) -> str:
 
     message = f"Are you sure you want to delete {selected_files} files"
     message += f" and {selected_dirs} directories?" if selected_dirs > 0 else "?"
-    message += f"\n\nNote: files will be moved to the recycle bin."
+    message += "\n\nNote: files will be moved to the recycle bin."
 
     response = show_message_box(message, ButtonType.YesNoCancel, "Are You Sure ?", "warning")
 

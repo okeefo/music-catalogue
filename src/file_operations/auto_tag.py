@@ -1,21 +1,26 @@
-import re, os, sys, discogs_client, requests
-
+import os
+import re
+import sys
 from pathlib import Path
+
+import discogs_client
+import requests
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from config_manager import ConfigurationManager
+from typing import List, Union
+
 from discogs_client.models import Release, Track
-from pydantic import BaseModel
-from typing import List
+from mutagen.id3 import APIC, COMM, ID3, TALB, TCON, TIT2, TMED, TPE1, TPE2, TPOS, TPUB, TRCK, TXXX, TYER, WXXX, ID3NoHeaderError
 from mutagen.wave import WAVE
-from mutagen.id3 import ID3, ID3NoHeaderError, WXXX, ID3, TIT2, APIC, TALB, TPE1, TPE2, TXXX, TYER, TPOS, TCON, TPUB, TMED, TRCK, COMM
-from file_operations.audio_tags import AudioTagHelper
-from ui.progress_bar_helper import ProgressBarHelper
-from ui.custom_messagebox import show_message_box, ButtonType, convert_response_to_string
-from log_config import get_logger
-from typing import Union
+from pydantic import BaseModel
 from PyQt5.QtWidgets import QMessageBox
+
+from config_manager import ConfigurationManager
+from file_operations.audio_tags import AudioTagHelper
+from log_config import get_logger
+from ui.custom_messagebox import ButtonType, convert_response_to_string, show_message_box
+from ui.progress_bar_helper import ProgressBarHelper
 
 logger = get_logger("f_o.auto_tag")
 __header_info = {
@@ -150,10 +155,10 @@ class ReleaseFacade(BaseModel):
 
     def __remove_brackets_and_numbers(self, string: str):
         return re.sub(r"\(\d+\)", "", string).strip()
-    
-    
+
+
     def get_track_list(self) -> List[Track]:
-        
+
         return [
             track
             for track in self.release.tracklist
@@ -163,20 +168,20 @@ class ReleaseFacade(BaseModel):
 
     def get_number_of_tracks(self) -> int:
         return len(self.get_track_list())
-    
+
     def find_track_no(self, track_no: str, track_title: str, disc_number: str) -> int:
-            
+
         for i, track in enumerate(self.get_track_list()):
-            
+
             if track_title == track.title:
                 return i
-            
+
             if track_no == track.position:
-                return i  
-            
+                return i
+
             if disc_number == track.position:
                 return i
-        
+
         return -1
 
 def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
@@ -203,7 +208,7 @@ def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
 
         if user_cancelled:
             break
-        
+
     if not user_cancelled:
         progress_bar.complete_progress_bar()
 
@@ -240,8 +245,8 @@ def __tag_files_in_release(
     return user_cancelled, file_count
 
 def __find_track_position_from_file(file: str, release: ReleaseFacade) -> int:
-    
-    # check tags first    
+
+    # check tags first
     tags = tag_helper.get_tags(file)
     file_track_no = release.find_track_no(tag_helper.get_track_number(tags), tag_helper.get_title(tags), tag_helper.get_disc_number(tags))
     if file_track_no == -1:
@@ -340,7 +345,7 @@ def __rename_file_based_on_mask(mask, file, audio_tags: AudioTagHelper, root_dir
 
         os.rename(file, full_path)
 
-    except Exception as e:
+    except Exception:
         logger.error(f"Failed to rename file: {file} to: {new_name} ", exc_info=True)
 
     return full_path
@@ -355,13 +360,13 @@ def __derive_new_file_name(mask: str, tags: dict) -> str:
         new_tag = __get_mapping_for_tag(tag)
         if new_tag in tags and tags[new_tag]:
             value = tags[new_tag][0]
-            # if value contains a / slash then tahe everything on the left of it 
+            # if value contains a / slash then tahe everything on the left of it
             if "/" in value:
                 value = value.split("/")[0]
-                
+
             if "\\" in value:
                 value = value.split("\\")[0]
-                
+
             new_name = new_name.replace(f"%{tag}%", value )
         else:
             if new_tag == AudioTagHelper.LABEL:
@@ -482,14 +487,14 @@ def __group_files_by_release_id(files: List[str], root_dir: str) -> dict:
 
     release_id_to_files = {}
     for file in files:
-        
-        release_id = __valid_File_check(file)      
+
+        release_id = __valid_File_check(file)
         if release_id is None:
             continue
-        
+
         if release_id not in release_id_to_files:
             release_id_to_files[release_id] = []
-        
+
         release_id_to_files[release_id].append(file)
 
     logger.info(f"Grouped {len(release_id_to_files)} release ids")

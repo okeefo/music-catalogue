@@ -3,8 +3,9 @@ import os
 from dataclasses import dataclass
 from typing import List, Optional
 
-from pydub import AudioSegment
 import numpy as np
+from pydub import AudioSegment
+
 # create logger
 from log_config import get_logger
 
@@ -46,16 +47,16 @@ def analyze_audio_file_go_style(path: str, num_samples: int = 1000) -> np.ndarra
             max_amp = 0.0
         waveform.append(max_amp)
     waveform = np.array(waveform)
-    
+
     # Normalize to 0.0–1.0
     if waveform.max() > 0:
         waveform = waveform / waveform.max()
     else:
         waveform = np.zeros(num_samples)
-    
+
     # Round waveform values to the specified decimal places
     waveform = np.round(waveform, WAVEFORM_DECIMAL_PLACES)
-    
+
     duration = len(audio) / 1000.0  # milliseconds to seconds
     return AudioAnalysisResult(waveform=waveform.tolist(), duration=duration)
 

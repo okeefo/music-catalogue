@@ -1,28 +1,32 @@
 import os
-from config_manager import ConfigurationManager
 
-from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
+from PyQt5.QtCore import QDir, QItemSelection, QItemSelectionModel, QModelIndex, Qt
 from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QCompleter,
     QFileSystemModel,
-    QPushButton,
     QFrame,
     QGroupBox,
-    QLabel,
     QHeaderView,
-    QCompleter,
+    QLabel,
     QMessageBox,
-    QWidget,
-    QTableView,
+    QPushButton,
     QStyledItemDelegate,
-    QAbstractItemView,
+    QTableView,
+    QWidget,
 )
+
+from config_manager import ConfigurationManager
 from db.music_db import MusicCatalogDB
 from log_config import get_logger
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
 
 logger = get_logger(__name__)
+
+_UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "qt")
+_ICONS_DIR = os.path.join(_UI_DIR, "icons")
 
 
 class DatabaseWidget(QWidget):
@@ -34,8 +38,8 @@ class DatabaseWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.icon_left = QIcon("src/qt/icons/chevrons-left.svg")
-        self.icon_right = QIcon("src/qt/icons/chevrons-right.svg")
+        self.icon_left = QIcon(os.path.join(_ICONS_DIR, "chevrons-left.svg"))
+        self.icon_right = QIcon(os.path.join(_ICONS_DIR, "chevrons-right.svg"))
         self.folder_icon = QIcon(":/icons/icons/folder.svg")
         self.media_icon = QIcon(":/media/icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png")
 

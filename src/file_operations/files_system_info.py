@@ -1,9 +1,9 @@
 import math
 import os
 from pathlib import Path
-from PyQt5.QtWidgets import QMessageBox
-from ui.custom_messagebox import ButtonType, show_message_box
 from typing import List, Tuple
+
+from ui.custom_messagebox import ButtonType, show_message_box
 
 
 def __count_files(paths: List[str]) -> Tuple[int, int, int, int, int]:

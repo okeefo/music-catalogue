@@ -1,5 +1,6 @@
-from PyQt5.QtWidgets import QLineEdit
 import os
+
+from PyQt5.QtWidgets import QLineEdit
 
 
 class MyLineEdit(QLineEdit):

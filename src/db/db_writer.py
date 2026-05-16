@@ -1,5 +1,6 @@
 import sqlite3
 from typing import Optional
+
 from log_config import get_logger
 
 logger = get_logger(__name__)

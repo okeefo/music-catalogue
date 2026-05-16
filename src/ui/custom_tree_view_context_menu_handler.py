@@ -1,27 +1,22 @@
-import winreg
 import os
 import subprocess
+import winreg
 
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QAction, QMenu, QTreeView, QWidget, QMessageBox
+from PyQt5.QtCore import QModelIndex, QPoint, QUrl
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtCore import QUrl, QPoint, QModelIndex
+from PyQt5.QtWidgets import QAction, QMenu, QTreeView, QWidget
 
-from typing import List
-
-from ui.custom_tree_view import MyTreeView
-from file_operations.file_utils import ask_and_move_files, delete_files, ask_and_copy_files
-from file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
-from file_operations.files_system_info import display_results
-from file_operations.auto_tag import auto_tag_files, tag_filename
+from file_operations.audio_processor import amplify_files, auto_process_files, slowdown_files_45_33, speed_up_files_33_45rpm, split_files, trim_audio_silence
 from file_operations.audio_tags import AudioTagHelper
-from file_operations.audio_processor import slowdown_files_45_33, amplify_files, split_files, auto_process_files, speed_up_files_33_45rpm, trim_audio_silence
-
-import qt.resources_rcc
+from file_operations.auto_tag import auto_tag_files, tag_filename
+from file_operations.file_utils import ask_and_copy_files, ask_and_move_files, delete_files
+from file_operations.files_system_info import display_results
+from file_operations.repackage_dir import repackage_dir_by_label, repackage_files_by_label
 
 # create logger
 from log_config import get_logger
-from tkinter import messagebox
+from ui.custom_tree_view import MyTreeView
 
 logger = get_logger(__name__)
 
@@ -274,7 +269,7 @@ class TreeViewContextMenuHandler(QWidget):
         """Deletes selected files. Returns: None"""
 
         logger.info("Menu action - delete")
-        result = delete_files(tree_view.get_selected_files())
+        delete_files(tree_view.get_selected_files())
         logger.info("Menu action - delete : done")
 
     def __do_open_in_mp3tag(self, tree_vew: MyTreeView) -> None:
@@ -306,7 +301,7 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"Menu Action -> Opening file/s in VLC: '{self.vlc_path,file_paths}'")
         command = [self.vlc_path] + file_paths
         subprocess.Popen(command, shell=False)
-        logger.info(f"Menu Action -> opening file/s in VLC: done")
+        logger.info("Menu Action -> opening file/s in VLC: done")
 
     def __do_open_in_audacity(self, tree_view: MyTreeView) -> None:
         """Opens a file/directory in Audacity. Returns: None"""
@@ -315,7 +310,7 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"Menu Action -> Opening file/s in Audacity: '{self.audacity_path,file_paths}'")
         command = [self.audacity_path] + file_paths
         subprocess.Popen(command, shell=False)
-        logger.info(f"Menu Action -> opening file/s in Audacity: done")
+        logger.info("Menu Action -> opening file/s in Audacity: done")
 
     def __do_open_in_media_info(self, tree_view: MyTreeView) -> None:
         """Opens a file/directory in MediaInfo. Returns: None"""
@@ -324,7 +319,7 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"Menu Action -> Opening file/s in MediaInfo: '{self.mediainfo_path,file_paths}'")
         command = [self.mediainfo_path] + file_paths
         subprocess.Popen(command, shell=False)
-        logger.info(f"Menu Action -> opening file/s in MediaInfo: done")
+        logger.info("Menu Action -> opening file/s in MediaInfo: done")
 
     def __do_repackage_dir_by_label(self, tree_view: MyTreeView) -> None:
         """Repackages a directory. Returns: None"""

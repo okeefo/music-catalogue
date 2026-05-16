@@ -1,8 +1,8 @@
 import sqlite3
 from dataclasses import dataclass
+from typing import Dict, Optional
 
 from log_config import get_logger
-from typing import Dict, Optional, Any
 
 logger = get_logger(__name__)
 

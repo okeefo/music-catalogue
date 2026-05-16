@@ -1,20 +1,21 @@
 import os
-from typing import Dict
 
-from PyQt5 import uic
-from config_manager import ConfigurationManager
-from PyQt5.QtCore import Qt, QDir, QModelIndex, QItemSelectionModel, QItemSelection
-from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QWidget, QSlider, QPushButton, QTreeView, QTableView, QLabel, QLineEdit, QCompleter, QMessageBox
+from PyQt5.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, Qt
+from PyQt5.QtGui import QIcon, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QLabel, QLineEdit, QMenu, QMessageBox, QPushButton, QSlider, QTableView, QTreeView, QWidget
 from qtpy import QtGui
-from PyQt5.QtWidgets import QMenu
-from db.db_reader import MusicCatalogDB_2, Track, Release, RecordLabel
-from ui.custom_waveform_widget import WaveformWidget
-from ui.media_player import MediaPlayerController
-from ui.db_window_widget import CenterAlignDelegate, DatabaseWidget
+
+from config_manager import ConfigurationManager
+from db.db_reader import MusicCatalogDB_2
 from log_config import get_logger
+from ui.custom_waveform_widget import WaveformWidget
+from ui.db_window_widget import CenterAlignDelegate, DatabaseWidget
+from ui.media_player import MediaPlayerController
 
 logger = get_logger(__name__)
+
+_UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "qt")
+_ICONS_DIR = os.path.join(_UI_DIR, "icons")
 
 
 class DatabaseMediaWindow(QWidget):
@@ -58,8 +59,8 @@ class DatabaseMediaWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.icon_left = QIcon("src/qt/icons/chevrons-left.svg")
-        self.icon_right = QIcon("src/qt/icons/chevrons-right.svg")
+        self.icon_left = QIcon(os.path.join(_ICONS_DIR, "chevrons-left.svg"))
+        self.icon_right = QIcon(os.path.join(_ICONS_DIR, "chevrons-right.svg"))
         self.folder_icon = QIcon(":/icons/icons/folder.svg")
         self.media_icon = QIcon(":/media/icons/media/Oxygen-Icons.org-Oxygen-Actions-media-record.256.png")
         self.icon_expand = QIcon(":/icons/icons/folder-plus.svg")
@@ -160,9 +161,10 @@ class DatabaseMediaWindow(QWidget):
         Analyze a single track and store waveform data in DB. Returns (success, elapsed_time, error_message).
         If show_messages is True, shows QMessageBox for errors/info.
         """
-        from file_operations.audio_waveform_analyzer import analyze_audio_file_go_style, analyze_audio_file
         import json
         import time
+
+        from file_operations.audio_waveform_analyzer import analyze_audio_file_go_style
 
         if not file_path or not os.path.isfile(file_path):
             logger.warning(f"File does not exist: {file_path}")
@@ -235,10 +237,12 @@ class DatabaseMediaWindow(QWidget):
         Handler for the 'Analyse' context menu action. Gathers selected tracks, analyzes audio, and stores waveform data in DB.
         Shows a progress dialog with cancel support.
         """
-        from db.db_writer import MusicCatalogDBWriter
-        from PyQt5.QtWidgets import QProgressDialog, QApplication
-        from PyQt5.QtCore import Qt
         import time
+
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtWidgets import QApplication, QProgressDialog
+
+        from db.db_writer import MusicCatalogDBWriter
 
         # Determine which tracks to analyze
         selected_indexes = self.tree_view.selectionModel().selectedIndexes()
