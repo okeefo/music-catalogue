@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
 )
 
 from config_manager import ConfigurationManager
-from db.music_db import MusicCatalogDB
+from db.db_reader import MusicCatalogDB
 from log_config import get_logger
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView

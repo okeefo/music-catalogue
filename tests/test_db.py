@@ -1,5 +1,5 @@
 """
-Tests for src/db/db_reader.py (MusicCatalogDB_2) and src/db/db_manager.py (setup_database).
+Tests for src/db/db_reader.py (MusicCatalogDB) and src/db/db_manager.py (setup_database).
 
 Strategy:
   - conftest.py stubs out PyQt5, log_config, path_helper, taglib, and mutagen
@@ -8,13 +8,11 @@ Strategy:
     patch ConfigurationManager at the module level in db_manager so the
     function uses a controlled, tmp_path-based DB path without touching disk
     or config.ini.
-  - MusicCatalogDB_2 is tested directly against real in-memory / tmp SQLite
+  - MusicCatalogDB is tested directly against real in-memory / tmp SQLite
     databases so the SQL logic is exercised without mocking sqlite3.
 """
 
-import os
 import sqlite3
-import pytest
 from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------
@@ -81,44 +79,45 @@ class TestSetupDatabase:
 
 
 # ---------------------------------------------------------------------------
-# T4-2: MusicCatalogDB_2 — constructor does NOT open a connection
+# T4-2: MusicCatalogDB — constructor does NOT open a connection
 # ---------------------------------------------------------------------------
 
 class TestMusicCatalogDB2Init:
 
     def test_connection_is_none_after_init(self, tmp_path):
         """__init__ must not open a connection; self.connection stays None."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "catalog.db")
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
 
         assert db.connection is None
 
     def test_caches_are_empty_after_init(self, tmp_path):
         """All internal caches start empty."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
-        db = MusicCatalogDB_2(str(tmp_path / "catalog.db"))
+        db = MusicCatalogDB(str(tmp_path / "catalog.db"))
 
         assert db._tracks_cache == {}
         assert db._releases_cache == {}
-        assert db._labels_cache == {}
+        assert db._labels_by_id == {}
+        assert db._labels_by_name == {}
         assert db._track_list == []
 
 
 # ---------------------------------------------------------------------------
-# T4-3: MusicCatalogDB_2.close() sets self.connection to None
+# T4-3: MusicCatalogDB.close() sets self.connection to None
 # ---------------------------------------------------------------------------
 
 class TestMusicCatalogDB2Close:
 
     def test_close_with_open_connection_sets_none(self, tmp_path):
         """close() must close an open connection and set self.connection to None."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "catalog.db")
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
 
         # Manually assign a real connection to simulate an open state.
         db.connection = sqlite3.connect(db_path)
@@ -130,16 +129,16 @@ class TestMusicCatalogDB2Close:
 
     def test_close_when_already_none_is_safe(self, tmp_path):
         """close() on a freshly-created instance (connection=None) must not raise."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
-        db = MusicCatalogDB_2(str(tmp_path / "catalog.db"))
+        db = MusicCatalogDB(str(tmp_path / "catalog.db"))
         # Should not raise even though connection is None
         db.close()
         assert db.connection is None
 
 
 # ---------------------------------------------------------------------------
-# T4-4: MusicCatalogDB_2.load() behaviour
+# T4-4: MusicCatalogDB.load() behaviour
 # ---------------------------------------------------------------------------
 
 class TestMusicCatalogDB2Load:
@@ -173,19 +172,19 @@ class TestMusicCatalogDB2Load:
 
     def test_load_returns_true_when_uber_tracks_view_exists_and_is_empty(self, tmp_path):
         """load() returns True when uber_tracks exists but contains no rows."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "catalog.db")
         self._make_db_with_uber_tracks(db_path)
 
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
         result = db.load()
 
         assert result is True
 
     def test_load_returns_false_when_uber_tracks_view_is_missing(self, tmp_path):
         """load() returns False gracefully when the uber_tracks view/table is absent."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "empty.db")
         # Create an empty SQLite database (no uber_tracks table/view)
@@ -193,14 +192,14 @@ class TestMusicCatalogDB2Load:
             conn.execute("CREATE TABLE unrelated (id INTEGER PRIMARY KEY)")
             conn.commit()
 
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
         result = db.load()
 
         assert result is False
 
     def test_load_populates_tracks_cache(self, tmp_path):
         """load() fills the internal cache with rows from uber_tracks."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "catalog.db")
         self._make_db_with_uber_tracks(db_path)
@@ -219,7 +218,7 @@ class TestMusicCatalogDB2Load:
             """)
             conn.commit()
 
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
         result = db.load()
 
         assert result is True
@@ -230,12 +229,12 @@ class TestMusicCatalogDB2Load:
 
     def test_load_does_not_set_self_connection(self, tmp_path):
         """load() opens its own internal connection and does not assign self.connection."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "catalog.db")
         self._make_db_with_uber_tracks(db_path)
 
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
         db.load()
 
         # self.connection must remain None — load() manages its own connection
@@ -243,7 +242,7 @@ class TestMusicCatalogDB2Load:
 
 
 # ---------------------------------------------------------------------------
-# T4-5: MusicCatalogDB_2.get_waveform_data() returns None when no data
+# T4-5: MusicCatalogDB.get_waveform_data() returns None when no data
 # ---------------------------------------------------------------------------
 
 class TestMusicCatalogDB2GetWaveformData:
@@ -261,19 +260,19 @@ class TestMusicCatalogDB2GetWaveformData:
 
     def test_returns_none_when_file_id_not_found(self, tmp_path):
         """get_waveform_data returns None if no row matches the file_id."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "waveform.db")
         self._make_db_with_meta_table(db_path)
 
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
         result = db.get_waveform_data(file_id=999)
 
         assert result is None
 
     def test_returns_none_when_waveform_data_is_null(self, tmp_path):
         """get_waveform_data returns None when the row exists but waveform_data is NULL."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "waveform.db")
         self._make_db_with_meta_table(db_path)
@@ -282,14 +281,14 @@ class TestMusicCatalogDB2GetWaveformData:
             conn.execute("INSERT INTO track_meta_data (id, waveform_data) VALUES (1, NULL)")
             conn.commit()
 
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
         result = db.get_waveform_data(file_id=1)
 
         assert result is None
 
     def test_returns_blob_when_data_exists(self, tmp_path):
         """get_waveform_data returns the stored bytes when waveform_data is set."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         db_path = str(tmp_path / "waveform.db")
         self._make_db_with_meta_table(db_path)
@@ -302,16 +301,16 @@ class TestMusicCatalogDB2GetWaveformData:
             )
             conn.commit()
 
-        db = MusicCatalogDB_2(db_path)
+        db = MusicCatalogDB(db_path)
         result = db.get_waveform_data(file_id=7)
 
         assert result == sample_data
 
     def test_returns_none_when_db_path_is_invalid(self, tmp_path):
         """get_waveform_data returns None gracefully when the DB file does not exist."""
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
-        db = MusicCatalogDB_2(str(tmp_path / "nonexistent" / "catalog.db"))
+        db = MusicCatalogDB(str(tmp_path / "nonexistent" / "catalog.db"))
         # SQLite will create a new empty DB, then the table won't exist → should return None
         result = db.get_waveform_data(file_id=1)
 

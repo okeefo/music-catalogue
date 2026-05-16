@@ -11,11 +11,10 @@ the test Python environment, etc.).  We patch those before any test module
 triggers the real imports.
 """
 
-import sys
 import logging
+import sys
 import types
 from unittest.mock import MagicMock
-
 
 # ---------------------------------------------------------------------------
 # Stub out PyQt5 so that src modules importing it don't fail when PyQt5 is
@@ -108,6 +107,7 @@ for _mod in ("mutagen", "mutagen.wave", "mutagen.id3", "mutagen.flac", "mutagen.
 # annotation without errors.
 # ---------------------------------------------------------------------------
 import types as _types  # noqa: E402 (already imported above as 'types')
+
 
 class _FakeDiscogsRelease:
     """Minimal stand-in for discogs_client.models.Release."""

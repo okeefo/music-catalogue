@@ -19,9 +19,9 @@ Strategy:
 """
 
 import os
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 
 # QMessageBox button result constants (standard Qt5 integer values).
 # These must match the constants set in conftest.py for the mock to behave

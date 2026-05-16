@@ -12,10 +12,7 @@ ReleaseFacade — no Discogs API is contacted.
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from file_operations.auto_tag import ReleaseFacade
-
 
 # ---------------------------------------------------------------------------
 # Helper factories

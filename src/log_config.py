@@ -8,126 +8,90 @@ from logging.handlers import RotatingFileHandler
 from path_helper import get_absolute_path_config, get_absolute_path_log_dir
 
 log_file_cleared = False
-
-
-def __get_config():
-    # Read the configuration options from config.ini
-    config = configparser.ConfigParser()
-    config.read(get_absolute_path_config())
-    # Check if the config.ini file was successfully read
-    if len(config.read("config.ini")) == 0:
-        raise FileNotFoundError("The config.ini file could not be found or read.")
-
-    # Check if the main_logger section exists, if not, create it with default settings
-    if not config.has_section("main_logger"):
-        __create_config_entry(config)
-
-    # Convert max_log_size to bytes
-    max_log_size = config.get("main_logger", "max_log_size").upper()
-    if "K" in max_log_size:
-        max_log_size = int(max_log_size.replace("K", "")) * 1024
-    elif "MB" in max_log_size:
-        max_log_size = int(max_log_size.replace("MB", "")) * 1024 * 1024
-    elif "GB" in max_log_size:
-        max_log_size = int(max_log_size.replace("GB", "")) * 1024 * 1024 * 1024
-    else:
-        max_log_size = int(max_log_size)  # Assume bytes if no unit is specified
-
-    config.set("main_logger", "max_log_size", str(max_log_size))
-
-    return config
-
-
-def __create_config_entry(config) -> None:
-    """Create the main_logger section in the config.ini file with default settings."""
-
-    config.add_section("main_logger")
-    config.set("main_logger", "log_dir", get_absolute_path_log_dir())
-    config.set("main_logger", "clear_log_each_run", "False")
-    config.set("main_logger", "max_log_size", "2MB")
-    config.set("main_logger", "backup_count", "5")
-
-    # Write the configuration to the config.ini file
-    with open("config.ini", "w") as config_file:
-        config.write(config_file)
-
-
-def get_logger(name) -> Logger:
-    """Returns a logger with the specified name. If the logger already exists, it is returned. Otherwise, a new logger is created and returned."""
-
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
-
-    if not logger.handlers:
-        add_file_handlers(logger)
-
-    return logger
-
-
 file_handler = None
 console_handler = None
 
+# Defaults mirror ConfigurationManager's [main_logger] fallbacks.
+_DEFAULT_LOG_DIR = get_absolute_path_log_dir()
+_DEFAULT_CLEAR_EACH_RUN = False
+_DEFAULT_MAX_LOG_SIZE = "10MB"
+_DEFAULT_BACKUP_COUNT = 5
+
+
+def _parse_size_to_bytes(size_str: str) -> int:
+    s = size_str.upper().strip()
+    if s.endswith("GB"):
+        return int(s[:-2]) * 1024 * 1024 * 1024
+    if s.endswith("MB"):
+        return int(s[:-2]) * 1024 * 1024
+    if s.endswith("K") or s.endswith("KB"):
+        return int(s.rstrip("B").rstrip("K")) * 1024
+    return int(s)
+
+
+def _read_config():
+    # Use interpolation=None to match ConfigurationManager — prevents
+    # configparser choking on values that contain '%' (e.g. filename masks).
+    config = configparser.ConfigParser(interpolation=None)
+    config.read(get_absolute_path_config())
+    return config
+
+
+def get_logger(name) -> Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    if not logger.handlers:
+        add_file_handlers(logger)
+    return logger
+
 
 def add_file_handlers(logger: Logger) -> None:
-    """Adds a file handler and a console handler to the specified logger."""
+    global file_handler, console_handler
 
-    global file_handler
-    global console_handler
-
-    # Remove all handlers from the logger
     for handler in logger.handlers[:]:
         logger.removeHandler(handler)
 
     if file_handler is None:
-        file_handler = __initialise_file_handler()
+        file_handler = _initialise_file_handler()
 
     if console_handler is None:
-        console_handler = __initialise_console_handler()
+        console_handler = _initialise_console_handler()
 
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
 
 
-def __get_formatter() -> logging.Formatter:
-    """Returns a formatter for the log file. Returns: logging.Formatter"""
+def _get_formatter() -> logging.Formatter:
     return logging.Formatter("%(asctime)s - [%(levelname)s] - [%(name)s:%(funcName)s] - %(message)s")
 
 
-def __initialise_file_handler() -> logging.FileHandler:
-    """Initialises the file handler for the logger. Returns: logging.FileHandler"""
-
-    global file_handler
+def _initialise_file_handler() -> logging.FileHandler:
     global log_file_cleared
 
-    config = __get_config()
+    config = _read_config()
 
-    log_dir = config.get("main_logger", "log_dir")
+    log_dir = config.get("main_logger", "log_dir", fallback=_DEFAULT_LOG_DIR)
     if not os.path.isdir(log_dir):
         os.makedirs(log_dir)
 
-    clear_log_each_run = config.getboolean("main_logger", "clear_log_each_run")
-    max_log_size = config.getint("main_logger", "max_log_size")
-    backup_count = config.getint("main_logger", "backup_count")
+    clear_log_each_run = config.getboolean("main_logger", "clear_log_each_run", fallback=_DEFAULT_CLEAR_EACH_RUN)
+    max_log_size = _parse_size_to_bytes(config.get("main_logger", "max_log_size", fallback=_DEFAULT_MAX_LOG_SIZE))
+    backup_count = config.getint("main_logger", "backup_count", fallback=_DEFAULT_BACKUP_COUNT)
 
-    formatter = __get_formatter()
-
-    # Create a file handler that logs to a file
     log_file = os.path.join(log_dir, "music-catalog.log")
     if clear_log_each_run and not log_file_cleared:
-        file_handler = logging.FileHandler(log_file, "w", "utf-8")  # Overwrite the log file each run
+        handler = logging.FileHandler(log_file, "w", "utf-8")
         log_file_cleared = True
     else:
-        file_handler = RotatingFileHandler(log_file, maxBytes=max_log_size, backupCount=backup_count, encoding="utf-8")
+        handler = RotatingFileHandler(log_file, maxBytes=max_log_size, backupCount=backup_count, encoding="utf-8")
 
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.INFO)
-    return file_handler
+    handler.setFormatter(_get_formatter())
+    handler.setLevel(logging.INFO)
+    return handler
 
 
-def __initialise_console_handler() -> logging.StreamHandler:
-    """Initialises the console handler for the logger. Returns: logging.StreamHandler"""
-
+def _initialise_console_handler() -> logging.StreamHandler:
     handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setFormatter(__get_formatter())
+    handler.setFormatter(_get_formatter())
     handler.setLevel(logging.INFO)
     return handler

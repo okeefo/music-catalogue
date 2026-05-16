@@ -11,12 +11,9 @@ isSupportedAudioFile uses pathlib.Path.is_file(), so tests that exercise the
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
-
-from file_operations.audio_tags import AudioTagHelper, AUDIO_EXTENSIONS
-
+from file_operations.audio_tags import AUDIO_EXTENSIONS, AudioTagHelper
 
 # ---------------------------------------------------------------------------
 # Helpers

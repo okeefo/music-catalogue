@@ -8,17 +8,18 @@ Uses tmp_path + monkeypatch to:
 """
 
 import sys
+
 # conftest.py stubs config_manager so that auto_tag can import it without side
 # effects.  We need the *real* module here, so we evict the stub first.
 sys.modules.pop("config_manager", None)
 
-import configparser
-import os
-import pytest
+import configparser  # noqa: E402
+import os  # noqa: E402
 
-import config_manager as cm_module
-from config_manager import ConfigurationManager
+import pytest  # noqa: E402
 
+import config_manager as cm_module  # noqa: E402
+from config_manager import ConfigurationManager  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Fixtures

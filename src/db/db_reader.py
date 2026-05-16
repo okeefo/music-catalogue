@@ -16,6 +16,8 @@ class Release:
     album_artist_name: str
     catalog_number: str
     label_name: str
+    id: int = 0        # same value as discogs_id; present for UI compatibility
+    label_id: int = 0  # synthetic integer matching RecordLabel.id
 
     def __str__(self) -> str:
         return f"{self.catalog_number} - {self.title}"
@@ -46,15 +48,25 @@ class Track:
 @dataclass
 class RecordLabel:
     name: str
+    id: int = 0  # synthetic integer assigned during load
 
 
-class MusicCatalogDB_2:
+class MusicCatalogDB:
+    def __init__(self, db_path: str) -> None:
+        self.db_path = db_path
+        self._tracks_cache: Dict[int, Track] = {}
+        self._releases_cache: Dict[int, Release] = {}
+        # Labels indexed two ways: by synthetic int ID and by name.
+        self._labels_by_id: Dict[int, RecordLabel] = {}
+        self._labels_by_name: Dict[str, RecordLabel] = {}
+        self._label_to_releases: Dict[str, set] = {}
+        self._release_to_tracks: Dict[int, set] = {}
+        self._track_list: list[Track] = []
+        self._next_label_id: int = 1
+        self.connection: Optional[sqlite3.Connection] = None
+
     def get_waveform_data(self, file_id: int) -> Optional[bytes]:
-        """
-        Fetch waveform_data BLOB for a given file_id from track_meta_data table.
-        Returns the waveform_data as bytes, or None if not found.
-        Opens and closes its own connection so no connection leaks occur.
-        """
+        """Fetch waveform_data BLOB for a given file_id from track_meta_data."""
         conn = self.__connect()
         if conn is None:
             return None
@@ -72,24 +84,7 @@ class MusicCatalogDB_2:
         finally:
             conn.close()
 
-    def __init__(self, db_path: str) -> None:
-        """
-        Initializes the MusicCatalogDB instance.
-
-        Args:
-            db_path (str): Path to the SQLite database file.
-        """
-        self.db_path = db_path
-        self._tracks_cache: Dict[int, Track] = {}
-        self._releases_cache: Dict[int, Release] = {}
-        self._labels_cache: Dict[str, RecordLabel] = {}
-        self._label_to_releases: Dict[str, set] = {}
-        self._release_to_tracks: Dict[int, set] = {}
-        self._track_list: list[Track] = []  # List to hold all tracks
-        self.connection: Optional[sqlite3.Connection] = None
-
     def __connect(self) -> Optional[sqlite3.Connection]:
-        """Opens and returns a new SQLite connection. Caller is responsible for closing it."""
         try:
             connection = sqlite3.connect(self.db_path)
             logger.info("Connected to SQLite database.")
@@ -98,12 +93,7 @@ class MusicCatalogDB_2:
             logger.info(f"Error connecting to database: {e}")
         return None
 
-    # Python
     def load(self) -> bool:
-        """
-        Loads the database and initializes the tracks cache.
-        Returns True if successful, False otherwise.
-        """
         connection = self.__connect()
         if connection is None:
             return False
@@ -113,21 +103,14 @@ class MusicCatalogDB_2:
                 logger.error("Failed to load tracks from the database.")
                 return False
             logger.info(f"Loaded {len(self._tracks_cache)} tracks from the database.")
-
             return True
         except Exception as e:
-            logger.error(f"Failed to load tracks adn releases: {e}")
+            logger.error(f"Failed to load tracks and releases: {e}")
             return False
         finally:
             connection.close()
 
     def __load_tracks(self, conn: sqlite3.Connection) -> bool:
-        """
-        Loads tracks from the uber_tracks view into the cache.
-        Handles minor schema variations (column name differences) gracefully.
-        Returns True if loaded, False otherwise.
-        """
-
         def get_col(r: sqlite3.Row, names: list[str], default=None):
             for n in names:
                 try:
@@ -146,12 +129,9 @@ class MusicCatalogDB_2:
             cursor.close()
             return True
 
-        # Load tracks into cache, keyed by track_id (int)
-        cache = self._tracks_cache
         for row in rows:
             tid = get_col(row, ["track_id", "id"])
             if tid is None:
-                # Skip rows without a track identifier
                 continue
 
             track = Track(
@@ -175,25 +155,34 @@ class MusicCatalogDB_2:
                 file_id=get_col(row, ["track_file_id", "file_id", "file_file_id"], None),
             )
 
-            cache[tid] = track
+            self._tracks_cache[tid] = track
             self._track_list.append(track)
+
+            # Assign a synthetic integer ID to each unique label name.
+            label_name = track.label or ""
+            if label_name and label_name not in self._labels_by_name:
+                label_obj = RecordLabel(name=label_name, id=self._next_label_id)
+                self._labels_by_name[label_name] = label_obj
+                self._labels_by_id[self._next_label_id] = label_obj
+                self._next_label_id += 1
+
+            label_obj = self._labels_by_name.get(label_name)
+            label_id_val = label_obj.id if label_obj else 0
 
             discogs_id = get_col(row, ["discogs_id"], None)
             if discogs_id is not None and discogs_id not in self._releases_cache:
                 release = Release(
                     discogs_id=discogs_id,
-                    date=track.year,
+                    id=discogs_id,
+                    label_id=label_id_val,
+                    date=str(track.year),
                     country=track.country,
                     title=track.album_title,
                     album_artist_name=track.album_artist,
                     catalog_number=track.catalog_number,
-                    label_name=track.label,
+                    label_name=label_name,
                 )
                 self._releases_cache[discogs_id] = release
-
-            label_name = track.label or ""
-            if label_name and label_name not in self._labels_cache:
-                self._labels_cache[label_name] = RecordLabel(name=label_name)
 
             if discogs_id is not None:
                 self._label_to_releases.setdefault(label_name, set()).add(discogs_id)
@@ -202,9 +191,24 @@ class MusicCatalogDB_2:
         cursor.close()
         return True
 
-    # Retrieval methods:
+    # ── Dict-returning accessors (for UI compatibility) ────────────────────
+
+    def get_labels(self) -> Dict[int, RecordLabel]:
+        return self._labels_by_id
+
+    def get_releases(self) -> Dict[int, Release]:
+        return self._releases_cache
+
+    def get_tracks(self) -> Dict[int, Track]:
+        return self._tracks_cache
+
+    # ── List-returning accessors ───────────────────────────────────────────
+
     def get_all_tracks(self) -> list[Track]:
         return self._track_list
+
+    def get_all_labels(self) -> list[RecordLabel]:
+        return list(self._labels_by_id.values())
 
     def get_tracks_for_label(self, label_name: str) -> list[Track]:
         track_ids = set()
@@ -215,60 +219,27 @@ class MusicCatalogDB_2:
     def get_releases_for_label(self, label_name: str) -> list[Release]:
         return [self._releases_cache[rid] for rid in self._label_to_releases.get(label_name, set())]
 
-    def get_all_labels(self) -> list[RecordLabel]:
-        return list(self._labels_cache.values())
-
     def get_labels_and_releases(self) -> Dict[str, set]:
-        """
-        Returns a dictionary mapping label names to their releases.
-        """
         return self._label_to_releases
 
-    def count_tracks(self) -> int:
-        """
-        Counts the number of tracks in the cache.
+    def get_release_by_id(self, release_id: int) -> Optional[Release]:
+        return self._releases_cache.get(release_id)
 
-        Returns:
-            int: Number of tracks.
-        """
-        if self._tracks_cache is None:
-            return 0
+    def count_tracks(self) -> int:
         return len(self._tracks_cache)
 
     def count_releases(self) -> int:
-        """
-        Counts the number of releases in the cache.
-
-        Returns:
-            int: Number of releases.
-        """
-        if self._tracks_cache is None:
-            return 0
         return len(self._releases_cache)
 
-    def get_release_by_id(self, release_id: int) -> Optional[Release]:
-        """
-        Retrieves a release by its Discogs ID.
-
-        Args:
-            discogs_id (int): The Discogs ID of the release.
-
-        Returns:
-            Optional[Release]: The Release object if found, None otherwise.
-        """
-        return self._releases_cache.get(release_id)
-
     def close(self) -> None:
-        """Closes the SQLite connection if one is open."""
         if self.connection:
             self.connection.close()
             self.connection = None
             logger.info("SQLite connection closed.")
 
 
-# Dummy execution for testing purposes
 if __name__ == "__main__":
-    db = MusicCatalogDB_2("music_catalog.db")
+    db = MusicCatalogDB("music_catalog.db")
     ok = db.load()
     print("Loaded tracks:", len(db.get_all_tracks()) if ok else 0)
     db.close()

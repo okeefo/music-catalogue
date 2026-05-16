@@ -25,8 +25,9 @@ QMessageBox integer constants used here match the values in conftest.py.
 import os
 import sys
 import types
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 # ---------------------------------------------------------------------------
 # QMessageBox button constants (must match conftest.py / standard Qt5 values)
@@ -71,8 +72,7 @@ sys.modules["ui.progress_bar_helper"] = _pb_helper_stub
 # ---------------------------------------------------------------------------
 # Import the module under test (after all stubs are in place).
 # ---------------------------------------------------------------------------
-import file_operations.file_utils as _fu_module   # noqa: E402  (intentional late import)
-
+import file_operations.file_utils as _fu_module  # noqa: E402  (intentional late import)
 
 # ---------------------------------------------------------------------------
 # Fixtures

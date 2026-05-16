@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QLabel, QLineEdit, QMenu, QMessageBox, QPushButton, 
 from qtpy import QtGui
 
 from config_manager import ConfigurationManager
-from db.db_reader import MusicCatalogDB_2
+from db.db_reader import MusicCatalogDB
 from log_config import get_logger
 from ui.custom_waveform_widget import WaveformWidget
 from ui.db_window_widget import CenterAlignDelegate, DatabaseWidget
@@ -70,7 +70,7 @@ class DatabaseMediaWindow(QWidget):
 
         # Resolve DB path from config.ini if available, else fall back
         db_path = self.__resolve_db_path()
-        self.music_db2 = MusicCatalogDB_2(db_path)
+        self.music_db2 = MusicCatalogDB(db_path)
         if not self.music_db2.load():
             logger.warning(f"DB Media Window: Failed to load database at: {db_path}. Viewer may be empty.")
         # Log loaded track count clearly for this window
