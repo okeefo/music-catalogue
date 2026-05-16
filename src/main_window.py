@@ -199,6 +199,10 @@ class MainWindow(QMainWindow):
         self.mo_settings.triggered.connect(self.on_settings_button_clicked)
         self.mo_settings.setToolTip("Open Settings")
 
+        self.action_restore_from_trash = self.findChild(QAction, "actionRestore_From_Trash")
+        self.action_restore_from_trash.triggered.connect(self.on_restore_button_clicked)
+        self.action_restore_from_trash.setToolTip("Restore from the recycle bin")
+
         # toggle menu
         self.frame_left_menu.setMinimumWidth(0)
         self.but_toggle = self.findChild(QPushButton, "but_toggle")
