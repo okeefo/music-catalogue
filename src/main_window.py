@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QTreeView,
 )
 
+import qt.resources_rcc  # noqa: F401 — registers :/icons/ and :/media/ Qt resources
 from file_operations.audio_tags import AudioTagHelper, PictureTypeDescription
 from file_operations.file_utils import ask_and_copy_files, ask_and_move_files
 from file_operations.repackage_dir import repackage_dir_by_label
