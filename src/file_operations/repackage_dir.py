@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import List
 
 from PyQt5.QtWidgets import QMessageBox
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
@@ -22,7 +23,7 @@ def repackage_dir_by_label(source_dir: str, target_dir: str) -> None:
     repackage_files_by_label(os.listdir(source_dir), source_dir, target_dir)
 
 
-def repackage_files_by_label(files: dict[str], source_dir: str, target_dir: str) -> None:
+def repackage_files_by_label(files: List[str], source_dir: str, target_dir: str) -> None:
 
     user_choice = None
     for file in files:

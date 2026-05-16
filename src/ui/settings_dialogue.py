@@ -1,8 +1,10 @@
+import os
+
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QDialog, QFileDialog
+from config_manager import ConfigurationManager
 from log_config import get_logger
-import configparser
 
 logger = get_logger(__name__)
 
@@ -10,111 +12,74 @@ logger = get_logger(__name__)
 class SettingsDialog(QDialog):
     def __init__(self):
         super().__init__()
-        self.ui = uic.loadUi("src\\qt\\settings.ui", self)
+        self.ui = uic.loadUi(os.path.join("src", "qt", "settings.ui"), self)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self.__display_settings()
-        # self.ui.show())
+        self._connect_browse_buttons()
+        self._load_settings()
 
-    def closeEvent(self, event):
-        logger.info("Settings dialog closed.")
-        event.accept()
+    def _connect_browse_buttons(self) -> None:
+        """Wire browse buttons to file pickers."""
+        if btn := self.findChild(type(self.ui.pushButton), "pushButton"):
+            btn.clicked.connect(lambda: self._browse_dir(self.ui.start_dir_source))
+        if btn2 := self.findChild(type(self.ui.pushButton_2), "pushButton_2"):
+            btn2.clicked.connect(lambda: self._browse_dir(self.ui.start_dir_target))
+        if btn5 := self.findChild(type(self.ui.pushButton_5), "pushButton_5"):
+            btn5.clicked.connect(lambda: self._browse_dir(self.ui.db_location))
 
-    def accept(self):
-        logger.info("Settings dialog accepted.")
-        self.close()
+    def _browse_dir(self, line_edit) -> None:
+        path = QFileDialog.getExistingDirectory(self, "Select Directory", line_edit.text())
+        if path:
+            line_edit.setText(path)
 
-    def reject(self):
-        logger.info("Settings dialog rejected.")
-        self.close()
+    def _load_settings(self) -> None:
+        """Populate all form fields from ConfigurationManager."""
+        cfg = ConfigurationManager()
+        self.ui.start_dir_source.setText(cfg.last_source_directory)
+        self.ui.start_dir_target.setText(cfg.last_target_directory)
+        self.ui.log_dir.setText(cfg.log_dir)
+        self.ui.clear_each_run.setChecked(cfg.clear_log_each_run)
+        self.ui.max_log_size.setValue(self._parse_mb(cfg.max_log_size))
+        self.ui.backup_count.setValue(cfg.backup_count)
+        self.ui.db_location.setText(cfg.db_location)
+        self.ui.db_name.setText(cfg.db_name)
+        self.ui.discogs_token.setText(cfg.discogs_token)
+        self.ui.file_mask.setText(cfg.filename_mask)
 
-    def show(self):
-        logger.info("Settings dialog shown.")
-        self.ui.show()
+    def _save_settings(self) -> None:
+        """Read all form fields and persist to config.ini via ConfigurationManager."""
+        cfg = ConfigurationManager()
+        cfg.set("Directories", "last_source_directory", self.ui.start_dir_source.text())
+        cfg.set("Directories", "last_target_directory", self.ui.start_dir_target.text())
+        cfg.set("main_logger", "log_dir", self.ui.log_dir.text())
+        cfg.set("main_logger", "clear_log_each_run", str(self.ui.clear_each_run.isChecked()))
+        cfg.set("main_logger", "max_log_size", f"{self.ui.max_log_size.value()}MB")
+        cfg.set("main_logger", "backup_count", str(self.ui.backup_count.value()))
+        cfg.set("db", "location", self.ui.db_location.text())
+        cfg.set("db", "name", self.ui.db_name.text())
+        cfg.set("discogs", "token", self.ui.discogs_token.text())
+        cfg.set("autotag", "filename_mask", self.ui.file_mask.text())
+        cfg.save()
+        logger.info("Settings saved.")
 
-    def hide(self):
-        logger.info("Settings dialog hidden.")
-        self.ui.hide()
+    def accept(self) -> None:
+        self._save_settings()
+        super().accept()
 
-    def __display_settings(self):
-        # read the config file and display the settings
-        config = configparser.RawConfigParser()
-        if config.read('config.ini')[0] == '':
-            logger.error("Config file not found.")
-            return
-        self._display_startup_settings(config)
-        self._display_logging_settings(config)
-        self._display_db_settings(config)
-        self._display_discogs_settings(config)
-        self._display_filetag_settings(config)
+    def reject(self) -> None:
+        logger.info("Settings dialog cancelled.")
+        super().reject()
 
-    def _display_startup_settings(self, config: configparser.RawConfigParser) -> None:
-        # display the startup settings
-        logger.info("Displaying startup settings.")
-        self.ui.start_dir_source.setText(config.get('Directories', 'last_source_directory'))
-        self.ui.start_dir_target.setText(config.get('Directories', 'last_target_directory'))
-
-    def _display_logging_settings(self, config: configparser.RawConfigParser) -> None:
-        logger.info("Displaying logging settings.")
-
-        logdir = config.get('main_logger', 'log_dir')
-        logger.info(f"setting: logdir: {logdir}")
-        self.ui.log_dir.setText(logdir)
-
-        clear_each_run = config.getboolean('main_logger', 'clear_log_each_run')
-        logger.info(f"setting: clear_each_run: {clear_each_run}")
-        self.ui.clear_each_run.setChecked(clear_each_run)
-
-        max_log_size = self.__get_log_size_in_mb(config)
-        logger.info(f"setting: max_log_size: {max_log_size}")
-        self.ui.max_log_size.setValue(max_log_size)
-
-        backup_count = int(config.get('main_logger', 'backup_count'))
-        if not backup_count:
-            logger.info(f"setting: backup_count, its not numeric: '{backup_count}'")
-            backup_count = 5
-        logger.info(f"setting: backup_count: {backup_count}")
-        self.ui.backup_count.setValue(backup_count)
-
-    def _display_db_settings(self, config: configparser.RawConfigParser) -> None:
-        logger.info("Displaying database settings.")
-        if 'db' in config.sections():
-
-            if 'location' in config['db']:
-                self.ui.db_location.setText(config.get('db', 'location'))
-
-            if 'name' in config['db']:
-                self.ui.db_name.setText(config.get('db', 'name'))
-
-    def _display_discogs_settings(self, config: configparser.RawConfigParser) -> None:
-        logger.info("Displaying Discogs settings.")
-        self.ui.discogs_token.setText(config.get('discogs', 'token'))
-
-    def _display_filetag_settings(self, config: configparser.RawConfigParser) -> None:
-        logger.info("Displaying FileTag settings.")
-        filename_mask = self._config_get(config, 'autotag', 'filename_mask')
-        self.ui.file_mask.setText(config.get('autotag', 'filename_mask'))
-    
-    def __get_log_size_in_mb(self, config: configparser.RawConfigParser) -> int:
-        max_log_size = config.get('main_logger', 'max_log_size')
-        unit = max_log_size[-2:]
-        value = max_log_size[:-2]
-
-        if str(unit).upper() == 'KB':
-            return int(value) // 1024
-        elif str(unit).upper() == 'GB':
-            return int(value) * 1024
-        elif str(unit).upper() == 'MB':
-            return int(value)
-        else:
-            return 10
-
-    def _config_get(self, config: configparser.RawConfigParser, section: str, key: str) -> str:
-
-        return (
-            config[section][key]
-            if section in config.sections() and key in config[section]
-            else ""
-        )
-     
-     
-
+    @staticmethod
+    def _parse_mb(value: str) -> int:
+        unit = value[-2:].upper()
+        num = value[:-2]
+        try:
+            if unit == "KB":
+                return int(num) // 1024
+            if unit == "GB":
+                return int(num) * 1024
+            if unit == "MB":
+                return int(num)
+        except (ValueError, IndexError):
+            pass
+        return 10
