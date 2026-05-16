@@ -7,6 +7,11 @@ Uses tmp_path + monkeypatch to:
   singleton does not bleed between tests
 """
 
+import sys
+# conftest.py stubs config_manager so that auto_tag can import it without side
+# effects.  We need the *real* module here, so we evict the stub first.
+sys.modules.pop("config_manager", None)
+
 import configparser
 import os
 import pytest

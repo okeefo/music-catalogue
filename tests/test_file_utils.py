@@ -63,7 +63,9 @@ _pb_instance_mock = MagicMock()
 _pb_instance_mock.user_has_cancelled.return_value = False
 _ProgressBarHelper_mock.return_value = _pb_instance_mock
 _pb_helper_stub.ProgressBarHelper = _ProgressBarHelper_mock
-sys.modules.setdefault("ui.progress_bar_helper", _pb_helper_stub)
+# Use direct assignment (not setdefault) — conftest already installed a plain
+# MagicMock stub; we need the properly-configured version for file_utils tests.
+sys.modules["ui.progress_bar_helper"] = _pb_helper_stub
 
 
 # ---------------------------------------------------------------------------
