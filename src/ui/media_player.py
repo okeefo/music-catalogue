@@ -83,14 +83,12 @@ class MediaPlayerController(QWidget):
         self.butt_play.clicked.connect(lambda: self.on_play_button_clicked())
         self.butt_play.setToolTip("Play the loaded audio file")
         self.butt_play.setToolTipDuration(1000)
-        # self.but_db.setShortcut("Ctrl+D")
 
         self.butt_stop = butt_stop
         self.butt_stop.setIcon(self.icon_stop_off)
         self.butt_stop.clicked.connect(lambda: self.on_stop_button_clicked())
         self.butt_stop.setToolTip("Stop playing the loaded audio file")
         self.butt_stop.setToolTipDuration(1000)
-        # self.but_db.setShortcut("Ctrl+D")
 
     def __setup_media_player(self) -> None:
         """Sets up the media player. Returns: None"""
@@ -104,7 +102,6 @@ class MediaPlayerController(QWidget):
         self.slider = slider
         self.slider.setMinimum(0)
         self.slider.setMaximum(1000)  # Increase for finer granularity
-        # self.slider.setSingleStep(1)  # Smallest possible step
         self.waveform_widget.set_slider(self.slider)
         self.slider.valueChanged.connect(self.on_slider_moved)
         self.slider.sliderPressed.connect(self.on_slider_pressed)

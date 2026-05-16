@@ -11,7 +11,7 @@ class ConfigurationManager:
     _instance = None
 
     def __new__(cls):
-        if not cls._instance:
+        if not isinstance(cls._instance, cls):
             cls._instance = super().__new__(cls)
             cls._instance._config = configparser.ConfigParser()
             cls._instance._load()

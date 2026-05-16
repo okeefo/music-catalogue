@@ -13,7 +13,7 @@ from typing import List, Union
 from discogs_client.models import Release, Track
 from mutagen.id3 import APIC, COMM, ID3, TALB, TCON, TIT2, TMED, TPE1, TPE2, TPOS, TPUB, TRCK, TXXX, TYER, WXXX, ID3NoHeaderError
 from mutagen.wave import WAVE
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from PyQt5.QtWidgets import QMessageBox
 
 from config_manager import ConfigurationManager
@@ -52,15 +52,9 @@ class TrackInfo(BaseModel):
 tag_helper = AudioTagHelper()
 
 
-class Config:
-    arbitrary_types_allowed = True
-
-
 class ReleaseFacade(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     release: Release
-
-    class Config:
-        arbitrary_types_allowed = True
 
     def get_id(self) -> int:
         return self.release.id
@@ -153,7 +147,7 @@ class ReleaseFacade(BaseModel):
             country=self.get_country(),
         )
 
-    def __remove_brackets_and_numbers(self, string: str):
+    def __remove_brackets_and_numbers(self, string: str) -> str:
         return re.sub(r"\(\d+\)", "", string).strip()
 
 

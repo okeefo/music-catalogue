@@ -219,7 +219,7 @@ def __target_file_exists(source_file, target_dir) -> bool:
     return os.path.exists(fq_target_file)
 
 
-def __do_copy_file(source_file, target_dir, userResponse):
+def __do_copy_file(source_file: str, target_dir: str, userResponse: int | None) -> None:
 
     try:
         if os.path.isfile(source_file):

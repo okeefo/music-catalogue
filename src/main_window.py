@@ -78,7 +78,6 @@ class MainWindow(QMainWindow):
         self.id3_tags = []
         self.audio_tags = AudioTagHelper()
         self.player = QMediaPlayer(self)
-        # self.player.setNotifyInterval(50)
         self._user_is_sliding = False
 
         # set up config
@@ -113,8 +112,6 @@ class MainWindow(QMainWindow):
         self.__setup_action_buttons()
         self.__setup_menu_buttons()
         self.__setup_dir_up_buttons()
-
-    #  self.__setup_mp3tag_path()
 
     def __setup_context_menus(self):
         """Set up the context menus for the tree views. Returns: None"""

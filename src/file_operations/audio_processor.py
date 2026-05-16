@@ -416,7 +416,7 @@ def __execute_system_command(command: List, action: str, release_id: str) -> boo
         return False
 
 
-def is_file_locked(file_path):
+def is_file_locked(file_path: str) -> bool | None:
     """Check if a file is locked by trying to open it in append mode."""
     locked = None
     if os.path.exists(file_path):

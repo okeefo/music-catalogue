@@ -222,5 +222,5 @@ class PictureTypeDescription:
     }
 
     @classmethod
-    def get_description(cls, picture_type):
+    def get_description(cls, picture_type: int) -> str:
         return cls.descriptions.get(picture_type, "Unknown")

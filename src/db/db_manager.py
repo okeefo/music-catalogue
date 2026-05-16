@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 _DEFAULT_DB_NAME = "music-catalog-v1"
 
 
-def setup_database():
+def setup_database() -> None:
     logger.info("Setting up the database: reading config.ini and creating tables if they do not exist.")
     cfg = ConfigurationManager()
 

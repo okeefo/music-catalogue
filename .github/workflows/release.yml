@@ -1,0 +1,44 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install PyQt5 qtpy mutagen pytaglib pydub pydantic numpy discogs_client send2trash winshell pywin32
+
+      - name: Build executable
+        run: pyinstaller music_catalogue.spec
+
+      - name: Archive distribution
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $archive = "music-catalogue-${tag}-windows.zip"
+          Compress-Archive -Path "dist\music-catalogue\*" -DestinationPath $archive
+          echo "ARCHIVE=$archive" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARCHIVE }}
+          generate_release_notes: true

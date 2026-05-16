@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 audio_tags = AudioTagHelper()
 
 
-def ___ask_user_to_overwrite(file, label):
+def ___ask_user_to_overwrite(file: str, label: str) -> int:
     """Ask user to overwrite file"""
     message = f"The file:\n'{file}'\nalready exists in the target directory\n'{label}'. \n\nDo you want to overwrite it?"
     return show_message_box(message, ButtonType.YesNoToAllCancel, "Overwrite File?")
@@ -108,7 +108,7 @@ def __log_overwrite(target_file: str, user_choice: int) -> None:
     logger.info(f"Overwriting - target file already exists '{target_file}' - User choice: {convert_response_to_string(user_choice)}")
 
 
-def __repack(source_file: str, target_file: str):
+def __repack(source_file: str, target_file: str) -> None:
     """Moves the source file to the target file"""
     logger.info(f"Repackaging {source_file} to {target_file}")
     shutil.move(source_file, target_file)

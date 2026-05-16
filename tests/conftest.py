@@ -98,3 +98,42 @@ sys.modules.setdefault("taglib", _taglib_mock)
 # ---------------------------------------------------------------------------
 for _mod in ("mutagen", "mutagen.wave", "mutagen.id3", "mutagen.flac", "mutagen.mp3"):
     sys.modules.setdefault(_mod, MagicMock())
+
+
+# ---------------------------------------------------------------------------
+# Stub discogs_client and discogs_client.models so modules that import them
+# (e.g. file_operations/auto_tag.py) can be loaded without the real package.
+# We expose lightweight placeholder classes for Release and Track so that
+# Pydantic's arbitrary_types_allowed check in ReleaseFacade can resolve the
+# annotation without errors.
+# ---------------------------------------------------------------------------
+import types as _types  # noqa: E402 (already imported above as 'types')
+
+class _FakeDiscogsRelease:
+    """Minimal stand-in for discogs_client.models.Release."""
+
+class _FakeDiscogsTrack:
+    """Minimal stand-in for discogs_client.models.Track."""
+
+_discogs_models_stub = _types.ModuleType("discogs_client.models")
+_discogs_models_stub.Release = _FakeDiscogsRelease
+_discogs_models_stub.Track = _FakeDiscogsTrack
+
+_discogs_client_stub = MagicMock()
+_discogs_client_stub.models = _discogs_models_stub
+
+sys.modules.setdefault("discogs_client", _discogs_client_stub)
+sys.modules.setdefault("discogs_client.models", _discogs_models_stub)
+
+# requests is used at module level by auto_tag (header dict only); stub it.
+sys.modules.setdefault("requests", MagicMock())
+
+# ui.progress_bar_helper is imported at module level by auto_tag.
+_ui_pbh_stub = _types.ModuleType("ui.progress_bar_helper")
+_ui_pbh_stub.ProgressBarHelper = MagicMock()
+sys.modules.setdefault("ui.progress_bar_helper", _ui_pbh_stub)
+
+# config_manager is imported at module level by auto_tag.
+_cfg_mgr_stub = _types.ModuleType("config_manager")
+_cfg_mgr_stub.ConfigurationManager = MagicMock()
+sys.modules.setdefault("config_manager", _cfg_mgr_stub)

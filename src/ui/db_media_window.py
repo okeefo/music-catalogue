@@ -509,7 +509,6 @@ class DatabaseMediaWindow(QWidget):
         self.track_viewer.setModel(model)
         # Hide the first and last columns (Track ID and No)
         self.track_viewer.setColumnHidden(self.COL_IDX["Track ID"], True)
-        # self.track_viewer.setColumnHidden(self.COL_IDX["No"], True)
 
         # Use constants for column indexes
         for col in ["Catalog No", "Discogs ID", "Format", "Disc No", "Track No"]:

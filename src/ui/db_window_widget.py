@@ -33,8 +33,6 @@ class DatabaseWidget(QWidget):
     label_map = {}
     label_a_map = {}
 
-    _instance = None
-
     def __init__(self, parent=None):
         super().__init__(parent)
 

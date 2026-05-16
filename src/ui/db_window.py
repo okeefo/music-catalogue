@@ -49,7 +49,6 @@ class DatabaseWindow(QMainWindow):
         self.clear_track_labels()
         self.__setup_icons()
         self.__set_chevron_icon()
-#        self.__setup_tracks_viewer()
 
     def __setup_line_edit(self, path: str) -> None:
         # Set the completer for the MyLineEdit

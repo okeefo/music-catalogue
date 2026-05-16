@@ -17,7 +17,7 @@ class Release:
     catalog_number: str
     label_name: str
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.catalog_number} - {self.title}"
 
 
@@ -86,10 +86,9 @@ class MusicCatalogDB_2:
         self._label_to_releases: Dict[str, set] = {}
         self._release_to_tracks: Dict[int, set] = {}
         self._track_list: list[Track] = []  # List to hold all tracks
-        # self._files_cache: Dict[int, list[str]] = {}  # Placeholder for file cache
         self.connection: Optional[sqlite3.Connection] = None
 
-    def __connect(self):
+    def __connect(self) -> Optional[sqlite3.Connection]:
         """Opens and returns a new SQLite connection. Caller is responsible for closing it."""
         try:
             connection = sqlite3.connect(self.db_path)
@@ -259,7 +258,7 @@ class MusicCatalogDB_2:
         """
         return self._releases_cache.get(release_id)
 
-    def close(self):
+    def close(self) -> None:
         """Closes the SQLite connection if one is open."""
         if self.connection:
             self.connection.close()

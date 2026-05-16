@@ -11,7 +11,7 @@ class MusicCatalogDBWriter:
         self.db_path = db_path
         self.connection: Optional[sqlite3.Connection] = self.__connect()
 
-    def __connect(self):
+    def __connect(self) -> Optional[sqlite3.Connection]:
         try:
             connection = sqlite3.connect(self.db_path)
             logger.info("Connected to SQLite database (writer).")
@@ -20,7 +20,7 @@ class MusicCatalogDBWriter:
             logger.error(f"Error connecting to database: {e}")
         return None
 
-    def ensure_track_meta_data_table(self):
+    def ensure_track_meta_data_table(self) -> None:
         """
         Ensures the track_meta_data table exists.
         """
@@ -62,7 +62,7 @@ class MusicCatalogDBWriter:
             logger.error(f"Failed to write waveform data: {e}")
             return False
 
-    def close(self):
+    def close(self) -> None:
         if self.connection:
             self.connection.close()
             logger.info("SQLite connection (writer) closed.")

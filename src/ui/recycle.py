@@ -135,7 +135,6 @@ class RecycleBinModel(QAbstractItemModel):
         """Update the model data by re-fetching the items from the recycle bin."""
         self.namespace = self.shell.Namespace(10)  # 10 is the code for the Recycle Bin
         self.items = list(self.namespace.Items())
-        # self.items = list(winshell.recycle_bin().items())
         self.layoutChanged.emit()
 
 
