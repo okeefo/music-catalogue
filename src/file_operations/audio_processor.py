@@ -30,6 +30,12 @@ _SPLIT_HIGH_THRESH_DBFS: int = -25
 _SPLIT_MAX_ATTEMPTS: int = 8
 _SPLIT_MIN_SILENCE_MS: int = 2000
 
+# Silence-trim constants.
+_TRIM_SILENCE_THRESHOLD_DBFS: int = -35
+# Pad this many milliseconds of silence before trimming to avoid clipping the
+# real audio start — SoX can introduce a tiny DC offset at the very beginning.
+_TRIM_PRE_START_BUFFER_MS: int = 100
+
 
 def amplify_files(fq_file_path: List[str]) -> None:
     """Process a list of audio files.  The file will be amplified."""
@@ -65,7 +71,7 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
     """Process a list of audio files.
     option may be: ALL, Slowdown, Amplify, Split, Speed_Up, or Trim.
     """
-    progress_parts = 4 if option == "ALL" else 1
+    progress_parts = 5 if option == "ALL" else 1  # slowdown, trim, amplify, split, tag
     progress_bar = ProgressBarHelper((len(fq_files) * progress_parts) + 2, "Processing..", min_files=1)
     maintain_tags = option != "ALL"
 
@@ -124,6 +130,10 @@ def __apply_processing_option(
         result = __reduce_recording_speed(fq_file_path, release, maintain_tags, option == "Slowdown")
         if (not result) or option == "Slowdown":
             return
+
+    if option == "ALL":
+        progress_bar.increment_with_message(f"{status_msg} Trimming leading silence")
+        __trim_the_silence(fq_file_path, release.get_id(), maintain_tags=False)
 
     if option in ["ALL", "Amplify"]:
         progress_bar.increment_with_message(f"{status_msg} Amplify file")
@@ -287,15 +297,22 @@ def __increase_speed_of_file_from_33_45rpm(source_file: str, release_id: str, ma
     return result
 
 
-def __trim_the_silence(source_file: str, release_id: str, maintain_tags=False) -> bool:
-    """Trims the silence at the beginning of an audio file using SoX."""
+def __trim_the_silence(source_file: str, release_id: str, maintain_tags: bool = False) -> bool:
+    """Trim leading silence from source_file using SoX.
+
+    Pads _TRIM_PRE_START_BUFFER_MS of silence before trimming to prevent SoX
+    from clipping the first few samples of real audio (DC-offset workaround).
+    """
     logger.info(f"{release_id} - Trimming the silence at the beginning of the audio file")
     if maintain_tags:
         tags, cover_art = audio_tag_helper.get_tags_and_cover_art(source_file)
 
-    # TODO: make this a configurable property
-    silence_threshold = -35
-    command = ["sox.exe", "{source}", "{target}", "silence", "-l", "1", "0.1", f"{silence_threshold}d"]
+    pad_secs = _TRIM_PRE_START_BUFFER_MS / 1000.0
+    command = [
+        "sox.exe", "{source}", "{target}",
+        "pad", f"{pad_secs:.3f}", "0",
+        "silence", "-l", "1", "0.1", f"{_TRIM_SILENCE_THRESHOLD_DBFS}d",
+    ]
     result = __execute_and_rename("Trim", source_file, command, release_id)
     if result and maintain_tags:
         audio_tag_helper.write_tags(source_file, tags)

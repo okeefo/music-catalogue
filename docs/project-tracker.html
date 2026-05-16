@@ -903,7 +903,10 @@
     "i3": "PyInstaller spec file created (music_catalogue.spec): bundles .ui files, Qt icons, sox, soundstretch into one-folder dist",
     "i4": "GitHub Actions release pipeline added (.github/workflows/release.yml): builds Windows exe on v*.*.* tag push",
     "m3": "Audio processing magic numbers extracted to named module-level constants (_SPLIT_LOW_THRESH_DBFS, _SPLIT_HIGH_THRESH_DBFS, _SPLIT_MAX_ATTEMPTS, _SPLIT_MIN_SILENCE_MS)",
-    "m5": "__batch_process_files refactored: extracted __validate_file_for_processing and __apply_processing_option helpers; fixed trim bug (release_id/maintain_tags args were swapped)"
+    "m5": "__batch_process_files refactored: extracted __validate_file_for_processing and __apply_processing_option helpers; fixed trim bug (release_id/maintain_tags args were swapped)",
+    "f3": "uber_tracks view created in db_manager.py (joins digital_media+release+media_types); track_meta_data orphan FK fixed; view tested in-memory",
+    "f4": "Trim integrated into ALL pipeline (after Slowdown, before Amplify); _TRIM_PRE_START_BUFFER_MS constant added; SoX pad+silence command updated",
+    "f5": "Artwork display already wired: MediaPlayerController.set_cover_art() handles APIC tags in db_media_window; falls back to white_label_record.jpg; stale TODO comments removed from main_window.py"
   };
 
   (function init() {

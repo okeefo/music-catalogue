@@ -109,6 +109,42 @@ def setup_database() -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_track_name  ON digital_media(track_name)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_media_type  ON digital_media(media_type)")
 
+        # track_meta_data stores pre-computed waveform blobs keyed by digital_media rowid.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS track_meta_data
+            (
+                id            INTEGER PRIMARY KEY,
+                waveform_data BLOB
+            )
+        """)
+
+        # uber_tracks — denormalised view used by MusicCatalogDB_2 and MusicCatalogDB.
+        conn.execute("""
+            CREATE VIEW IF NOT EXISTS uber_tracks AS
+            SELECT
+                dm.rowid                AS track_id,
+                dm.rowid                AS file_id,
+                r.catalogue_number      AS catalog_number,
+                r.label                 AS label,
+                r.name                  AS album_title,
+                1                       AS disc_number,
+                dm.track_artist         AS track_artist,
+                dm.track_name           AS track_title,
+                COALESCE(mt.format, r.media, '') AS format,
+                dm.track_number         AS track_number,
+                r.release_id            AS discogs_id,
+                CAST(SUBSTR(r.date, 1, 4) AS INTEGER) AS year,
+                r.country               AS country,
+                r.url                   AS discogs_url,
+                r.artist                AS album_artist,
+                dm.file_location        AS file_location,
+                r.style                 AS style,
+                r.genre                 AS genre
+            FROM digital_media dm
+            JOIN release r ON dm.release_id = r.release_id
+            LEFT JOIN media_types mt ON dm.media_type = mt.id
+        """)
+
         conn.commit()
 
 

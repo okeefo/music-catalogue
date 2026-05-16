@@ -26,7 +26,7 @@ class MusicCatalogDBWriter:
         """
         query = """
         CREATE TABLE IF NOT EXISTS track_meta_data (
-            id INTEGER PRIMARY KEY REFERENCES track_formats(id),
+            id            INTEGER PRIMARY KEY,
             waveform_data BLOB
         )
         """
