@@ -1,12 +1,10 @@
 import shutil
-import time
 import send2trash
 import os
 from typing import List, Union
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
 from ui.progress_bar_helper import ProgressBarHelper
-from PyQt5.QtWidgets import QMessageBox, QProgressDialog
-import qt.resources_rcc
+from PyQt5.QtWidgets import QMessageBox
 
 import log_config
 

@@ -3,7 +3,7 @@ from log_config import get_logger
 import taglib
 from mutagen.wave import WAVE
 from mutagen.id3 import ID3, APIC, ID3NoHeaderError
-from mutagen.flac import FLAC, Picture
+from mutagen.flac import FLAC
 from mutagen import File
 
 AUDIO_EXTENSIONS = [".mp3", ".wav",".flac"]

@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QMessageBox
 from ui.custom_messagebox import ButtonType, show_message_box, convert_response_to_string
 from file_operations.audio_tags import AudioTagHelper
 from log_config import get_logger
-from typing import Tuple
 
 logger = get_logger(__name__)
 audio_tags = AudioTagHelper()
@@ -57,13 +56,13 @@ def repackage_file_by_label(file: str, source_dir: str, target_dir: str, user_ch
 
     # check is file is supported else skip
     if not audio_tags.isSupportedAudioFile(source_file):
-        logger.warn(f"Skipping - file not supported: '{source_file}'")
+        logger.warning(f"Skipping - file not supported: '{source_file}'")
         return user_choice
 
     # get tags if no tags skip
     tags = audio_tags.get_tags(source_file)
     if not tags:
-        logger.warn(f"Skipping - no tags '{source_file}'")
+        logger.warning(f"Skipping - no tags '{source_file}'")
         return user_choice
 
     # get label if no label return "unknown Publisher"

@@ -1,16 +1,13 @@
 import os
-import configparser
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QDir, QModelIndex
-from PyQt5.QtWidgets import QMainWindow, QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox, QTableView
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QMainWindow, QFileSystemModel, QPushButton, QFrame, QGroupBox, QLabel, QHeaderView, QCompleter, QMessageBox
 from qtpy import QtGui
 from ui.custom_line_edit import MyLineEdit
 from ui.custom_tree_view import MyTreeView
 
 from log_config import get_logger
-from db.music_db import MusicCatalogDB
 
 logger = get_logger(__name__)
 

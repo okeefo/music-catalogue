@@ -7,10 +7,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from config_manager import ConfigurationManager
 from discogs_client.models import Release, Track
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from mutagen.wave import WAVE
 from mutagen.id3 import ID3, ID3NoHeaderError, WXXX, ID3, TIT2, APIC, TALB, TPE1, TPE2, TXXX, TYER, TPOS, TCON, TPUB, TMED, TRCK, COMM
-from file_operations.audio_tags import AudioTagHelper, AUDIO_EXTENSIONS
+from file_operations.audio_tags import AudioTagHelper
 from ui.progress_bar_helper import ProgressBarHelper
 from ui.custom_messagebox import show_message_box, ButtonType, convert_response_to_string
 from log_config import get_logger
@@ -66,16 +66,23 @@ class ReleaseFacade(BaseModel):
     def get_artist(self, trackNumber: int) -> str:
         if self.get_track_list()[trackNumber].artists:
             return self.get_track_list()[trackNumber].artists[0].name
-        return self.release.data.get("artists_sort") or self.release.artists[0].name
+        artists_sort = self.release.data.get("artists_sort")
+        if artists_sort:
+            return artists_sort
+        if self.release.artists:
+            return self.release.artists[0].name
+        return ""
 
     def get_album_artist(self) -> str:
-        return self.release.data.get("artists_sort")
+        return self.release.data.get("artists_sort") or ""
 
     def get_album(self) -> str:
         return self.release.title
 
     def get_catalog_number(self) -> str:
-        return self.release.labels[0].data.get("catno")
+        if not self.release.labels:
+            return ""
+        return self.release.labels[0].data.get("catno") or ""
 
     def get_country(self) -> str:
         return "" if self.release.country is None else self.release.country
@@ -84,9 +91,13 @@ class ReleaseFacade(BaseModel):
         return self.release.id
 
     def get_genres(self) -> str:
+        if not self.release.genres:
+            return ""
         return ", ".join(self.release.genres)
 
     def get_publisher(self) -> str:
+        if not self.release.labels:
+            return ""
         return self.release.labels[0].name
 
     def get_disc_number(self, trackNumber: int) -> str:
@@ -110,8 +121,10 @@ class ReleaseFacade(BaseModel):
         return str(self.release.data.get("released"))
 
     def get_media(self) -> str:
+        if not self.release.formats:
+            return ""
         format_data = self.release.formats[0]
-        media = format_data.get("name")
+        media = format_data.get("name") or ""
         descriptions = format_data.get("descriptions", [])
         description = ", ".join(desc for desc in descriptions if desc)
         return f"{media} ({description})" if description else media
@@ -498,7 +511,7 @@ def __valid_File_check(file: str) -> str:
             logger.info(f"{release_id} - Found track number {track_number} in file name: {file}")
             return release_id
         else:
-            logger.warn(f"{release_id} - Could not find track number in file name, skipping: {file}")
+            logger.warning(f"{release_id} - Could not find track number in file name, skipping: {file}")
 
     else:
         tags = tag_helper.get_tags(file)
