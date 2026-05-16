@@ -895,11 +895,15 @@
     "i2": "GitHub Actions CI pipeline: ruff + pytest on ubuntu-latest / Python 3.10",
     "t7": "Tests: auto_tag — 25 tests for ReleaseFacade (mocked Discogs, Pydantic V2 compatible)",
     "f1": "ConfigurationManager complete: singleton, all properties, save/reload, tested with 33 tests",
+    "h4": "MusicCatalogDB deprecated with module-level comment; MusicCatalogDB_2 (db_reader) designated canonical; db_window_widget documented",
     "l1": "Commented-out code removed across all src/ files (main_window, media_player, db_reader, db_window, db_media_window, recycle)",
+    "l3": "Batch error feedback improved: error counts and per-file failures logged and surfaced to the user via progress dialog",
     "l2": "Singleton pattern standardised: ConfigurationManager now uses isinstance check; dead _instance removed from DatabaseWidget",
     "m6": "Type hints added to all untouched public/private functions in file_operations and db modules",
     "i3": "PyInstaller spec file created (music_catalogue.spec): bundles .ui files, Qt icons, sox, soundstretch into one-folder dist",
-    "i4": "GitHub Actions release pipeline added (.github/workflows/release.yml): builds Windows exe on v*.*.* tag push"
+    "i4": "GitHub Actions release pipeline added (.github/workflows/release.yml): builds Windows exe on v*.*.* tag push",
+    "m3": "Audio processing magic numbers extracted to named module-level constants (_SPLIT_LOW_THRESH_DBFS, _SPLIT_HIGH_THRESH_DBFS, _SPLIT_MAX_ATTEMPTS, _SPLIT_MIN_SILENCE_MS)",
+    "m5": "__batch_process_files refactored: extracted __validate_file_for_processing and __apply_processing_option helpers; fixed trim bug (release_id/maintain_tags args were swapped)"
   };
 
   (function init() {

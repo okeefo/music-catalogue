@@ -24,6 +24,12 @@ logger = get_logger(__name__)
 __DISCOGS_CLIENT = get_discogs_client()
 audio_tag_helper = AudioTagHelper()
 
+# Audio splitting thresholds (dBFS) and binary-search limits.
+_SPLIT_LOW_THRESH_DBFS: int = -55
+_SPLIT_HIGH_THRESH_DBFS: int = -25
+_SPLIT_MAX_ATTEMPTS: int = 8
+_SPLIT_MIN_SILENCE_MS: int = 2000
+
 
 def amplify_files(fq_file_path: List[str]) -> None:
     """Process a list of audio files.  The file will be amplified."""
@@ -57,91 +63,93 @@ def auto_process_files(fq_file_path: List[str]) -> None:
 
 def __batch_process_files(fq_files: List[str], option="ALL") -> None:
     """Process a list of audio files.
-    The option parameter can be ALL, Slowdown,Amplify, Split or Speed_Up.
-    If ALL, the file will be slowed down, amplified. split and tagged.
-    If Slowdown, the file will only be slowed down.
-    If Amplify, the file will only be amplified.
-    If Split, the file will, be split and tagged.
-    If Speed_Up, the file will only be speed up.
-    If Trim, the file will be trimmed.
+    option may be: ALL, Slowdown, Amplify, Split, Speed_Up, or Trim.
     """
-
     progress_parts = 4 if option == "ALL" else 1
-    num = (len(fq_files) * progress_parts) + 2
-    progress_bar = ProgressBarHelper(num, "Processing..", min_files=1)
-
+    progress_bar = ProgressBarHelper((len(fq_files) * progress_parts) + 2, "Processing..", min_files=1)
     maintain_tags = option != "ALL"
 
     for fq_file_path in fq_files:
-
         status_msg = f"Processing file: {os.path.basename(fq_file_path)}\n"
         progress_bar.increment_with_message(status_msg)
 
-        fq_file_path, root_dir, file_name = __normalise_file_path(fq_file_path)
-
-        # skip directories
-        if os.path.isdir(fq_file_path):
-            logger.info(f"Skipping directory: {fq_file_path}")
+        validated = __validate_file_for_processing(fq_file_path)
+        if validated is None:
             continue
+        fq_file_path, root_dir, release = validated
 
-        # skip if not a wav file
-        if not fq_file_path.endswith(".wav"):
-            logger.info(f"Skipping, wavs only,  file: {fq_file_path}")
-            continue
-
-        if is_file_locked(fq_file_path):
-            logger.error(f"Skipping, file is locked: {fq_file_path}")
-            continue
-
-        logger.info(f"Processing file: {file_name}")
-
-        release_id = __get_release_id(fq_file_path)
-        if release_id is None:
-            continue
-
-        release = __get_release(release_id)
-        if release is None:
-            continue
-
-        # Reduce the speed of the file to 33rpm
-        if option in ["ALL", "Slowdown"]:
-            progress_bar.increment_with_message(f"{status_msg} Reduce speed to 33rpm")
-            result = __reduce_recording_speed(fq_file_path, release, maintain_tags, option == "Slowdown")
-            if (not result) or option == "Slowdown":
-                continue
-
-        # Amplify the file
-        if option in ["ALL", "Amplify"]:
-            progress_bar.increment_with_message(f"{status_msg} Amplify file")
-            result = __amplify_file(fq_file_path, release_id, maintain_tags)
-            if not result or option == "Amplify":
-                continue
-
-        # Speed up the file to 45rpm
-        if option == "Speed_Up":
-            progress_bar.increment_with_message(f"{status_msg} increasing speed up to 45rpm")
-            __increase_speed_of_file_from_33_45rpm(fq_file_path, release, maintain_tags)
-            continue
-
-        if option == "Trim":
-            progress_bar.increment_with_message(f"{status_msg} trimming")
-            __trim_the_silence(fq_file_path, release, progress_bar)
-            continue
-
-        # Split the file into individual tracks
-        if option in ["ALL", "Split"]:
-            progress_bar.increment_with_message(f"{status_msg} splitting into files")
-            tracks = __split_audio_file(fq_file_path, release, progress_bar)
-            if option == "Split":
-                continue
-
-            # Tag the files and rename them
-            progress_bar.update_progress_bar_text(f"{status_msg} tagging files")
-            auto_tag_files(tracks, root_dir)
-
-        logger.info(f"{release.get_id()} - Processing complete for file {file_name}")
+        __apply_processing_option(fq_file_path, root_dir, release, option, maintain_tags, progress_bar, status_msg)
 
     progress_bar.complete_progress_bar()
+
+
+def __validate_file_for_processing(fq_file_path: str):
+    """Return (fq_file_path, root_dir, release) if the file is processable, else None."""
+    fq_file_path, root_dir, file_name = __normalise_file_path(fq_file_path)
+
+    if os.path.isdir(fq_file_path):
+        logger.info(f"Skipping directory: {fq_file_path}")
+        return None
+    if not fq_file_path.endswith(".wav"):
+        logger.info(f"Skipping, wavs only, file: {fq_file_path}")
+        return None
+    if is_file_locked(fq_file_path):
+        logger.error(f"Skipping, file is locked: {fq_file_path}")
+        return None
+
+    logger.info(f"Processing file: {file_name}")
+    release_id = __get_release_id(fq_file_path)
+    if release_id is None:
+        return None
+
+    release = __get_release(release_id)
+    if release is None:
+        return None
+
+    return fq_file_path, root_dir, release
+
+
+def __apply_processing_option(
+    fq_file_path: str,
+    root_dir: str,
+    release,
+    option: str,
+    maintain_tags: bool,
+    progress_bar,
+    status_msg: str,
+) -> None:
+    """Dispatch to the correct processing step(s) for the given option."""
+    if option in ["ALL", "Slowdown"]:
+        progress_bar.increment_with_message(f"{status_msg} Reduce speed to 33rpm")
+        result = __reduce_recording_speed(fq_file_path, release, maintain_tags, option == "Slowdown")
+        if (not result) or option == "Slowdown":
+            return
+
+    if option in ["ALL", "Amplify"]:
+        progress_bar.increment_with_message(f"{status_msg} Amplify file")
+        result = __amplify_file(fq_file_path, release.get_id(), maintain_tags)
+        if not result or option == "Amplify":
+            return
+
+    if option == "Speed_Up":
+        progress_bar.increment_with_message(f"{status_msg} increasing speed up to 45rpm")
+        __increase_speed_of_file_from_33_45rpm(fq_file_path, release, maintain_tags)
+        return
+
+    if option == "Trim":
+        progress_bar.increment_with_message(f"{status_msg} trimming")
+        __trim_the_silence(fq_file_path, release.get_id(), maintain_tags)
+        return
+
+    if option in ["ALL", "Split"]:
+        progress_bar.increment_with_message(f"{status_msg} splitting into files")
+        tracks = __split_audio_file(fq_file_path, release, progress_bar)
+        if option == "Split":
+            return
+        progress_bar.update_progress_bar_text(f"{status_msg} tagging files")
+        auto_tag_files(tracks, root_dir)
+
+    logger.info(f"{release.get_id()} - Processing complete for {os.path.basename(fq_file_path)}")
 
 
 def __reduce_recording_speed(source_file: str, release: ReleaseFacade, maintain_tags=False, skip_speed_check=False) -> Tuple[bool, str]:
@@ -178,12 +186,10 @@ def __split_audio_file(fq_audio_file: str, release: ReleaseFacade, progress_bar:
         progress_bar.update_progress_bar_text(msg)
 
     number_of_tracks = release.get_number_of_tracks()
-    # TODO:  set these number if the configuration manager
-    low_thresh = -55  # Initial low threshold
-    high_thresh = -25  # Initial high threshold
-    max_attempts = 8  # max number of attempts
+    low_thresh = _SPLIT_LOW_THRESH_DBFS
+    high_thresh = _SPLIT_HIGH_THRESH_DBFS
 
-    for _ in range(max_attempts):
+    for _ in range(_SPLIT_MAX_ATTEMPTS):
         silence_thresh = (low_thresh + high_thresh) / 2  # Midpoint of current range
         chunks = __execute_split(fq_audio_file, silence_thresh)
 
@@ -235,7 +241,7 @@ def __execute_split(fq_audio_file: str, silence_thresh: int) -> List[AudioSegmen
     """Split the audio file into individual tracks"""
 
     audio = AudioSegment.from_wav(fq_audio_file)
-    chunks = split_on_silence(audio, min_silence_len=2000, silence_thresh=silence_thresh, keep_silence=True, seek_step=10)
+    chunks = split_on_silence(audio, min_silence_len=_SPLIT_MIN_SILENCE_MS, silence_thresh=silence_thresh, keep_silence=True, seek_step=10)
     cleaned_chunks = []
     for chunk in chunks:
         estimated_size = chunk.frame_count() * 2 / 1024
