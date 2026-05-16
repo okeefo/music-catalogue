@@ -1,3 +1,7 @@
+# DEPRECATED: Use MusicCatalogDB_2 from db.db_reader instead.
+# This module is retained for backward compatibility with db_window_widget.py.
+# Do not add new functionality here; extend MusicCatalogDB_2 instead.
+
 import sqlite3
 from dataclasses import dataclass
 from typing import Dict, Optional

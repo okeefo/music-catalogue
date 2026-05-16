@@ -49,12 +49,12 @@ def __move_files(file_list: List[str], source_dir: str, target_dir: str, progres
 
     except Exception as e:
 
-        logger.error(f"Error moving files: {e}")
+        logger.error(f"Error moving file '{source_file}': {e}")
         if root:
-            progress_bar.update_progress_bar_text("Error moving files, check log files for details")
+            progress_bar.update_progress_bar_text(f"Error moving '{source_file}', check log files for details")
             progress_bar.complete_progress_bar()
 
-        show_message_box(f"Error moving files, check log files for details: {e}", ButtonType.Ok, "Error Moving Files")
+        show_message_box(f"Error moving '{source_file}': {e}", ButtonType.Ok, "Error Moving Files")
 
 
 def _handle_move_of_existing_target_file(source_file: str, fq_source_file: str, target_dir: str, fq_target_file: str, userResponse, files_to_delete: List[str]) -> Union[str, int]:
@@ -221,16 +221,20 @@ def __target_file_exists(source_file, target_dir) -> bool:
 
 def __do_copy_file(source_file, target_dir, userResponse):
 
-    if os.path.isfile(source_file):
-        logger.info(f'Copying file "{source_file}" to "{target_dir}"')
-        shutil.copy2(source_file, target_dir)
+    try:
+        if os.path.isfile(source_file):
+            logger.info(f'Copying file "{source_file}" to "{target_dir}"')
+            shutil.copy2(source_file, target_dir)
 
-    elif os.path.isdir(source_file):
-        logger.info(f'Copying directory "{source_file}" to "{target_dir}"')
-        shutil.copytree(source_file, os.path.join(target_dir, os.path.basename(source_file)))
+        elif os.path.isdir(source_file):
+            logger.info(f'Copying directory "{source_file}" to "{target_dir}"')
+            shutil.copytree(source_file, os.path.join(target_dir, os.path.basename(source_file)))
 
-    else:
-        logger.error(f"Source path does not exist: {source_file}")
+        else:
+            logger.error(f"Source path does not exist: {source_file}")
+    except Exception as e:
+        logger.error(f"Error copying '{os.path.basename(source_file)}': {e}")
+        show_message_box(f"Error copying '{os.path.basename(source_file)}': {e}", ButtonType.Ok, "Error Copying Files")
 
 
 def ask_and_copy_files(file_list: List[str], target_dir: str) -> None:
