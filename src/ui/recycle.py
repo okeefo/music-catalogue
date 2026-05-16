@@ -10,14 +10,15 @@ from PyQt5.uic import loadUi
 
 from log_config import get_logger
 
-# create logger
 logger = get_logger(__name__)
+
+_UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "qt")
 
 
 class RestoreDialog(QDialog):
     def __init__(self):
         super().__init__()
-        loadUi("src//qt//recycle.ui", self)
+        loadUi(os.path.join(_UI_DIR, "recycle.ui"), self)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.restoreButton.clicked.connect(self.restore)
         self.exitButton.clicked.connect(self.close)
