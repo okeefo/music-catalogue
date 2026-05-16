@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(git tag *)",
+      "Bash(git merge *)",
+      "Bash(git stash *)",
+      "Bash(git -C * add *)",
+      "Bash(git -C * commit *)",
+      "Bash(git -C * push *)",
+      "Bash(git -C * tag *)",
+      "Bash(mkdir *)",
+      "Bash(pip install *)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -m pytest *)",
+      "Bash(python3 -m ruff *)",
+      "Bash(python3 -m mypy *)",
+      "Bash(python3 -m flake8 *)",
+      "Bash(pytest *)",
+      "Bash(ruff *)",
+      "Bash(eza *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(git push --force origin main)",
+      "Bash(git push --force origin master)"
+    ]
+  }
+}
