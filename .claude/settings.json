@@ -27,6 +27,7 @@
       "Bash(rm -rf /*)",
       "Bash(git push --force origin main)",
       "Bash(git push --force origin master)"
-    ]
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }
