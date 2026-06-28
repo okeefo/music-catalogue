@@ -1,3 +1,4 @@
+import difflib
 import os
 import re
 import sys
@@ -165,18 +166,47 @@ class ReleaseFacade(BaseModel):
 
     def find_track_no(self, track_no: str, track_title: str, disc_number: str) -> int:
 
-        for i, track in enumerate(self.get_track_list()):
+        tracks = self.get_track_list()
 
-            if track_title == track.title:
+        for i, track in enumerate(tracks):
+
+            if track_no and track_no == track.position:
                 return i
 
-            if track_no == track.position:
+            if disc_number and disc_number == track.position:
                 return i
 
-            if disc_number == track.position:
-                return i
+        return _find_track_no_by_title(track_title, tracks)
 
+
+_TITLE_NORMALISE_PATTERN = re.compile(r"[^a-z0-9]+")
+_TITLE_TRAILING_KEY_BPM_PATTERN = re.compile(r"\s*-\s*\d+[a-z]?\s*-\s*\d+\s*$")
+_TITLE_MATCH_THRESHOLD = 0.6
+
+
+def _normalise_title(title: str) -> str:
+    title = _TITLE_TRAILING_KEY_BPM_PATTERN.sub("", title.lower())
+    return _TITLE_NORMALISE_PATTERN.sub(" ", title).strip()
+
+
+def _find_track_no_by_title(track_title: str, tracks: List[Track]) -> int:
+    if not track_title:
         return -1
+
+    normalised_target = _normalise_title(track_title)
+    if not normalised_target:
+        return -1
+
+    best_index = -1
+    best_ratio = _TITLE_MATCH_THRESHOLD
+    for i, track in enumerate(tracks):
+        ratio = difflib.SequenceMatcher(None, normalised_target, _normalise_title(track.title)).ratio()
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best_index = i
+
+    return best_index
+
 
 def auto_tag_files(file_name_list: List[str], root_dir: str) -> None:
     """Auto tag files"""
