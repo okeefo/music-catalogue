@@ -50,22 +50,23 @@ Each operation can also be performed separately if needed.
 ### Working / Stable
 - **Dual File Explorer** — twin-panel file browser for easy file management
 - **Automated Batch Processing** — amplify, slow down, split, tag, rename, and repack in one click
-- **Manual Control** — each operation available individually
+- **Manual Control** — each operation available individually; amplify and trim also work on files without a Discogs release ID
 - **Discogs Integration** — auto-tag tracks using a Discogs release ID
-- **Track Playback** — built-in media player with waveform visualisation
+- **Track Playback** — built-in media player with waveform visualisation; previewing a track no longer locks the file, so tags and artwork can still be written while it is loaded
+- **Waveform Editor** — right-click a wav → *Edit Waveform...*: zoom (selection-aware) and scroll the waveform, drag to select a region, cut it out or trim to it, undo, and save over the original or as a copy (tags and artwork preserved). Selections play as a loop, spacebar pauses/restarts, and selection edges can be grabbed and dragged to resize
 - **Tag & Artwork Display** — view and inspect track metadata
-- **File Management** — move, copy, delete with recycle bin support
+- **File Management** — move, copy, delete with recycle bin support; copy a selected file's full path or filename to the clipboard from the context menu
 - **3rd Party Tool Integration** — open files directly in Audacity, Mp3Tag, VLC, and MediaInfo (must be installed separately)
 
 ### In Progress / Experimental
 - **Database** — scan music collection and build a searchable database (`db/` module, UI exists, integration in progress)
-- **Trim** — remove silence from the start/end of a track (implemented, experimental — see notes below)
+- **Trim** — remove leading silence from a track (implemented, experimental — see notes below)
 - **Settings Dialog** — UI exists but changes are not yet persisted back to `config.ini`
 - **Configuration Manager** — skeleton exists, not yet wired up
 
 ### Known Limitations
 - **Windows only** — uses `winshell`, `pywin32`, and Windows-specific paths
-- **Trim is harsh** — silence detection removes too aggressively; a pre-start buffer is wanted but not yet implemented in SOX
+- **Trim thresholds are workflow-tuned** — silence detection (with a 100&nbsp;ms pre-start buffer) is tuned for vinyl recordings; on already-mastered files it may find nothing to trim — use the Waveform Editor for manual cuts instead
 - **External tools must be installed** — Mp3Tag, VLC, Audacity, MediaInfo, K-Lite Codec Pack
 
 ---
