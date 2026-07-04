@@ -5,7 +5,7 @@ import winreg
 from PyQt5 import QtGui
 from PyQt5.QtCore import QModelIndex, QPoint, QUrl
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QAction, QMenu, QTreeView, QWidget
+from PyQt5.QtWidgets import QAction, QApplication, QMenu, QTreeView, QWidget
 
 from file_operations.audio_processor import amplify_files, auto_process_files, slowdown_files_45_33, speed_up_files_33_45rpm, split_files, trim_audio_silence
 from file_operations.audio_tags import AudioTagHelper
@@ -51,6 +51,7 @@ class TreeViewContextMenuHandler(QWidget):
             "move": {0: [self.move_all_action], "default": [self.move_all_action, self.move_selected_action]},
             "copy": {0: [self.copy_selected_across_action], "default": [self.copy_selected_across_action, self.copy_selected_to_clipboard_action]},
             "paste": {"override": [self.paste_items_to_root_action, self.paste_items_to_selected_action]},
+            "copy_path": {1: [self.copy_path_and_filename_action, self.copy_filename_action], "override": []},
             "delete": {0: [], "default": [self.delete_action]},
             # submenu - Audio Processing - options
             "batch": {"default": [self.process_batch_action]},
@@ -93,6 +94,8 @@ class TreeViewContextMenuHandler(QWidget):
             self.process_speed_up_action: lambda tree_view, dest_path: self.__do_process_speed_up(tree_view),
             self.process_split_action: lambda tree_view, dest_path: self.__do_process_split(tree_view),
             self.process_trim_action: lambda tree_view, dest_path: self.__do_process_trim(tree_view),
+            self.copy_path_and_filename_action: lambda tree_view, dest_path: self.__do_copy_path_and_filename(tree_view),
+            self.copy_filename_action: lambda tree_view, dest_path: self.__do_copy_filename(tree_view),
         }
 
     def __setup_menu_actions(self):
@@ -115,6 +118,8 @@ class TreeViewContextMenuHandler(QWidget):
         self.info_selected_action = QAction(QtGui.QIcon(":/icons/icons/info.svg"), "Info selected items", self)
         self.copy_selected_across_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy across.", self)
         self.copy_selected_to_clipboard_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy items to clipboard", self)
+        self.copy_path_and_filename_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy Path && Filename", self)
+        self.copy_filename_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy Filename", self)
         self.paste_items_to_root_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste here", self)
         self.paste_items_to_selected_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste in selected dir", self)
         self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename (F2 or Ctrl+7)", self)
@@ -240,6 +245,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.__add_actions_to_menu(menu, "move", number_of_selected_items)
         self.__add_actions_to_menu(menu, "copy", number_of_selected_items)
         self.__add_actions_to_menu(menu, "paste", number_of_selected_items, has_clipboard)
+        self.__add_actions_to_menu(menu, "copy_path", number_of_selected_items, is_dir)
         self.__add_actions_to_menu(menu, "delete", number_of_selected_items)
 
         return menu
@@ -523,6 +529,22 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info("Menu action -> process trim")
         trim_audio_silence(tree_view.get_selected_files())
         logger.info("Menu action -> process trim : done")
+
+    def __do_copy_path_and_filename(self, tree_view: MyTreeView) -> None:
+        """Copies the absolute path and filename of the selected file to the clipboard. Returns: None"""
+
+        file_path = tree_view.get_selected_files()[0]
+        logger.info(f"Menu action -> copy path and filename: '{file_path}'")
+        QApplication.clipboard().setText(file_path)
+        logger.info("Menu action -> copy path and filename : done")
+
+    def __do_copy_filename(self, tree_view: MyTreeView) -> None:
+        """Copies the filename of the selected file to the clipboard. Returns: None"""
+
+        filename = os.path.basename(tree_view.get_selected_files()[0])
+        logger.info(f"Menu action -> copy filename: '{filename}'")
+        QApplication.clipboard().setText(filename)
+        logger.info("Menu action -> copy filename : done")
 
 
 if __name__ == "__main__":
