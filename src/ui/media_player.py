@@ -59,6 +59,7 @@ class MediaPlayerController(QWidget):
         self.media_ready = False
         self._user_is_sliding = None
         self.db_path = db_path
+        self._media_loaded_path = None
 
         self.__setup_icons()
         self.__setup_media_player()
@@ -147,7 +148,9 @@ class MediaPlayerController(QWidget):
         self.load_tag_data(path)
         self.set_cover_art()
         self.path = path
-        self.player.setMedia(QMediaContent(QUrl.fromLocalFile(self.path)))
+        # Media isn't handed to QMediaPlayer until Play is pressed (see _ensure_media_loaded),
+        # since QMediaPlayer keeps an OS-level lock on the file for as long as it's loaded, which
+        # otherwise blocks tag/cover-art writes to a track that's merely selected for preview.
         if file_id is not None and self.db_path:
             self.waveform_widget.load_waveform_from_db_or_file(file_id, path, self.db_path)
         else:
@@ -182,6 +185,18 @@ class MediaPlayerController(QWidget):
         current_seconds = position / 1000.0
         self.lbl_current.setText(self.format_time(current_seconds))
 
+    def _ensure_media_loaded(self) -> None:
+        """Hand the current path to QMediaPlayer if it isn't already loaded, carrying over
+        the slider's position so a seek made before Play is pressed still takes effect."""
+        if self._media_loaded_path == self.path:
+            return
+        self.player.setMedia(QMediaContent(QUrl.fromLocalFile(self.path)))
+        self._media_loaded_path = self.path
+        max_val = self.slider.maximum()
+        rel_pos = self.slider.value() / max_val if max_val else 0.0
+        total_ms = self.waveform_widget.duration * 1000
+        self.player.setPosition(int(rel_pos * total_ms))
+
     def on_play_button_clicked(self) -> None:
         if not self.media_ready:
             return
@@ -198,6 +213,7 @@ class MediaPlayerController(QWidget):
             return
 
         logger.info("Play button clicked")
+        self._ensure_media_loaded()
         self.player.play()
         # When audio starts playing, show blue pause icon.
         self.butt_play.setIcon(self.icon_pause)
@@ -207,8 +223,10 @@ class MediaPlayerController(QWidget):
         # Assuming the waveform widget has a loaded audio file and self.player is set up with the media
         logger.info("Stop button clicked")
 
-        # Load the media from the waveform widget file if needed, e.g.
         self.player.stop()
+        # Release QMediaPlayer's hold on the file so it isn't locked while merely selected/previewed.
+        self.player.setMedia(QMediaContent())
+        self._media_loaded_path = None
         self.butt_play.setIcon(self.icon_play_off)
         self.butt_stop.setIcon(self.icon_stop_off)
         if self.media_ready:
