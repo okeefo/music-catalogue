@@ -115,7 +115,8 @@ class WaveformWidget(QWidget):
         n = len(display_waveform)
 
         for i, value in enumerate(display_waveform):
-            x = i
+            # Scale to the widget width in case there are fewer samples than pixels
+            x = int(i * w / n)
             y = int(value * (h // 2))
             pen.setColor(played_color if (i / n) < self.progress else unplayed_color)
             painter.setPen(pen)

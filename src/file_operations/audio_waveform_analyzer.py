@@ -113,8 +113,12 @@ def get_display_waveform(waveform: np.ndarray, widget_width: int) -> np.ndarray:
     Returns:
         np.ndarray of length widget_width
     """
-    if len(waveform) <= widget_width:
+    n = len(waveform)
+    if n <= widget_width:
         return waveform
-    factor = len(waveform) // widget_width
+    # Bin edges must span the whole waveform: integer-division binning drops the
+    # remainder samples at the end of the track, stretching the drawn waveform
+    # relative to the (time-accurate) needle position.
+    edges = np.linspace(0, n, widget_width + 1).astype(int)
     # Use max in each bin for a visually accurate envelope
-    return np.max(waveform[: factor * widget_width].reshape(-1, factor), axis=1)
+    return np.maximum.reduceat(waveform, edges[:-1])

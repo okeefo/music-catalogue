@@ -492,12 +492,18 @@ class MainWindow(QMainWindow):
 
     def confirm_exit(self) -> None:
         """Confirms the exit of the application. Returns: None"""
+        self.close()
+
+    def closeEvent(self, event) -> None:
+        """Confirm and save config on any exit path: Exit button, Ctrl+Q or the window's X button."""
 
         if self.prompt_yes_no("Exit", "Are you sure you want to exit?") == QMessageBox.No:
+            event.ignore()
             return
 
         self.hide()
         self.__update_config_file()
+        event.accept()
         self.application.quit()
 
     def __update_config_file(self) -> None:

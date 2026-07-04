@@ -47,6 +47,7 @@ class TreeViewContextMenuHandler(QWidget):
             "tag": {0: [self.auto_tag_dir_action], "override": [self.auto_tag_dir_action], "default": [self.auto_tag_dir_action, self.auto_tag_selected_action]},
             "tag_filename": {0: [self.tag_filename_dir_action], "override": [self.tag_filename_dir_action], "default": [self.tag_filename_dir_action, self.tag_filename_selected_action]},
             "media_player": {"override": [self.play_action, self.stop_action, self.pause_action]},
+            "edit_waveform": {"override": [self.edit_waveform_action]},
             "repackage": {0: [self.repackage_dir_action], "override": [self.repackage_dir_action], "default": [self.repackage_dir_action, self.repackage_select_action]},
             "move": {0: [self.move_all_action], "default": [self.move_all_action, self.move_selected_action]},
             "copy": {0: [self.copy_selected_across_action], "default": [self.copy_selected_across_action, self.copy_selected_to_clipboard_action]},
@@ -96,6 +97,7 @@ class TreeViewContextMenuHandler(QWidget):
             self.process_trim_action: lambda tree_view, dest_path: self.__do_process_trim(tree_view),
             self.copy_path_and_filename_action: lambda tree_view, dest_path: self.__do_copy_path_and_filename(tree_view),
             self.copy_filename_action: lambda tree_view, dest_path: self.__do_copy_filename(tree_view),
+            self.edit_waveform_action: lambda tree_view, dest_path: self.__do_edit_waveform(tree_view),
         }
 
     def __setup_menu_actions(self):
@@ -120,6 +122,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.copy_selected_to_clipboard_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy items to clipboard", self)
         self.copy_path_and_filename_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy Path && Filename", self)
         self.copy_filename_action = QAction(QtGui.QIcon(":/icons/icons/clipboard.svg"), "Copy Filename", self)
+        self.edit_waveform_action = QAction(QtGui.QIcon(":/icons/icons/activity.svg"), "Edit Waveform...", self)
         self.paste_items_to_root_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste here", self)
         self.paste_items_to_selected_action = QAction(QtGui.QIcon(":/icons/icons/copy.svg"), "Paste in selected dir", self)
         self.rename_file_action = QAction(QtGui.QIcon(":/icons/icons/type.svg"), "Rename (F2 or Ctrl+7)", self)
@@ -220,6 +223,7 @@ class TreeViewContextMenuHandler(QWidget):
         number_of_selected_items = len(tree_view.selectionModel().selectedRows())
         is_dir = number_of_selected_items == 1 and os.path.isdir(file_path)
         is_audio_file = number_of_selected_items == 1 and self.audio_tag_helper.isSupportedAudioFile(file_path)
+        is_wav = number_of_selected_items == 1 and file_path.lower().endswith(".wav")
         has_clipboard = len(self.clipboard) > 0
 
         self.__add_actions_to_menu(submenu, "batch", number_of_selected_items)
@@ -241,6 +245,7 @@ class TreeViewContextMenuHandler(QWidget):
         self.__add_actions_to_menu(menu, "tag", number_of_selected_items, is_dir)
         self.__add_actions_to_menu(menu, "tag_filename", number_of_selected_items, is_dir)
         self.__add_actions_to_menu(menu, "media_player", number_of_selected_items, is_audio_file)
+        self.__add_actions_to_menu(menu, "edit_waveform", number_of_selected_items, is_wav)
         self.__add_actions_to_menu(menu, "repackage", number_of_selected_items, is_dir)
         self.__add_actions_to_menu(menu, "move", number_of_selected_items)
         self.__add_actions_to_menu(menu, "copy", number_of_selected_items)
@@ -545,6 +550,17 @@ class TreeViewContextMenuHandler(QWidget):
         logger.info(f"Menu action -> copy filename: '{filename}'")
         QApplication.clipboard().setText(filename)
         logger.info("Menu action -> copy filename : done")
+
+    def __do_edit_waveform(self, tree_view: MyTreeView) -> None:
+        """Opens the selected wav file in the waveform editor. Returns: None"""
+
+        file_path = tree_view.get_selected_files()[0]
+        logger.info(f"Menu action -> edit waveform: '{file_path}'")
+        from ui.waveform_editor_dialog import WaveformEditorDialog
+
+        dialog = WaveformEditorDialog(file_path, parent=self)
+        dialog.exec_()
+        logger.info("Menu action -> edit waveform : done")
 
 
 if __name__ == "__main__":
