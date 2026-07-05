@@ -20,145 +20,6 @@
    <iconset resource="../../../../music-catalogue/src/qt/resources.qrc">
     <normaloff>:/icons/icons/headphones.svg</normaloff>:/icons/icons/headphones.svg</iconset>
   </property>
-  <property name="styleSheet">
-   <string notr="true">
-
-/*-----QWidget-----
-QWidget
-{
-	background-color: rgb(92, 106, 106);
-	color: #ffffff;
-	border-color: #051a39;
-}
-
-QTreeView {
-
-     color: #ffffff;;
-     border: 1px solid black;
-      background-color: #677676;
-      alternate-background-color: #91a6a6;
-      color: black;
-      selection-background-color: #91a6a6;
-      selection-color: #ffffff
-}
-QTreeView::item {
-      padding: 5px;
-}
- QHeaderView::section {
-        background-color: rgb(92, 106, 106);;
-        color: #ffffff;
-        border: 1px solid black;
-        padding: 5px;
-}
-
-QLineEdit{
-		color: black;
-		border: 1px solid black;
-        border-radius: 10px;
-        padding: 5px;
-        selection-background-color: green;
-        selection-color: white;
-}
-*/
-QLineEdit {
-
-        min-height: 20px;
-		font-size: 14px;
-		color: black;
-		border: 1px solid black;
-        border-radius: 5px;
-        padding: 5px;
-        selection-background-color: lightgrey;
-        selection-color: black;	   
- }
-
-
-QGroupBox {
-        border: 1px solid black;
-        margin-top: 3ex; /* leave space at the top for the title */
-
-}
-QGroupBox::title {
-		color: black;
-        subcontrol-origin: margin;
-        left: 10px; /* position of the title */
-        padding: 0 5px 0 5px; /* space around the title text */
-}
-
-
-QSpinBox {
-
-        min-height: 20px;
-		font-size: 14px;
-		color: black;
-		border: 1px solid black;
-        border-radius: 5px;
-        padding: 5px;
-        selection-background-color: lightgrey;
-        selection-color: black;	   
- }
-
-
-QCheckBox {
-
-        min-height: 20px;
-		font-size: 14px;
-		color: black;
-        padding: 5px;
-        selection-background-color: lightgrey;
-        selection-color: black;	   
- }
-
-/*-----QPushButton-----*/
-QPushButton
-{
-/**	background-color:  rgb(92, 106, 106);
-	color: #ffffff;
-**/	
-   border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-	width: 100
-}
-
-QPushButton::disabled
-{
-	background-color: #404040;
-	color: #656565;
-	border-color: #051a39;
-
-}
-
-
-QPushButton::hover
-{
-	background-color: lightgrey;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}
-
-
-QPushButton::pressed
-{
-	background-color: rgb(125, 155, 143);
-	color: #ffffff;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-}
-
-QGroupBox{
-	font-size:14px
-}</string>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QGroupBox" name="groupBox">
@@ -571,6 +432,46 @@ QGroupBox{
     </widget>
    </item>
    <item>
+    <widget class="QGroupBox" name="groupBox_appearance">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>70</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>Appearance</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_appearance">
+      <item>
+       <layout class="QGridLayout" name="gridLayout_appearance">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_theme">
+          <property name="minimumSize">
+           <size>
+            <width>125</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>9</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Theme</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="theme_combo"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -593,54 +494,6 @@ QGroupBox{
        <width>0</width>
        <height>0</height>
       </size>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">/*-----QPushButton-----*/
-QPushButton
-{
-/**	background-color:  rgb(92, 106, 106);
-	color: #ffffff;
-**/	
-   border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-	width: 100
-}
-
-QPushButton::disabled
-{
-	background-color: #404040;
-	color: #656565;
-	border-color: #051a39;
-
-}
-
-
-QPushButton::hover
-{
-	background-color: lightgrey;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}
-
-
-QPushButton::pressed
-{
-	background-color: rgb(125, 155, 143);
-	color: #ffffff;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #051a39;
-	padding: 5px;
-
-}</string>
      </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

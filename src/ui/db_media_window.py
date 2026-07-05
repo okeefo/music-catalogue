@@ -32,19 +32,7 @@ def setup_data_view(table_view: QTableView, clicked_connect) -> None:
     table_view.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
     table_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     table_view.clicked.connect(lambda index: clicked_connect(table_view, index))
-
-    table_view.setStyleSheet(
-        """
-    QTableView::item:selected {
-        background: #3399ff;
-        color: white;
-    }
-    QTableView::item:selected:!active {
-        background: #3399ff;
-        color: white;
-    }
-    """
-    )
+    # selection colours come from the application-wide theme stylesheet
 
 
 def on_row_clicked(table_view: QTableView, index: QModelIndex):

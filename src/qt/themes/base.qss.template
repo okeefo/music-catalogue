@@ -1,0 +1,215 @@
+/* Master stylesheet template. Each `at-sign + name` placeholder is filled from
+   a theme palette JSON by ThemeManager. No literal colours here; add a token
+   to every palette instead. */
+
+QWidget {
+    background-color: @window-bg;
+    color: @text;
+    border-color: @border;
+}
+
+QMainWindow, QDialog {
+    background-color: @window-bg;
+}
+
+QToolTip {
+    background-color: @panel-bg;
+    color: @text;
+    border: 1px solid @border;
+    padding: 3px;
+}
+
+/* ---- Menus ---- */
+QMenuBar {
+    background-color: @window-bg;
+    color: @text;
+}
+QMenuBar::item:selected {
+    background-color: @selection-bg;
+    color: @selection-text;
+}
+QMenu {
+    background-color: @panel-bg;
+    color: @text;
+    border: 1px solid @border;
+}
+QMenu::item:selected {
+    background-color: @selection-bg;
+    color: @selection-text;
+}
+QMenu::separator {
+    height: 1px;
+    background: @border;
+    margin: 3px 8px;
+}
+
+/* ---- Buttons ---- */
+QPushButton {
+    background-color: @button-bg;
+    color: @button-text;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 3px;
+    border-color: @border;
+    padding: 5px;
+}
+QPushButton:hover {
+    background-color: @button-hover-bg;
+    color: @button-hover-text;
+}
+QPushButton:pressed {
+    background-color: @button-pressed-bg;
+    color: @selection-text;
+}
+QPushButton:disabled {
+    background-color: @button-disabled-bg;
+    color: @button-disabled-text;
+    border-color: @border;
+}
+
+/* ---- Inputs ---- */
+QLineEdit, QSpinBox, QComboBox {
+    background-color: @input-bg;
+    color: @input-text;
+    border: 1px solid @input-border;
+    border-radius: 3px;
+    padding: 2px 4px;
+    selection-background-color: @selection-bg;
+    selection-color: @selection-text;
+}
+QComboBox QAbstractItemView {
+    background-color: @panel-bg;
+    color: @text;
+    selection-background-color: @selection-bg;
+    selection-color: @selection-text;
+}
+QCheckBox, QRadioButton {
+    background-color: transparent;
+    color: @text;
+}
+
+/* ---- Item views ---- */
+QTreeView, QTableView, QListView {
+    background-color: @panel-bg;
+    alternate-background-color: @panel-alt-bg;
+    color: @panel-text;
+    border: 1px solid @border;
+    selection-background-color: @selection-bg;
+    selection-color: @selection-text;
+    gridline-color: @border;
+}
+QTreeView::item, QTableView::item {
+    padding: 3px;
+}
+QTreeView::item:selected, QTableView::item:selected,
+QTreeView::item:selected:!active, QTableView::item:selected:!active {
+    background-color: @selection-bg;
+    color: @selection-text;
+}
+QHeaderView::section {
+    background-color: @header-bg;
+    color: @text;
+    border: 1px solid @border;
+    padding: 5px;
+}
+
+/* ---- Group boxes / frames / pages ---- */
+QGroupBox {
+    border: 1px solid @border;
+    border-radius: 3px;
+    margin-top: 1.2em;
+    background-color: @window-bg;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 8px;
+    color: @text;
+}
+QStackedWidget, QFrame {
+    background-color: @window-bg;
+}
+QSplitter::handle {
+    background-color: @border;
+}
+
+/* ---- Media slider ---- */
+QSlider::groove:horizontal {
+    border: 1px solid @slider-groove-border;
+    height: 3px;
+    background: @slider-groove;
+    border-radius: 3px;
+}
+QSlider::sub-page:horizontal {
+    background: @slider-played;
+    border-radius: 3px;
+}
+QSlider::add-page:horizontal {
+    background: @slider-remaining;
+    border-radius: 3px;
+}
+QSlider::handle:horizontal {
+    background: @slider-handle;
+    border: 1px solid @border;
+    width: 12px;
+    height: 12px;
+    margin: -6px 0;
+    border-radius: 6px;
+}
+
+/* ---- Scrollbars ---- */
+QScrollBar:vertical {
+    background: @window-bg;
+    width: 12px;
+    margin: 0;
+}
+QScrollBar:horizontal {
+    background: @window-bg;
+    height: 12px;
+    margin: 0;
+}
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background: @scrollbar-handle;
+    border-radius: 5px;
+    min-height: 20px;
+    min-width: 20px;
+}
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+    background: @selection-bg;
+}
+QScrollBar::add-line, QScrollBar::sub-line {
+    height: 0;
+    width: 0;
+}
+QScrollBar::add-page, QScrollBar::sub-page {
+    background: transparent;
+}
+
+/* ---- Progress / message boxes ---- */
+QProgressBar {
+    background-color: @panel-bg;
+    color: @text;
+    border: 1px solid @border;
+    border-radius: 3px;
+    text-align: center;
+}
+QProgressBar::chunk {
+    background-color: @selection-bg;
+    border-radius: 3px;
+}
+QMessageBox {
+    background-color: @window-bg;
+}
+
+/* ---- Tabs ---- */
+QTabWidget::pane {
+    border: 1px solid @border;
+}
+QTabBar::tab {
+    background: @window-bg;
+    color: @text;
+    border: 1px solid @border;
+    padding: 5px 12px;
+}
+QTabBar::tab:selected {
+    background: @panel-bg;
+}

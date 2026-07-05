@@ -1,11 +1,12 @@
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QColor, QPainter, QPen
+from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtWidgets import QWidget
 
 import file_operations.audio_waveform_analyzer as analyzer
 
 # create logger
 from log_config import get_logger
+from ui.theme_manager import ThemeManager
 
 logger = get_logger(__name__)
 
@@ -103,8 +104,10 @@ class WaveformWidget(QWidget):
         painter = QPainter(self)
         w, h = self.width(), self.height()
         mid = h // 2
-        played_color = QColor("blue")
-        unplayed_color = QColor("orange")
+        theme = ThemeManager()
+        played_color = theme.color("waveform-played", "blue")
+        unplayed_color = theme.color("waveform-unplayed", "orange")
+        needle_color = theme.color("waveform-needle", "red")
         pen = QPen()
         pen.setWidth(1)
 
@@ -125,7 +128,7 @@ class WaveformWidget(QWidget):
         # Draw needle
         needle_x = int(self.progress * w)
         needle_x = max(0, min(w - 1, needle_x))
-        painter.setPen(QPen(Qt.red, 2))
+        painter.setPen(QPen(needle_color, 2))
         painter.drawLine(needle_x, 0, needle_x, h)
 
     def set_needle_position(self, pos):

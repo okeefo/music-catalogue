@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QDialog, QFileDialog
 
 from config_manager import ConfigurationManager
 from log_config import get_logger
+from ui.theme_manager import ThemeManager
 
 logger = get_logger(__name__)
 
@@ -48,6 +49,13 @@ class SettingsDialog(QDialog):
         self.ui.discogs_token.setText(cfg.discogs_token)
         self.ui.file_mask.setText(cfg.filename_mask)
 
+        theme_manager = ThemeManager()
+        for name, display_name in theme_manager.available_themes().items():
+            self.ui.theme_combo.addItem(display_name, userData=name)
+        current_index = self.ui.theme_combo.findData(theme_manager.current_theme)
+        if current_index >= 0:
+            self.ui.theme_combo.setCurrentIndex(current_index)
+
     def _save_settings(self) -> None:
         """Read all form fields and persist to config.ini via ConfigurationManager."""
         cfg = ConfigurationManager()
@@ -62,6 +70,10 @@ class SettingsDialog(QDialog):
         cfg.set("discogs", "token", self.ui.discogs_token.text())
         cfg.set("autotag", "filename_mask", self.ui.file_mask.text())
         cfg.save()
+
+        chosen_theme = self.ui.theme_combo.currentData()
+        if chosen_theme and chosen_theme != ThemeManager().current_theme:
+            ThemeManager().apply(chosen_theme, persist=True)
         logger.info("Settings saved.")
 
     def accept(self) -> None:

@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
 
 from file_operations.audio_tags import AudioTagHelper
 from log_config import get_logger
+from ui.theme_manager import ThemeManager
 
 logger = get_logger(__name__)
 
@@ -170,7 +171,8 @@ class WaveformEditView(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         w, h = self.width(), self.height()
-        painter.fillRect(0, 0, w, h, QColor(30, 30, 30))
+        theme = ThemeManager()
+        painter.fillRect(0, 0, w, h, theme.color("waveform-bg", "#1e1e1e"))
         if len(self.envelope) == 0 or self.duration <= 0:
             return
 
@@ -182,7 +184,7 @@ class WaveformEditView(QWidget):
         display = _max_pool(visible, w)
         n = len(display)
 
-        pen = QPen(QColor("orange"))
+        pen = QPen(theme.color("waveform-unplayed", "orange"))
         pen.setWidth(1)
         painter.setPen(pen)
         for i, value in enumerate(display):
@@ -193,13 +195,15 @@ class WaveformEditView(QWidget):
         if self.selection:
             x0 = self.time_to_x(self.selection[0])
             x1 = self.time_to_x(self.selection[1])
-            painter.fillRect(x0, 0, max(1, x1 - x0), h, QColor(70, 130, 220, 90))
-            painter.setPen(QPen(QColor(120, 170, 255), 1))
+            fill = theme.color("editor-selection", "#4682DC")
+            fill.setAlpha(90)
+            painter.fillRect(x0, 0, max(1, x1 - x0), h, fill)
+            painter.setPen(QPen(theme.color("editor-selection-edge", "#78AAFF"), 1))
             painter.drawLine(x0, 0, x0, h)
             painter.drawLine(x1, 0, x1, h)
 
         if self.playhead is not None and self.view_start <= self.playhead <= self.view_end:
-            painter.setPen(QPen(Qt.red, 2))
+            painter.setPen(QPen(theme.color("waveform-needle", "red"), 2))
             x = self.time_to_x(self.playhead)
             painter.drawLine(x, 0, x, h)
 

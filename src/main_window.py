@@ -11,6 +11,7 @@ from PyQt5.QtGui import QFont, QIcon, QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtWidgets import (
     QAction,
+    QActionGroup,
     QApplication,
     QCompleter,
     QFileDialog,
@@ -38,6 +39,7 @@ from ui.db_window import DatabaseWindow
 from ui.media_player import MediaPlayerController
 from ui.recycle import RestoreDialog
 from ui.settings_dialogue import SettingsDialog
+from ui.theme_manager import ThemeManager
 
 logger = get_logger("mc.main_window")
 
@@ -87,6 +89,8 @@ class MainWindow(QMainWindow):
             os.path.join(_UI_DIR, "music_manager.ui"),
             self,
         )
+        ThemeManager().apply_saved_theme()
+        ThemeManager().themeChanged.connect(lambda _name: self.__setup_label_style_sheet())
         self.__setup_ui()
         self.db_media_window.setup_ui()
 
@@ -194,6 +198,8 @@ class MainWindow(QMainWindow):
         self.mo_settings.triggered.connect(self.on_settings_button_clicked)
         self.mo_settings.setToolTip("Open Settings")
 
+        self.__setup_theme_menu()
+
         self.action_restore_from_trash = self.findChild(QAction, "actionRestore_From_Trash")
         self.action_restore_from_trash.triggered.connect(self.on_restore_button_clicked)
         self.action_restore_from_trash.setToolTip("Restore from the recycle bin")
@@ -207,6 +213,26 @@ class MainWindow(QMainWindow):
         self.but_toggle.setIcon(self.icon_menu)
         self.but_toggle.setShortcut("Ctrl+M")
         self.but_exit.setIcon(QtGui.QIcon(self.icon_exit.pixmap(40, 40)))
+
+    def __setup_theme_menu(self) -> None:
+        """Add a Theme submenu to the Options menu with one checkable entry per theme. Returns: None"""
+        theme_manager = ThemeManager()
+        theme_menu = QMenu("Theme", self)
+        theme_menu.setIcon(QIcon(":/icons/icons/eye.svg"))
+
+        group = QActionGroup(self)
+        group.setExclusive(True)
+        for name, display_name in theme_manager.available_themes().items():
+            action = QAction(display_name, self, checkable=True)
+            action.setChecked(name == theme_manager.current_theme)
+            action.triggered.connect(lambda _checked, n=name: theme_manager.apply(n, persist=True))
+            group.addAction(action)
+            theme_menu.addAction(action)
+
+        self.menu_options.addSeparator()
+        self.menu_options.addMenu(theme_menu)
+        # keep the menu checkmarks in sync when the theme changes elsewhere (e.g. Settings dialog)
+        theme_manager.themeChanged.connect(lambda applied: [a.setChecked(a.text() == theme_manager.available_themes().get(applied)) for a in group.actions()])
 
     def __setup_action_buttons(self) -> None:
         """Set up the action buttons. Returns: None"""
@@ -346,22 +372,26 @@ class MainWindow(QMainWindow):
         self.label_cache = {"id3": (id3_labels_left, id3_labels_right), "artwork": (left_artwork_labels, right_artwork_labels)}
 
     def __setup_label_style_sheet(self) -> None:
-        """Set style sheet for the labels. Returns: None"""
+        """Set style sheet for the labels, using the current theme's tag colours. Returns: None"""
         # Create a QFont object for the bold and italic font
         font = QFont()
         font.setBold(True)
         font.setPointSize(10)
 
+        theme = ThemeManager()
+        left_colour = theme.color("tag-label-left").name()
+        right_colour = theme.color("tag-label-right").name()
+
         left_labels, right_labels = self.label_cache.get("id3")
         # Loop over the left labels
         for label in left_labels:
             label.setFont(font)
-            label.setStyleSheet("color: rgb(33, 143, 122 );")
+            label.setStyleSheet(f"color: {left_colour};")
 
         # Loop over the right labels
         for label in right_labels:
             label.setFont(font)
-            label.setStyleSheet("color: rgb(177, 162, 86);")
+            label.setStyleSheet(f"color: {right_colour};")
 
     def __setup_tree_widgets(self) -> None:
         """Populates the id3_tags list with the names of the supported ID3 tags. Returns: None"""
