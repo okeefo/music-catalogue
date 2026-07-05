@@ -59,7 +59,7 @@ Each operation can also be performed separately if needed.
 - **3rd Party Tool Integration** — open files directly in Audacity, Mp3Tag, VLC, and MediaInfo (must be installed separately)
 
 ### In Progress / Experimental
-- **Database** — scan music collection and build a searchable database (`db/` module, UI exists, integration in progress)
+- **Database** — scan music collection and build a searchable database (`db/` module, integration in progress). Browsed via the DB Viewer page: labels & releases tree, track table, and built-in media player with waveform. (The separate DB Manager page has been removed in favour of the DB Viewer.)
 - **Trim** — remove leading silence from a track (implemented, experimental — see notes below)
 - **Settings Dialog** — UI exists but changes are not yet persisted back to `config.ini`
 - **Configuration Manager** — skeleton exists, not yet wired up
