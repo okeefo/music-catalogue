@@ -118,7 +118,7 @@ def setup_database() -> None:
             )
         """)
 
-        # uber_tracks — denormalised view used by MusicCatalogDB_2 and MusicCatalogDB.
+        # uber_tracks — denormalised view used by MusicCatalogDB.
         conn.execute("""
             CREATE VIEW IF NOT EXISTS uber_tracks AS
             SELECT

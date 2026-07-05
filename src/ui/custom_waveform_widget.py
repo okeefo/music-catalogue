@@ -17,10 +17,10 @@ class WaveformWidget(QWidget):
         """
         import json
 
-        from db.db_reader import MusicCatalogDB_2
+        from db.db_reader import MusicCatalogDB
 
         logger.info(f"Trying to load waveform from DB for file_id={file_id}")
-        db_reader = MusicCatalogDB_2(db_path)
+        db_reader = MusicCatalogDB(db_path)
         raw_waveform = db_reader.get_waveform_data(file_id)
         if raw_waveform:
             try:
