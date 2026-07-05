@@ -1,21 +1,60 @@
 import os
 
 from PyQt5.QtCore import QItemSelection, QItemSelectionModel, QModelIndex, Qt
-from PyQt5.QtGui import QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QLabel, QLineEdit, QMenu, QMessageBox, QPushButton, QSlider, QTableView, QTreeView, QWidget
+from PyQt5.QtGui import QFont, QIcon, QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QAbstractItemView, QLabel, QLineEdit, QMenu, QMessageBox, QPushButton, QSlider, QStyledItemDelegate, QTableView, QTreeView, QWidget
 from qtpy import QtGui
 
 from config_manager import ConfigurationManager
 from db.db_reader import MusicCatalogDB
 from log_config import get_logger
 from ui.custom_waveform_widget import WaveformWidget
-from ui.db_window_widget import CenterAlignDelegate, DatabaseWidget
 from ui.media_player import MediaPlayerController
 
 logger = get_logger(__name__)
 
 _UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "qt")
 _ICONS_DIR = os.path.join(_UI_DIR, "icons")
+
+
+class CenterAlignDelegate(QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        option.displayAlignment = Qt.AlignmentFlag.AlignCenter
+
+
+def setup_data_view(table_view: QTableView, clicked_connect) -> None:
+    """Set up a table view with a standard item model."""
+    table_view.setModel(QStandardItemModel())
+    table_view.setFont(QFont("Source Code Pro", 8))  # change the size as desired
+    table_view.setAlternatingRowColors(True)
+    table_view.verticalHeader().setVisible(False)
+    table_view.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+    table_view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+    table_view.clicked.connect(lambda index: clicked_connect(table_view, index))
+
+    table_view.setStyleSheet(
+        """
+    QTableView::item:selected {
+        background: #3399ff;
+        color: white;
+    }
+    QTableView::item:selected:!active {
+        background: #3399ff;
+        color: white;
+    }
+    """
+    )
+
+
+def on_row_clicked(table_view: QTableView, index: QModelIndex):
+    selection_model = table_view.selectionModel()
+    selection = QItemSelection(index, index)
+    if selection_model.isSelected(index):
+        selection_model.select(selection, QItemSelectionModel.Deselect | QItemSelectionModel.Rows)
+    else:
+        selection_model.clearSelection()
+        selection_model.select(selection, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
 
 class DatabaseMediaWindow(QWidget):
@@ -114,7 +153,7 @@ class DatabaseMediaWindow(QWidget):
         """Sets up the track viewer with a table view."""
         self.track_viewer = self.findChild(QTableView, "track_viewer")
         self.track_viewer.doubleClicked.connect(self.on_track_viewer_double_clicked)
-        DatabaseWidget._setup_data_view(self.track_viewer, DatabaseWidget.on_row_clicked)
+        setup_data_view(self.track_viewer, on_row_clicked)
         self.__populate_view_db_tracks(None)
         self.track_viewer.setContextMenuPolicy(Qt.CustomContextMenu)
         self.track_viewer.customContextMenuRequested.connect(self.on_track_viewer_context_menu)

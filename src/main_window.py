@@ -88,7 +88,6 @@ class MainWindow(QMainWindow):
             self,
         )
         self.__setup_ui()
-        self.db_window.setup_ui("C:/")
         self.db_media_window.setup_ui()
 
     def __setup_ui(self):
@@ -187,12 +186,8 @@ class MainWindow(QMainWindow):
         self.menu_view_filem.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(0))
         self.menu_view_filem.setToolTip("File Manager")
 
-        self.menu_view_dbm = self.findChild(QAction, "menu_view_dbm")
-        self.menu_view_dbm.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(1))
-        self.menu_view_dbm.setToolTip("Database View")
-
         self.menu_view_dbm2 = self.findChild(QAction, "menu_view_dbm2")
-        self.menu_view_dbm2.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(2))
+        self.menu_view_dbm2.triggered.connect(lambda: self.stack_page_view.setCurrentIndex(1))
         self.menu_view_dbm2.setToolTip("Database with Media Player View")
 
         self.mo_settings = self.findChild(QAction, "mo_settings")
@@ -492,12 +487,18 @@ class MainWindow(QMainWindow):
 
     def confirm_exit(self) -> None:
         """Confirms the exit of the application. Returns: None"""
+        self.close()
+
+    def closeEvent(self, event) -> None:
+        """Confirm and save config on any exit path: Exit button, Ctrl+Q or the window's X button."""
 
         if self.prompt_yes_no("Exit", "Are you sure you want to exit?") == QMessageBox.No:
+            event.ignore()
             return
 
         self.hide()
         self.__update_config_file()
+        event.accept()
         self.application.quit()
 
     def __update_config_file(self) -> None:

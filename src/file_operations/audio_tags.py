@@ -105,16 +105,26 @@ class AudioTagHelper:
         path = Path(absolute_path_filename)
 
         if path.suffix == ".wav":
-            filedata = WAVE(absolute_path_filename)
-            for art in cover_art:
-                filedata.tags.add(art)
-            filedata.save()
+            try:
+                filedata = WAVE(absolute_path_filename)
+                if filedata.tags is None:
+                    filedata.add_tags()
+                for art in cover_art:
+                    filedata.tags.add(art)
+                filedata.save()
+            except Exception:
+                logger.exception(f"Could not write cover art to file: '{absolute_path_filename}'")
+            return
 
         try:
             file = ID3(absolute_path_filename)
+        except ID3NoHeaderError:
+            file = ID3()
+
+        try:
             for art in cover_art:
                 file.add(art)
-            file.save()
+            file.save(absolute_path_filename)
         except Exception:
             logger.exception(f"Could not write cover art to file: '{absolute_path_filename}'")
 

@@ -30,6 +30,10 @@ _SPLIT_HIGH_THRESH_DBFS: int = -25
 _SPLIT_MAX_ATTEMPTS: int = 8
 _SPLIT_MIN_SILENCE_MS: int = 2000
 
+# Options that only use the Discogs release for log messages, so files without
+# a release id (e.g. not recorded via the usual vinyl workflow) can still be processed.
+_RELEASE_OPTIONAL_OPTIONS = ("Amplify", "Trim")
+
 # Silence-trim constants.
 _TRIM_SILENCE_THRESHOLD_DBFS: int = -35
 # Pad this many milliseconds of silence before trimming to avoid clipping the
@@ -79,7 +83,7 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
         status_msg = f"Processing file: {os.path.basename(fq_file_path)}\n"
         progress_bar.increment_with_message(status_msg)
 
-        validated = __validate_file_for_processing(fq_file_path)
+        validated = __validate_file_for_processing(fq_file_path, option)
         if validated is None:
             continue
         fq_file_path, root_dir, release = validated
@@ -89,7 +93,7 @@ def __batch_process_files(fq_files: List[str], option="ALL") -> None:
     progress_bar.complete_progress_bar()
 
 
-def __validate_file_for_processing(fq_file_path: str):
+def __validate_file_for_processing(fq_file_path: str, option: str = "ALL"):
     """Return (fq_file_path, root_dir, release) if the file is processable, else None."""
     fq_file_path, root_dir, file_name = __normalise_file_path(fq_file_path)
 
@@ -104,13 +108,21 @@ def __validate_file_for_processing(fq_file_path: str):
         return None
 
     logger.info(f"Processing file: {file_name}")
+    release_optional = option in _RELEASE_OPTIONAL_OPTIONS
+
     release_id = __get_release_id(fq_file_path)
     if release_id is None:
-        return None
+        if not release_optional:
+            return None
+        logger.info(f"No release id for '{file_name}': continuing, '{option}' does not need one")
+        return fq_file_path, root_dir, _FilenameRelease(file_name)
 
     release = __get_release(release_id)
     if release is None:
-        return None
+        if not release_optional:
+            return None
+        logger.info(f"Could not fetch release {release_id} for '{file_name}': continuing, '{option}' does not need it")
+        return fq_file_path, root_dir, _FilenameRelease(file_name)
 
     return fq_file_path, root_dir, release
 
@@ -330,9 +342,13 @@ def __amplify_file(source_file: str, release_id: str, maintain_tags) -> bool:
         tags, cover_art = audio_tag_helper.get_tags_and_cover_art(source_file)
 
     gain_value = __get_volume(source_file)
-    if gain_value == 0:
+    if gain_value is None:
+        logger.error(f"{release_id} - Could not determine volume (is sox available?):  Skipping...")
+        return False
+    # sox reports the multiplier needed to reach full scale; ~1.0 means already at max volume
+    if abs(gain_value - 1.0) < 0.01:
         logger.info(f"{release_id} - Audio is already at the correct volume:  Skipping...")
-        return True, "No Action Taken"
+        return True
 
     command = ["sox.exe", "-v", f"{gain_value}", "{source}", "{target}"]
     result = __execute_and_rename("Amplifying", source_file, command, release_id)
@@ -392,6 +408,16 @@ def __get_recorded_speed(filename: str, release: ReleaseFacade) -> str:
         return str(33)
 
 
+class _FilenameRelease:
+    """Stand-in for a Discogs release when an option doesn't need one; only supplies an id for log messages."""
+
+    def __init__(self, name: str):
+        self._name = name
+
+    def get_id(self) -> str:
+        return self._name
+
+
 def __get_release(release_id) -> ReleaseFacade:
     release_id = int(release_id[1:]) if release_id.startswith("r") else int(release_id)
 
@@ -413,8 +439,8 @@ def __get_release_id(file_path) -> str:
         logger.info(f"{release_id} - Found release id in file name: {file_path}")
         return release_id
 
-    elif audio_tag_helper.get_tags(file_path) is not None:
-        release_id = audio_tag_helper.get_tags(file_path)[audio_tag_helper.DISCOGS_RELEASE_ID][0]
+    elif tags := audio_tag_helper.get_tags(file_path):
+        release_id = tags.get(audio_tag_helper.DISCOGS_RELEASE_ID, [None])[0]
         if release_id is not None:
             return release_id
 
